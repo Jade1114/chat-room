@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Room Test</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 24px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #475569;
+        }
+
+        #status {
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        #messages {
+            height: 320px;
+            overflow-y: auto;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f8fafc;
+            white-space: pre-wrap;
+        }
+
+        .hint {
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>聊天室最小测试页</h1>
+        <div id="status">状态：未连接</div>
+
+        <div class="row">
+            <input id="wsUrl" value="ws://localhost:8080/ws/chat" />
+            <button id="connectBtn">连接</button>
+            <button id="disconnectBtn" class="secondary" disabled>断开</button>
+        </div>
+
+        <div class="row">
+            <input id="messageInput" placeholder="输入一条消息，比如 hello" />
+            <button id="sendBtn" disabled>发送</button>
+        </div>
+
+        <div id="messages"></div>
+        <div class="hint">打开地址：`http://localhost:8080/`。先点连接，再发消息。</div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        const wsUrlEl = document.getElementById('wsUrl');
+        const messageInputEl = document.getElementById('messageInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const sendBtn = document.getElementById('sendBtn');
+
+        let socket = null;
+
+        function appendMessage(text) {
+            const line = document.createElement('div');
+            line.textContent = text;
+            messagesEl.appendChild(line);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function setConnected(connected) {
+            connectBtn.disabled = connected;
+            disconnectBtn.disabled = !connected;
+            sendBtn.disabled = !connected;
+            statusEl.textContent = connected ? '状态：已连接' : '状态：未连接';
+        }
+
+        connectBtn.addEventListener('click', () => {
+            const url = wsUrlEl.value.trim();
+            if (!url) {
+                appendMessage('系统：WebSocket 地址不能为空');
+                return;
+            }
+
+            socket = new WebSocket(url);
+
+            socket.onopen = () => {
+                setConnected(true);
+                appendMessage('系统：连接成功');
+            };
+
+            socket.onmessage = (event) => {
+                appendMessage('服务端：' + event.data);
+            };
+
+            socket.onclose = () => {
+                setConnected(false);
+                appendMessage('系统：连接关闭');
+                socket = null;
+            };
+
+            socket.onerror = () => {
+                appendMessage('系统：连接出错');
+            };
+        });
+
+        disconnectBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.close();
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            const text = messageInputEl.value.trim();
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                appendMessage('系统：WebSocket 还没连上');
+                return;
+            }
+            if (!text) {
+                appendMessage('系统：消息不能为空');
+                return;
+            }
+
+            socket.send(text);
+            appendMessage('我：' + text);
+            messageInputEl.value = '';
+            messageInputEl.focus();
+        });
+
+        messageInputEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !sendBtn.disabled) {
+                sendBtn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>
