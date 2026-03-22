@@ -147,7 +147,9 @@
             };
 
             socket.onmessage = (event) => {
-                appendMessage('服务端：' + event.data);
+                const message = JSON.parse(event.data);
+
+                appendMessage(message.sender + ': ' + message.content);
             };
 
             socket.onclose = () => {
@@ -178,8 +180,16 @@
                 return;
             }
 
-            socket.send(text);
+            const message = {
+                type: "USER_CHAT",
+                sender: "temp",
+                content: text
+            };
+
+
+            socket.send(JSON.stringify(message));
             appendMessage('我：' + text);
+
             messageInputEl.value = '';
             messageInputEl.focus();
         });

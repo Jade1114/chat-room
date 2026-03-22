@@ -9,10 +9,20 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.yuy.chatroom.model.Message;
+import com.yuy.chatroom.model.MessageType;
+
+import tools.jackson.databind.ObjectMapper;
+
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private final Set<WebSocketSession> sessions = new HashSet<>();
+    private final ObjectMapper objectMapper;
+
+    public WebSocketHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -24,9 +34,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
 
+        Message newMessage = objectMapper.readValue(payload, Message.class);
+        newMessage.setSender(session.getId());
+
+        String json = objectMapper.writeValueAsString(newMessage);
+
         for (WebSocketSession targetSession : sessions) {
             if (targetSession.isOpen()) {
-                targetSession.sendMessage(new TextMessage(payload));
+                targetSession.sendMessage(new TextMessage(json));
             }
         }
     }
@@ -36,5 +51,4 @@ public class WebSocketHandler extends TextWebSocketHandler {
         sessions.remove(session);
         System.out.println("连接关闭: " + session.getId());
     }
-
 }
