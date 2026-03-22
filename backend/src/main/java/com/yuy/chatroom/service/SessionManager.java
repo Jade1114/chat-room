@@ -31,4 +31,8 @@ public class SessionManager {
             sessionUsernameMap.remove(webSocketSession);
         }
     }
+
+    public boolean isUsernameTaken(String username) {
+        return sessionUsernameMap.containsValue(username);
+    }
 }

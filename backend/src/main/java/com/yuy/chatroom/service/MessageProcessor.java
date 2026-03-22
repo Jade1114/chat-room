@@ -65,22 +65,29 @@ public class MessageProcessor {
 
     private boolean isValidJoinMessage(Message message) {
         if (message.getSender() == null || message.getSender().trim().isEmpty()) {
-            System.err.println("错误：当前登录消息中用户名错误");
+            System.err.println("错误：用户名错误");
             return false;
         }
+
+        if (sessionManager.isUsernameTaken(message.getSender())) {
+            System.err.println("错误：用户名已存在");
+            return false;
+        }
+
         return true;
     }
 
     private boolean isValidChatMessage(Message message, WebSocketSession session) {
         if (message.getContent() == null || message.getContent().trim().isEmpty()) {
-            System.err.println("错误：当前聊天消息中内容错误");
+            System.err.println("错误：内容不合规");
             return false;
         }
 
         if (sessionManager.getUsernameBySession(session) == null) {
-            System.err.println("错误：当前聊天消息中发送者不存在");
+            System.err.println("错误：发送者不存在");
             return false;
         }
         return true;
     }
+
 }
