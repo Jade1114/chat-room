@@ -21,17 +21,17 @@ public class MessageProcessor {
     public void processMessage(WebSocketSession session, Message message) throws Exception {
         switch (message.getType()) {
             case USER_CHAT:
-                String username = sessionManager.getUsernameBySession(session);
-                if (username != null) {
+                if (isValidChatMessage(message, session)) {
+                    String username = sessionManager.getUsernameBySession(session);
                     message.setSender(username);
                     broadcastAndCleanup(message, sessionManager.getSessions());
-                } else {
-                    System.out.println("出现了错误，" + session.getId() + "没有保存用户名");
                 }
                 break;
             case USER_JOIN:
-                sessionManager.addSession(session, message.getSender());
-                broadcastAndCleanup(message, sessionManager.getSessions());
+                if (isValidJoinMessage(message)) {
+                    sessionManager.addSession(session, message.getSender());
+                    broadcastAndCleanup(message, sessionManager.getSessions());
+                }
                 break;
             // 当前离开事件由 handleDisconnect(...) 处理
             case USER_LEAVE:
@@ -63,4 +63,24 @@ public class MessageProcessor {
         removeExceptionSession(exceptionSessions);
     }
 
+    private boolean isValidJoinMessage(Message message) {
+        if (message.getSender() == null || message.getSender().trim().isEmpty()) {
+            System.err.println("错误：当前登录消息中用户名错误");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isValidChatMessage(Message message, WebSocketSession session) {
+        if (message.getContent() == null || message.getContent().trim().isEmpty()) {
+            System.err.println("错误：当前聊天消息中内容错误");
+            return false;
+        }
+
+        if (sessionManager.getUsernameBySession(session) == null) {
+            System.err.println("错误：当前聊天消息中发送者不存在");
+            return false;
+        }
+        return true;
+    }
 }
