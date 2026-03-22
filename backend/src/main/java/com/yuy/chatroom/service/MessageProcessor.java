@@ -10,6 +10,9 @@ import com.yuy.chatroom.model.MessageType;
 
 @Service
 public class MessageProcessor {
+    private final static int USERNAME_MAX_LENGTH = 20;
+    private final static int MESSAGE_MAX_LENGTH = 100;
+
     private final BroadcastService broadcastService;
     private final SessionManager sessionManager;
 
@@ -74,6 +77,11 @@ public class MessageProcessor {
             return false;
         }
 
+        if (message.getSender().trim().length() > USERNAME_MAX_LENGTH) {
+            System.err.println("错误：用户名长度不合规");
+            return false;
+        }
+
         return true;
     }
 
@@ -87,7 +95,14 @@ public class MessageProcessor {
             System.err.println("错误：发送者不存在");
             return false;
         }
+
+        if (message.getContent().trim().length() > MESSAGE_MAX_LENGTH) {
+            System.err.println("错误：消息内容长度不合规");
+            return false;
+        }
+
         return true;
     }
+
 
 }
