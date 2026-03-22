@@ -149,7 +149,19 @@
             socket.onmessage = (event) => {
                 const message = JSON.parse(event.data);
 
-                appendMessage(message.sender + ': ' + message.content);
+                switch (message.type) {
+                    case "USER_CHAT":
+                        appendMessage(message.sender + ": " + message.content);
+                        break;
+                    case "USER_JOIN":
+                        appendMessage("系统: " + message.sender + " " + message.content);
+                        break;
+                    case "USER_LEAVE":
+                        appendMessage("系统: " + message.sender + " " + message.content);
+                        break;
+                    default:
+                        appendMessage("系统: 收到未知消息");
+                }
             };
 
             socket.onclose = () => {

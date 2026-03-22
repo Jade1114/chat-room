@@ -27,6 +27,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
+        Message joinMessage = new Message(MessageType.USER_JOIN, session.getId(), "进入了当前频道");
+        broadcastMessage(joinMessage);
         System.out.println("新连接建立: " + session.getId());
     }
 
@@ -34,21 +36,27 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
 
-        Message newMessage = objectMapper.readValue(payload, Message.class);
-        newMessage.setSender(session.getId());
+        Message chatMessage = objectMapper.readValue(payload, Message.class);
+        chatMessage.setSender(session.getId());
 
-        String json = objectMapper.writeValueAsString(newMessage);
+        broadcastMessage(chatMessage);
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        sessions.remove(session);
+        Message leaveMessage = new Message(MessageType.USER_LEAVE, session.getId(), "离开了当前频道");
+        broadcastMessage(leaveMessage);
+        System.out.println("连接关闭: " + session.getId());
+    }
+
+    private void broadcastMessage(Message message) throws Exception {
+        String json = objectMapper.writeValueAsString(message);
 
         for (WebSocketSession targetSession : sessions) {
             if (targetSession.isOpen()) {
                 targetSession.sendMessage(new TextMessage(json));
             }
         }
-    }
-
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        sessions.remove(session);
-        System.out.println("连接关闭: " + session.getId());
     }
 }
