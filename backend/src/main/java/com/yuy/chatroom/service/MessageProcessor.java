@@ -32,8 +32,11 @@ public class MessageProcessor {
                 break;
             case USER_JOIN:
                 if (isValidJoinMessage(message)) {
-                    sessionManager.addSession(session, message.getSender());
-                    broadcastAndCleanup(message, sessionManager.getSessions());
+                    if (sessionManager.tryRegister(session, message.getSender())) {
+                        broadcastAndCleanup(message, sessionManager.getSessions());
+                    } else {
+                        System.err.println("错误：用户名已被占用");
+                    }
                 }
                 break;
             // 当前离开事件由 handleDisconnect(...) 处理
@@ -67,21 +70,11 @@ public class MessageProcessor {
     }
 
     private boolean isValidJoinMessage(Message message) {
-        if (message.getSender() == null || message.getSender().trim().isEmpty()) {
-            System.err.println("错误：用户名错误");
+        String temp = message.getSender();
+        if (temp == null || temp.trim().isEmpty() || temp.matches(".*\\s.*") || temp.length() > USERNAME_MAX_LENGTH) {
+            System.err.println("错误：用户名不合规");
             return false;
         }
-
-        if (sessionManager.isUsernameTaken(message.getSender())) {
-            System.err.println("错误：用户名已存在");
-            return false;
-        }
-
-        if (message.getSender().trim().length() > USERNAME_MAX_LENGTH) {
-            System.err.println("错误：用户名长度不合规");
-            return false;
-        }
-
         return true;
     }
 
@@ -103,6 +96,5 @@ public class MessageProcessor {
 
         return true;
     }
-
 
 }

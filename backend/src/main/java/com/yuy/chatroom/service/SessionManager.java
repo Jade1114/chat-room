@@ -9,10 +9,7 @@ import org.springframework.web.socket.WebSocketSession;
 @Service
 public class SessionManager {
     private final ConcurrentHashMap<WebSocketSession, String> sessionUsernameMap = new ConcurrentHashMap<>();
-
-    public void addSession(WebSocketSession session, String username) {
-        sessionUsernameMap.put(session, username);
-    }
+    private final ConcurrentHashMap<String, WebSocketSession> usernameSessionMap = new ConcurrentHashMap<>();
 
     public Set<WebSocketSession> getSessions() {
         return sessionUsernameMap.keySet();
@@ -22,17 +19,25 @@ public class SessionManager {
         return sessionUsernameMap.get(session);
     }
 
-    public String removeSession(WebSocketSession session) {
-        return sessionUsernameMap.remove(session);
+    public synchronized String removeSession(WebSocketSession session) {
+        String result = sessionUsernameMap.remove(session);
+        usernameSessionMap.remove(result);
+        return result;
     }
 
-    public void removeSessions(Set<WebSocketSession> sessions) {
+    public synchronized void removeSessions(Set<WebSocketSession> sessions) {
         for (WebSocketSession webSocketSession : sessions) {
-            sessionUsernameMap.remove(webSocketSession);
+            usernameSessionMap.remove(sessionUsernameMap.remove(webSocketSession));
         }
     }
 
-    public boolean isUsernameTaken(String username) {
-        return sessionUsernameMap.containsValue(username);
+    public synchronized boolean tryRegister(WebSocketSession session, String username) {
+        if (!usernameSessionMap.containsKey(username)) {
+            usernameSessionMap.put(username, session);
+            sessionUsernameMap.put(session, username);
+            return true;
+        } else {
+            return false;
+        }
     }
 }
