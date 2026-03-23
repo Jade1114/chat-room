@@ -1,5 +1,6 @@
 package com.yuy.chatroom.service;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,7 +20,8 @@ public class BroadcastService {
         this.objectMapper = objectMapper;
     }
 
-    public Set<WebSocketSession> broadcastMessage(Message message, Set<WebSocketSession> sessions) throws Exception {
+    public Set<WebSocketSession> broadcastMessage(Message message, Set<WebSocketSession> sessions)
+            throws IOException {
         String json = objectMapper.writeValueAsString(message);
         Set<WebSocketSession> exceptionSessions = new HashSet<>();
 
@@ -27,7 +29,7 @@ public class BroadcastService {
             if (targetSession.isOpen()) {
                 try {
                     targetSession.sendMessage(new TextMessage(json));
-                } catch (Exception e) {
+                } catch (IOException e) {
                     exceptionSessions.add(targetSession);
                     e.printStackTrace();
                 }
