@@ -4,16 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
-@Getter
 @Setter
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-@ToString
-public class Message {
-    private MessageType type;
-    private String sender;
-    private String content;
+@NoArgsConstructor
+public class RoomSummary {
     private String roomId;
+    private int onlineCount;
 }

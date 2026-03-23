@@ -8,12 +8,10 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @ToString
-public class Message {
-    private MessageType type;
-    private String sender;
-    private String content;
+public class UserSessionInfo {
+    private String username;
     private String roomId;
 }

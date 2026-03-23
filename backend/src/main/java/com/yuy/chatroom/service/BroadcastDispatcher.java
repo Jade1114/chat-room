@@ -1,6 +1,5 @@
 package com.yuy.chatroom.service;
 
-import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +15,7 @@ import com.yuy.chatroom.model.Message;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.core.JacksonException;
 
 @Service
 public class BroadcastDispatcher {
@@ -53,12 +53,17 @@ public class BroadcastDispatcher {
         while (isRunning) {
             try {
                 Message message = queue.take();
-                removeExceptionSessions(broadcastService.broadcastMessage(message, sessionManager.getSessions()));
+                if (message.getRoomId() == null) {
+                    log.warn("错误：消息缺少房间信息，无法广播");
+                    continue;
+                }
+                removeExceptionSessions(broadcastService.broadcastMessage(message,
+                        sessionManager.getSessionsByRoomId(message.getRoomId())));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("错误：消费线程被中断，准备停止");
                 break;
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 log.error("错误：消息无法广播");
             }
             // 循环取消息

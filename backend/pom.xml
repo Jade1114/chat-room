@@ -33,6 +33,13 @@
 
     <dependencies>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Web（REST + MVC + JSON） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -60,6 +67,7 @@
             <scope>test</scope>
         </dependency>
 
+        
     </dependencies>
 
     <build>

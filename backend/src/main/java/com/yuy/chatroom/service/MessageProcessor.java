@@ -7,11 +7,13 @@ import org.springframework.web.socket.WebSocketSession;
 
 import com.yuy.chatroom.model.Message;
 import com.yuy.chatroom.model.MessageType;
+import com.yuy.chatroom.model.UserSessionInfo;
 
 @Service
 public class MessageProcessor {
     private final static int USERNAME_MAX_LENGTH = 20;
     private final static int MESSAGE_MAX_LENGTH = 100;
+    private final static int ROOMID_MAX_LENGTH = 10;
     private final static Logger log = LoggerFactory.getLogger(MessageProcessor.class);
 
     private final SessionManager sessionManager;
@@ -23,17 +25,22 @@ public class MessageProcessor {
     }
 
     public void processMessage(WebSocketSession session, Message message) {
+        if (message == null || message.getType() == null) {
+            log.warn("消息类型不合规");
+            return;
+        }
         switch (message.getType()) {
             case USER_CHAT:
                 if (isValidChatMessage(message, session)) {
-                    String username = sessionManager.getUsernameBySession(session);
-                    message.setSender(username);
+                    UserSessionInfo info = sessionManager.getSessionInfo(session);
+                    message.setSender(info.getUsername());
+                    message.setRoomId(info.getRoomId());
                     broadcastDispatcher.submit(message);
                 }
                 break;
             case USER_JOIN:
                 if (isValidJoinMessage(message)) {
-                    if (sessionManager.tryRegister(session, message.getSender())) {
+                    if (sessionManager.tryRegister(session, message.getSender(), message.getRoomId())) {
                         broadcastDispatcher.submit(message);
                     } else {
                         log.warn("错误：用户名已被占用");
@@ -51,21 +58,29 @@ public class MessageProcessor {
     }
 
     public void handleDisconnect(WebSocketSession session) {
-        String username = sessionManager.removeSession(session);
-        if (username != null) {
-            Message message = new Message(MessageType.USER_LEAVE, username, "离开了当前频道");
+        UserSessionInfo info = sessionManager.removeSession(session);
+        if (info != null) {
+            Message message = new Message(MessageType.USER_LEAVE, info.getUsername(), "离开了当前频道", info.getRoomId());
             broadcastDispatcher.submit(message);
         } else {
-            log.warn("{} 未绑定用户名但正在断开连接", session.getId());
+            log.warn("{} 未绑定用户信息但正在断开连接", session.getId());
         }
     }
 
     private boolean isValidJoinMessage(Message message) {
-        String temp = message.getSender();
-        if (temp == null || temp.trim().isEmpty() || temp.matches(".*\\s.*") || temp.length() > USERNAME_MAX_LENGTH) {
+        String name = message.getSender();
+        if (name == null || name.trim().isEmpty() || name.matches(".*\\s.*") || name.length() > USERNAME_MAX_LENGTH) {
             log.warn("错误：用户名不合规");
             return false;
         }
+
+        String roomId = message.getRoomId();
+        if (roomId == null || roomId.trim().isEmpty() || roomId.matches(".*\\s.*")
+                || roomId.length() > ROOMID_MAX_LENGTH) {
+            log.warn("错误：房间名不合规");
+            return false;
+        }
+
         return true;
     }
 
@@ -75,8 +90,8 @@ public class MessageProcessor {
             return false;
         }
 
-        if (sessionManager.getUsernameBySession(session) == null) {
-            log.warn("错误：发送者不存在");
+        if (sessionManager.getSessionInfo(session) == null) {
+            log.warn("错误：当前 session 未注册用户信息");
             return false;
         }
 
