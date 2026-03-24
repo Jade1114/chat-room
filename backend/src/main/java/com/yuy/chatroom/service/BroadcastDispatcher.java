@@ -1,28 +1,28 @@
 package com.yuy.chatroom.service;
 
-import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.WebSocketSession;
 
 import com.yuy.chatroom.model.Message;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import tools.jackson.core.JacksonException;
+
 
 @Service
 public class BroadcastDispatcher {
-    private final BlockingQueue<Message> queue = new LinkedBlockingQueue<>();
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ConcurrentHashMap<String, AtomicBoolean> roomHandlingFlags = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, BlockingQueue<Message>> roomQueues = new ConcurrentHashMap<>();
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(4);
+
     private static final Logger log = LoggerFactory.getLogger(BroadcastDispatcher.class);
-    private boolean isRunning = true;
 
     private final SessionManager sessionManager;
     private final BroadcastService broadcastService;
@@ -33,55 +33,62 @@ public class BroadcastDispatcher {
     }
 
     public void submit(Message message) {
+        String roomId = message.getRoomId();
+        AtomicBoolean flag = roomHandlingFlags.computeIfAbsent(roomId, key -> new AtomicBoolean(false));
+        BlockingQueue<Message> queue = roomQueues.computeIfAbsent(roomId, key -> new ArrayBlockingQueue<Message>(10));
+
         try {
             queue.put(message);
+
+            if (flag.compareAndSet(false, true)) {
+                log.info("{} 当前房间中不存在消费线程，尝试向线程池申请线程", roomId);
+                threadPool.submit(() -> processRoomQueue(roomId));
+            } else {
+                log.info("{} 房间中已经存在消费线程，submit任务完成", roomId);
+            }
+
         } catch (InterruptedException e) {
+            log.warn("尝试给 {} 房间消息队列添加消息时，线程被中断", roomId);
             Thread.currentThread().interrupt();
-            log.error("错误：无法成功添加消息到队列中，当前线程被中断");
+        }
+    }
+
+    private void processRoomQueue(String roomId) {
+        BlockingQueue<Message> queue = roomQueues.get(roomId);
+        AtomicBoolean flag = roomHandlingFlags.get(roomId);
+
+        if (queue == null || flag == null) {
             return;
         }
-    }
 
-    @PostConstruct
-    public void start() {
-        executor.execute(() -> {
-            dispatchLoop();
-        });
-    }
+        while (true) {
+            Message message = queue.poll();
 
-    private void dispatchLoop() {
-        while (isRunning) {
-            try {
-                Message message = queue.take();
-                if (message.getRoomId() == null) {
-                    log.warn("错误：消息缺少房间信息，无法广播");
+            if (message == null) {
+                flag.compareAndSet(true, false);
+                if (queue.isEmpty()) {
+                    log.info("{} 房间消息队列已处理完，释放处理权", roomId);
+                    return;
+                }
+                if (flag.compareAndSet(false, true)) {
                     continue;
                 }
-                removeExceptionSessions(broadcastService.broadcastMessage(message,
-                        sessionManager.getSessionsByRoomId(message.getRoomId())));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("错误：消费线程被中断，准备停止");
-                break;
-            } catch (JacksonException e) {
-                log.error("错误：消息无法广播");
+                return;
             }
-            // 循环取消息
-            // 拿当前在线 sessions
-            // 调 broadcastService 广播
-            // 清理异常 session
+
+            try {
+                sessionManager.removeSessions(
+                        broadcastService.broadcastMessage(message, sessionManager.getSessionsByRoomId(roomId)));
+            } catch (Exception e) {
+                log.error("{} 房间消息广播失败", roomId, e);
+            }
         }
     }
+
 
     @PreDestroy
     public void stop() {
-        isRunning = false;
-        executor.shutdownNow();
-        // 关闭执行器
-    }
-
-    private void removeExceptionSessions(Set<WebSocketSession> exceptionSessions) {
-        sessionManager.removeSessions(exceptionSessions);
+        threadPool.shutdownNow();
     }
 
 }
