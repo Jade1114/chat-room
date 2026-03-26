@@ -19,12 +19,14 @@ public class MessageProcessor {
     private final SessionManager sessionManager;
     private final BroadcastDispatcher broadcastDispatcher;
     private final RoomPresenceManager roomPresenceManager;
+    private final ChatMessagePublisher chatMessagePublisher;
 
     public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
-            RoomPresenceManager roomPresenceManager) {
+            RoomPresenceManager roomPresenceManager, ChatMessagePublisher chatMessagePublisher) {
         this.sessionManager = sessionManager;
         this.broadcastDispatcher = broadcastDispatcher;
         this.roomPresenceManager = roomPresenceManager;
+        this.chatMessagePublisher = chatMessagePublisher;
     }
 
     public void processMessage(WebSocketSession session, Message message) {
@@ -38,7 +40,9 @@ public class MessageProcessor {
                     UserSessionInfo info = sessionManager.getSessionInfo(session);
                     message.setSender(info.getUsername());
                     message.setRoomId(info.getRoomId());
-                    broadcastDispatcher.submit(message);
+                    if (!chatMessagePublisher.publishMessage(message)) {
+                        log.warn("消息发送失败, 详情: {}", message);
+                    }
                 }
                 break;
             case USER_JOIN:
