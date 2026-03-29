@@ -64,10 +64,6 @@ public class ChatMessagePublisher {
         return true;
     }
 
-    private String buildBucketQueueName(int bucketIndex) {
-        return "chat.queue." + Integer.toString(bucketIndex);
-    }
-
     private int resolveBucketIndex(String roomId) {
         return Math.abs(roomId.hashCode()) % BUCKET_COUNT;
     }
