@@ -78,7 +78,7 @@ public class SessionManager {
     }
 
     public List<RoomSummary> getRoomSummaries() {
-        List<RoomSummary> result = new ArrayList<>();
+        List<RoomSummary> result = new ArrayList<>(roomToSessionsMap.size());
 
         for (Map.Entry<String, Set<WebSocketSession>> entry : roomToSessionsMap.entrySet()) {
             result.add(new RoomSummary(entry.getKey(), entry.getValue().size()));
@@ -92,7 +92,7 @@ public class SessionManager {
             return null;
         }
 
-        List<String> usernames = new ArrayList<>();
+        List<String> usernames = new ArrayList<>(roomSessions.size());
         for (WebSocketSession session : roomSessions) {
             UserSessionInfo info = sessionToUserMap.get(session);
             if (info != null) {
