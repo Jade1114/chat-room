@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -38,19 +39,19 @@ public class CampusDirectoryServiceTest {
         presenceService = new ChannelPresenceService();
         service = new CampusDirectoryService(userMapper, channelMapper, presenceService);
 
-        when(userMapper.findById("u-stu-1")).thenReturn(studentYuy());
-        when(userMapper.findCourseIdsByUserId("u-stu-1")).thenReturn(List.of("course-java", "course-websocket"));
+        lenient().when(userMapper.findById("u-stu-1")).thenReturn(studentYuy());
+        lenient().when(userMapper.findCourseIdsByUserId("u-stu-1")).thenReturn(List.of("course-java", "course-websocket"));
 
-        when(userMapper.findById("u-teacher-1")).thenReturn(teacherChen());
-        when(userMapper.findCourseIdsByUserId("u-teacher-1")).thenReturn(List.of("course-java", "course-websocket"));
+        lenient().when(userMapper.findById("u-teacher-1")).thenReturn(teacherChen());
+        lenient().when(userMapper.findCourseIdsByUserId("u-teacher-1")).thenReturn(List.of("course-java", "course-websocket"));
 
-        when(userMapper.findById("u-admin-1")).thenReturn(admin());
-        when(userMapper.findCourseIdsByUserId("u-admin-1")).thenReturn(List.of());
+        lenient().when(userMapper.findById("u-admin-1")).thenReturn(admin());
+        lenient().when(userMapper.findCourseIdsByUserId("u-admin-1")).thenReturn(List.of());
 
-        when(userMapper.findAll()).thenReturn(List.of(studentYuy(), teacherChen(), admin()));
+        lenient().when(userMapper.findAll()).thenReturn(List.of(studentYuy(), teacherChen(), admin()));
 
-        when(channelMapper.findAll()).thenReturn(allChannels());
-        when(channelMapper.findById(anyString())).thenAnswer(invocation -> {
+        lenient().when(channelMapper.findAll()).thenReturn(allChannels());
+        lenient().when(channelMapper.findById(anyString())).thenAnswer(invocation -> {
             String id = invocation.getArgument(0);
             return allChannels().stream().filter(c -> c.getId().equals(id)).findFirst().orElse(null);
         });
@@ -58,8 +59,6 @@ public class CampusDirectoryServiceTest {
 
     @Test
     void shouldReturnDefaultUserWhenUserIdMissing() {
-        when(userMapper.findById("u-stu-1")).thenReturn(studentYuy());
-
         CurrentUser user = service.getCurrentUser(null);
 
         assertEquals("u-stu-1", user.getId());
@@ -109,8 +108,6 @@ public class CampusDirectoryServiceTest {
     @Test
     void shouldReflectOnlinePresenceInChannelDetail() {
         presenceService.join("ch-java", "u-stu-1");
-        when(userMapper.findById("u-stu-1")).thenReturn(studentYuy());
-        when(userMapper.findCourseIdsByUserId("u-stu-1")).thenReturn(List.of("course-java", "course-websocket"));
 
         Optional<ChannelDetail> detail = service.getAccessibleChannelDetail("u-stu-1", "ch-java");
 

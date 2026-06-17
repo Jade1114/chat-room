@@ -75,13 +75,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2（测试用内存数据库） -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <!-- 测试（包含MockMvc + JUnit + Mockito） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
