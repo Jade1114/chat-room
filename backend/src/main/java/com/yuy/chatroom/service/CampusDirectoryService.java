@@ -3,6 +3,7 @@ package com.yuy.chatroom.service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,12 @@ import com.yuy.chatroom.model.UserRole;
 @Service
 public class CampusDirectoryService {
     private static final String DEFAULT_USER_ID = "u-stu-1";
+
+    private final ChannelPresenceService presenceService;
+
+    public CampusDirectoryService(ChannelPresenceService presenceService) {
+        this.presenceService = presenceService;
+    }
 
     private final Map<String, CurrentUser> users = Map.of(
             "u-stu-1", new CurrentUser(
@@ -160,6 +167,12 @@ public class CampusDirectoryService {
     }
 
     private ChannelDetail toChannelDetail(Channel channel, CurrentUser user) {
+        Set<String> onlineUserIds = presenceService.getOnlineUserIds(channel.getId());
+        List<String> displayNames = onlineUserIds.stream()
+                .map(this::getCurrentUser)
+                .map(CurrentUser::getDisplayName)
+                .toList();
+
         return new ChannelDetail(
                 channel.getId(),
                 channel.getName(),
@@ -167,8 +180,8 @@ public class CampusDirectoryService {
                 channel.getScopeId(),
                 channel.getDescription(),
                 channel.isReadonly(),
-                0,
-                List.of(user.getDisplayName()));
+                onlineUserIds.size(),
+                displayNames);
     }
 
     private String normalizeUserId(String userId) {
