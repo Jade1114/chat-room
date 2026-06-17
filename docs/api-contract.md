@@ -158,7 +158,36 @@ GET /api/channels/{channelId}?userId={userId}
 
 ---
 
-### 2.5 获取房间列表（旧接口，待废弃）
+### 2.5 加入频道在线状态
+
+```http
+POST /api/channels/{channelId}/join?userId={userId}
+```
+
+**说明**：将当前用户标记为在该频道在线。返回 403 如果用户无权访问该频道。
+
+⚠️ TODO: WebSocket — 此端点仅用于测试/演示在线状态。后续由 WebSocket 连接事件自动调用。
+
+**响应**（200）：无 body。
+**响应**（403）：无 body。
+
+---
+
+### 2.6 离开频道在线状态
+
+```http
+POST /api/channels/{channelId}/leave?userId={userId}
+```
+
+**说明**：将当前用户从该频道在线集合中移除。
+
+⚠️ TODO: WebSocket — 同 2.5，后续由 WebSocket 断开事件自动调用。
+
+**响应**（200）：无 body。
+
+---
+
+### 2.7 获取房间列表（旧接口，待废弃）
 
 ```http
 GET /api/rooms
