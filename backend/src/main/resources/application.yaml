@@ -2,6 +2,12 @@ spring:
   application:
     name: chat-room-backend
 
+  datasource:
+    url: jdbc:mysql://localhost:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   data:
     redis:
       host: localhost
@@ -13,3 +19,7 @@ spring:
     username: guest
     password: guest
     virtual-host: /
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true

@@ -2,6 +2,8 @@ package com.yuy.chatroom.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +19,10 @@ public class ChannelDetail {
     private ChannelType type;
     private String scopeId;
     private String description;
-    private boolean readonly;
+
+    @JsonProperty("readonly")
+    private boolean isReadonly;
+
     private int onlineCount;
     private List<String> onlineUsers;
 }

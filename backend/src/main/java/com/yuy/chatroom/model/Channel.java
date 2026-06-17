@@ -1,5 +1,7 @@
 package com.yuy.chatroom.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,5 +17,7 @@ public class Channel {
     private ChannelType type;
     private String scopeId;
     private String description;
-    private boolean readonly;
+
+    @JsonProperty("readonly")
+    private boolean isReadonly;
 }
