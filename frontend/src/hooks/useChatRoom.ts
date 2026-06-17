@@ -1,19 +1,24 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
 import { wsUrl } from '../config';
-import { fetchRoomDetail, fetchRooms } from '../lib/chatApi';
+import { fetchChannelDetail, fetchChannels, fetchCurrentUser, fetchMockUsers } from '../lib/chatApi';
 import {
-  activeRoomDetailAtom,
+  activeChannelDetailAtom,
   canSendAtom,
+  channelIdAtom,
+  channelsAtom,
+  currentUserAtom,
+  displayNameAtom,
   draftAtom,
-  loadingDetailAtom,
-  loadingRoomsAtom,
-  roomIdAtom,
-  roomsAtom,
-  selectedRoomAtom,
+  loadingChannelDetailAtom,
+  loadingChannelsAtom,
+  loadingUsersAtom,
+  lobbyErrorAtom,
+  mockUsersAtom,
+  selectedChannelIdAtom,
+  selectedUserIdAtom,
   statusAtom,
-  timelineAtom,
-  trimmedUsernameAtom
+  timelineAtom
 } from '../state/chatAtoms';
 import type { ChatMessagePayload, TimelineItem } from '../types/chat';
 
@@ -32,16 +37,22 @@ function createTimelineItem(payload: Omit<TimelineItem, 'id' | 'time'>): Timelin
 
 export function useChatRoom() {
   const [draft, setDraft] = useAtom(draftAtom);
-  const [roomId, setRoomId] = useAtom(roomIdAtom);
-  const trimmedUsername = useAtomValue(trimmedUsernameAtom);
-  const selectedRoom = useAtomValue(selectedRoomAtom);
+  const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
+  const selectedChannelId = useAtomValue(selectedChannelIdAtom);
+  const displayName = useAtomValue(displayNameAtom);
+  const currentUser = useAtomValue(currentUserAtom);
   const canSend = useAtomValue(canSendAtom);
   const setStatus = useSetAtom(statusAtom);
   const setTimeline = useSetAtom(timelineAtom);
-  const setRooms = useSetAtom(roomsAtom);
-  const setActiveRoomDetail = useSetAtom(activeRoomDetailAtom);
-  const setLoadingRooms = useSetAtom(loadingRoomsAtom);
-  const setLoadingDetail = useSetAtom(loadingDetailAtom);
+  const setMockUsers = useSetAtom(mockUsersAtom);
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const setChannels = useSetAtom(channelsAtom);
+  const setChannelId = useSetAtom(channelIdAtom);
+  const setActiveChannelDetail = useSetAtom(activeChannelDetailAtom);
+  const setLoadingUsers = useSetAtom(loadingUsersAtom);
+  const setLoadingChannels = useSetAtom(loadingChannelsAtom);
+  const setLoadingChannelDetail = useSetAtom(loadingChannelDetailAtom);
+  const setLobbyError = useSetAtom(lobbyErrorAtom);
   const socketRef = useRef<WebSocket | null>(null);
 
   const pushSystem = useCallback(
@@ -56,56 +67,99 @@ export function useChatRoom() {
       setTimeline((current) => [
         ...current,
         createTimelineItem({
-          role: sender === trimmedUsername ? 'me' : 'user',
+          role: sender === displayName ? 'me' : 'user',
           sender,
           text
         })
       ]);
     },
-    [setTimeline, trimmedUsername]
+    [displayName, setTimeline]
   );
 
-  const refreshRooms = useCallback(async () => {
-    setLoadingRooms(true);
-    try {
-      const nextRooms = await fetchRooms();
-      setRooms(nextRooms);
-      setRoomId((currentRoomId) => {
-        if (!currentRoomId.trim() && nextRooms.length > 0) {
-          return nextRooms[0].roomId;
-        }
-        return currentRoomId;
-      });
-    } catch {
-      setRooms([]);
-    } finally {
-      setLoadingRooms(false);
-    }
-  }, [setLoadingRooms, setRoomId, setRooms]);
-
-  const refreshRoomDetail = useCallback(
-    async (targetRoomId = selectedRoom) => {
-      if (!targetRoomId) {
-        setActiveRoomDetail(null);
+  const refreshChannelDetail = useCallback(
+    async (targetChannelId = selectedChannelId, targetUserId = selectedUserId) => {
+      if (!targetChannelId) {
+        setActiveChannelDetail(null);
         return;
       }
 
-      setLoadingDetail(true);
+      setLoadingChannelDetail(true);
       try {
-        setActiveRoomDetail(await fetchRoomDetail(targetRoomId));
+        setActiveChannelDetail(await fetchChannelDetail(targetChannelId, targetUserId));
       } catch {
-        setActiveRoomDetail(null);
+        setActiveChannelDetail(null);
       } finally {
-        setLoadingDetail(false);
+        setLoadingChannelDetail(false);
       }
     },
-    [selectedRoom, setActiveRoomDetail, setLoadingDetail]
+    [selectedChannelId, selectedUserId, setActiveChannelDetail, setLoadingChannelDetail]
+  );
+
+  const refreshChannels = useCallback(
+    async (targetUserId = selectedUserId) => {
+      setLoadingChannels(true);
+      setLobbyError('');
+      try {
+        const nextChannels = await fetchChannels(targetUserId);
+        setChannels(nextChannels);
+        setChannelId((currentChannelId) => {
+          if (nextChannels.some((channel) => channel.id === currentChannelId)) {
+            return currentChannelId;
+          }
+          return nextChannels[0]?.id || '';
+        });
+      } catch {
+        setChannels([]);
+        setLobbyError('频道加载失败');
+      } finally {
+        setLoadingChannels(false);
+      }
+    },
+    [selectedUserId, setChannelId, setChannels, setLoadingChannels, setLobbyError]
+  );
+
+  const refreshUser = useCallback(
+    async (targetUserId = selectedUserId) => {
+      setLoadingUsers(true);
+      setLobbyError('');
+      try {
+        const user = await fetchCurrentUser(targetUserId);
+        setCurrentUser(user);
+        if (!targetUserId) {
+          setSelectedUserId(user.id);
+        }
+        return user;
+      } catch {
+        setCurrentUser(null);
+        setLobbyError('用户加载失败');
+        return null;
+      } finally {
+        setLoadingUsers(false);
+      }
+    },
+    [selectedUserId, setCurrentUser, setLoadingUsers, setLobbyError, setSelectedUserId]
   );
 
   const refreshLobby = useCallback(async () => {
-    await refreshRooms();
-    await refreshRoomDetail(selectedRoom);
-  }, [refreshRoomDetail, refreshRooms, selectedRoom]);
+    const user = await refreshUser(selectedUserId);
+    const userId = user?.id || selectedUserId;
+    await refreshChannels(userId);
+    await refreshChannelDetail(selectedChannelId, userId);
+  }, [refreshChannelDetail, refreshChannels, refreshUser, selectedChannelId, selectedUserId]);
+
+  const loadMockUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const users = await fetchMockUsers();
+      setMockUsers(users);
+      setSelectedUserId((current) => current || users[0]?.id || '');
+    } catch {
+      setMockUsers([]);
+      setLobbyError('模拟用户加载失败');
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [setLoadingUsers, setLobbyError, setMockUsers, setSelectedUserId]);
 
   const handleServerMessage = useCallback(
     (raw: string) => {
@@ -131,14 +185,14 @@ export function useChatRoom() {
           break;
       }
 
-      refreshLobby();
+      refreshChannelDetail();
     },
-    [pushChat, pushSystem, refreshLobby]
+    [pushChat, pushSystem, refreshChannelDetail]
   );
 
   const connect = useCallback(() => {
-    if (!trimmedUsername || !selectedRoom) {
-      pushSystem('请输入昵称和房间号后再连接。');
+    if (!currentUser || !displayName || !selectedChannelId) {
+      pushSystem('请选择用户和频道后再连接。');
       return;
     }
 
@@ -152,16 +206,16 @@ export function useChatRoom() {
 
     socket.onopen = () => {
       setStatus('connected');
-      pushSystem(`已连接到房间 ${selectedRoom}`);
+      pushSystem(`已进入 ${selectedChannelId}`);
       socket.send(
         JSON.stringify({
           type: 'USER_JOIN',
-          sender: trimmedUsername,
-          roomId: selectedRoom,
+          sender: displayName,
+          roomId: selectedChannelId,
           content: '进入了当前频道'
         } satisfies ChatMessagePayload)
       );
-      refreshLobby();
+      refreshChannelDetail();
     };
 
     socket.onmessage = (event) => {
@@ -176,9 +230,9 @@ export function useChatRoom() {
       setStatus('idle');
       pushSystem('连接已关闭。');
       socketRef.current = null;
-      refreshLobby();
+      refreshChannelDetail();
     };
-  }, [handleServerMessage, pushSystem, refreshLobby, selectedRoom, setStatus, trimmedUsername]);
+  }, [currentUser, displayName, handleServerMessage, pushSystem, refreshChannelDetail, selectedChannelId, setStatus]);
 
   const disconnect = useCallback(() => {
     socketRef.current?.close();
@@ -193,41 +247,62 @@ export function useChatRoom() {
     socketRef.current.send(
       JSON.stringify({
         type: 'USER_CHAT',
-        sender: trimmedUsername,
-        roomId: selectedRoom,
+        sender: displayName,
+        roomId: selectedChannelId,
         content: text
       } satisfies ChatMessagePayload)
     );
     setDraft('');
-  }, [canSend, draft, selectedRoom, setDraft, trimmedUsername]);
+  }, [canSend, displayName, draft, selectedChannelId, setDraft]);
 
-  const pickRoom = useCallback(
-    (targetRoomId: string) => {
-      setRoomId(targetRoomId);
-      refreshRoomDetail(targetRoomId);
+  const pickChannel = useCallback(
+    (targetChannelId: string) => {
+      setChannelId(targetChannelId);
+      refreshChannelDetail(targetChannelId);
     },
-    [refreshRoomDetail, setRoomId]
+    [refreshChannelDetail, setChannelId]
+  );
+
+  const switchUser = useCallback(
+    (targetUserId: string) => {
+      socketRef.current?.close();
+      setTimeline([]);
+      setSelectedUserId(targetUserId);
+      setActiveChannelDetail(null);
+    },
+    [setActiveChannelDetail, setSelectedUserId, setTimeline]
   );
 
   useEffect(() => {
+    loadMockUsers();
+  }, [loadMockUsers]);
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      return;
+    }
+
     refreshLobby();
     const pollingTimer = window.setInterval(refreshLobby, 5000);
 
     return () => {
-      socketRef.current?.close();
       window.clearInterval(pollingTimer);
     };
-  }, [refreshLobby]);
+  }, [refreshLobby, selectedUserId]);
+
+  useEffect(() => {
+    return () => {
+      socketRef.current?.close();
+    };
+  }, []);
 
   return {
     connect,
     disconnect,
-    pickRoom,
+    pickChannel,
+    refreshChannelDetail,
     refreshLobby,
-    refreshRoomDetail,
     sendChat,
-    setDraft,
-    setRoomId,
-    roomId
+    switchUser
   };
 }

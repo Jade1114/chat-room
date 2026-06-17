@@ -2,20 +2,44 @@ import { useAtom, useAtomValue } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useChatRoom } from '../hooks/useChatRoom';
 import {
-  activeRoomDetailAtom,
+  activeChannelDetailAtom,
   canConnectAtom,
   canSendAtom,
+  channelIdAtom,
+  channelsAtom,
+  currentUserAtom,
   draftAtom,
   isConnectedAtom,
-  loadingDetailAtom,
-  loadingRoomsAtom,
-  roomIdAtom,
-  roomsAtom,
-  selectedRoomAtom,
+  loadingChannelDetailAtom,
+  loadingChannelsAtom,
+  loadingUsersAtom,
+  lobbyErrorAtom,
+  mockUsersAtom,
+  selectedUserIdAtom,
   statusAtom,
-  timelineAtom,
-  usernameAtom
+  timelineAtom
 } from '../state/chatAtoms';
+import type { ChannelType, UserRole } from '../types/chat';
+
+const roleLabel: Record<UserRole, string> = {
+  STUDENT: '学生',
+  TEACHER: '教师',
+  ADMIN: '管理员'
+};
+
+const typeLabel: Record<ChannelType, string> = {
+  SCHOOL: '全校',
+  DEPARTMENT: '院系',
+  CLASS: '班级',
+  COURSE: '课程'
+};
+
+const typeMark: Record<ChannelType, string> = {
+  SCHOOL: 'S',
+  DEPARTMENT: 'D',
+  CLASS: 'C',
+  COURSE: 'K'
+};
 
 const statusText = {
   idle: '未连接',
@@ -24,20 +48,23 @@ const statusText = {
 } as const;
 
 export function ChatPage() {
-  const [username, setUsername] = useAtom(usernameAtom);
-  const [roomId, setRoomId] = useAtom(roomIdAtom);
   const [draft, setDraft] = useAtom(draftAtom);
+  const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
+  const channelId = useAtomValue(channelIdAtom);
   const status = useAtomValue(statusAtom);
-  const rooms = useAtomValue(roomsAtom);
-  const activeRoomDetail = useAtomValue(activeRoomDetailAtom);
-  const loadingRooms = useAtomValue(loadingRoomsAtom);
-  const loadingDetail = useAtomValue(loadingDetailAtom);
+  const currentUser = useAtomValue(currentUserAtom);
+  const mockUsers = useAtomValue(mockUsersAtom);
+  const channels = useAtomValue(channelsAtom);
+  const activeChannelDetail = useAtomValue(activeChannelDetailAtom);
+  const loadingUsers = useAtomValue(loadingUsersAtom);
+  const loadingChannels = useAtomValue(loadingChannelsAtom);
+  const loadingChannelDetail = useAtomValue(loadingChannelDetailAtom);
+  const lobbyError = useAtomValue(lobbyErrorAtom);
   const timeline = useAtomValue(timelineAtom);
   const isConnected = useAtomValue(isConnectedAtom);
   const canConnect = useAtomValue(canConnectAtom);
   const canSend = useAtomValue(canSendAtom);
-  const selectedRoom = useAtomValue(selectedRoomAtom);
-  const { connect, disconnect, pickRoom, refreshLobby, refreshRoomDetail, sendChat } = useChatRoom();
+  const { connect, disconnect, pickChannel, refreshLobby, sendChat, switchUser } = useChatRoom();
 
   function handleSendKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -46,168 +73,265 @@ export function ChatPage() {
     }
   }
 
+  function handleUserChange(nextUserId: string) {
+    setSelectedUserId(nextUserId);
+    switchUser(nextUserId);
+  }
+
+  const activeChannel = activeChannelDetail || channels.find((channel) => channel.id === channelId) || null;
+  const onlineUsers = activeChannelDetail?.onlineUsers || [];
+
   return (
-    <main className="min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(45,212,191,0.24),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(249,115,22,0.22),transparent_28%),linear-gradient(135deg,#020617_0%,#0f172a_52%,#111827_100%)]" />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl shadow-black/20 backdrop-blur md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-200">React · Jotai · TanStack Router</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">Room Chat</h1>
-            <p className="mt-2 text-sm text-slate-300">WebSocket 实时聊天，房间状态通过 REST 接口刷新。</p>
+    <main className="min-h-screen bg-[#101318] text-[#eef2f4]">
+      <div className="grid min-h-screen grid-cols-[76px_minmax(240px,300px)_minmax(0,1fr)] xl:grid-cols-[76px_300px_minmax(0,1fr)_320px]">
+        <aside className="flex flex-col items-center gap-3 border-r border-white/8 bg-[#161a20] px-3 py-4">
+          <div className="grid size-12 place-items-center rounded-2xl bg-[#6ee7b7] text-lg font-black text-[#0f1720]">
+            CR
           </div>
-          <div className={`inline-flex w-fit items-center gap-3 rounded-full border px-4 py-2 text-sm font-semibold ${status === 'connected' ? 'border-emerald-300/40 bg-emerald-400/15 text-emerald-100' : status === 'connecting' ? 'border-amber-300/40 bg-amber-400/15 text-amber-100' : 'border-slate-300/20 bg-slate-900/50 text-slate-300'}`}>
-            <span className={`h-2.5 w-2.5 rounded-full ${status === 'connected' ? 'bg-emerald-300' : status === 'connecting' ? 'bg-amber-300' : 'bg-slate-500'}`} />
-            {statusText[status]}
-          </div>
-        </header>
+          <div className="h-px w-10 bg-white/10" />
+          {channels.slice(0, 7).map((channel) => (
+            <button
+              key={channel.id}
+              type="button"
+              title={channel.name}
+              disabled={isConnected}
+              onClick={() => pickChannel(channel.id)}
+              className={`grid size-12 place-items-center rounded-2xl text-sm font-black transition ${
+                channel.id === channelId
+                  ? 'bg-[#f59e0b] text-[#18120a]'
+                  : 'bg-[#232832] text-[#b8c2cc] hover:bg-[#2f3745] hover:text-white'
+              } disabled:cursor-not-allowed disabled:opacity-70`}
+            >
+              {typeMark[channel.type]}
+            </button>
+          ))}
+        </aside>
 
-        <section className="grid flex-1 gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="grid content-start gap-4">
-            <section className="rounded-3xl border border-white/10 bg-white/[0.08] p-5 shadow-xl shadow-black/10 backdrop-blur">
-              <h2 className="text-lg font-bold text-white">连接信息</h2>
-              <div className="mt-4 grid gap-4">
-                <label className="grid gap-2 text-sm font-medium text-slate-300">
-                  昵称
-                  <input
-                    value={username}
-                    maxLength={20}
-                    disabled={isConnected}
-                    onChange={(event) => setUsername(event.target.value)}
-                    placeholder="例如：yuy"
-                    className="h-11 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-300/70 focus:ring-4 focus:ring-teal-300/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                </label>
-                <label className="grid gap-2 text-sm font-medium text-slate-300">
-                  房间号
-                  <input
-                    value={roomId}
-                    maxLength={20}
-                    disabled={isConnected}
-                    onBlur={() => refreshRoomDetail(roomId.trim())}
-                    onChange={(event) => setRoomId(event.target.value)}
-                    placeholder="例如：room-1"
-                    className="h-11 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-300/70 focus:ring-4 focus:ring-teal-300/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                </label>
+        <aside className="flex min-h-screen flex-col border-r border-white/8 bg-[#1c2129]">
+          <section className="border-b border-white/8 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ea0b3]">Campus</p>
+                <h1 className="mt-1 text-xl font-black tracking-normal text-white">星河大学</h1>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  disabled={!canConnect}
-                  onClick={connect}
-                  className="h-11 rounded-2xl bg-orange-500 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  连接
-                </button>
-                <button
-                  type="button"
-                  disabled={!isConnected}
-                  onClick={disconnect}
-                  className="h-11 rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-bold text-slate-100 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  断开
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/[0.08] p-5 shadow-xl shadow-black/10 backdrop-blur">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-white">房间大厅</h2>
-                <button type="button" onClick={refreshLobby} className="rounded-full bg-teal-300 px-3 py-1.5 text-xs font-bold text-slate-950 transition hover:bg-teal-200">
-                  刷新
-                </button>
-              </div>
-              <div className="mt-4 grid gap-2">
-                {loadingRooms && <p className="rounded-2xl bg-slate-950/40 p-3 text-sm text-slate-400">正在加载房间...</p>}
-                {!loadingRooms && rooms.length === 0 && <p className="rounded-2xl bg-slate-950/40 p-3 text-sm text-slate-400">当前没有在线房间</p>}
-                {!loadingRooms &&
-                  rooms.map((room) => (
-                    <button
-                      key={room.roomId}
-                      type="button"
-                      disabled={isConnected}
-                      onClick={() => pickRoom(room.roomId)}
-                      className={`flex h-12 items-center justify-between rounded-2xl border px-4 text-left transition disabled:cursor-not-allowed ${room.roomId === selectedRoom ? 'border-teal-300/60 bg-teal-300/15 text-teal-50' : 'border-white/10 bg-slate-950/40 text-slate-200 hover:bg-white/10'}`}
-                    >
-                      <span className="text-sm font-semibold"># {room.roomId}</span>
-                      <strong className="text-xs text-slate-300">{room.onlineCount} 人</strong>
-                    </button>
-                  ))}
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-white/10 bg-white/[0.08] p-5 shadow-xl shadow-black/10 backdrop-blur">
-              <h2 className="text-lg font-bold text-white">房间详情</h2>
-              {loadingDetail && <p className="mt-4 rounded-2xl bg-slate-950/40 p-3 text-sm text-slate-400">正在获取详情...</p>}
-              {!loadingDetail && !activeRoomDetail && <p className="mt-4 rounded-2xl bg-slate-950/40 p-3 text-sm text-slate-400">暂无详情（可先选择房间）</p>}
-              {!loadingDetail && activeRoomDetail && (
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-2xl bg-slate-950/40 p-4">
-                    <p className="text-sm text-slate-400">当前房间</p>
-                    <p className="mt-1 font-bold text-white"># {activeRoomDetail.roomId}</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-950/40 p-4">
-                    <p className="text-sm text-slate-400">在线人数</p>
-                    <p className="mt-1 text-2xl font-black text-teal-200">{activeRoomDetail.onlineCount}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {activeRoomDetail.usernames.map((name) => (
-                      <span key={name} className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-          </aside>
-
-          <section className="grid min-h-[560px] grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-3xl border border-white/10 bg-white/[0.08] shadow-2xl shadow-black/20 backdrop-blur">
-            <div className="overflow-y-auto p-5">
-              {timeline.length === 0 && (
-                <div className="flex h-full min-h-80 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-slate-950/30 p-8 text-center">
-                  <div>
-                    <p className="text-5xl">💬</p>
-                    <p className="mt-4 text-lg font-bold text-white">还没有消息</p>
-                    <p className="mt-2 text-sm text-slate-400">先进入一个房间，然后聊起来吧。</p>
-                  </div>
-                </div>
-              )}
-              <div className="grid gap-3">
-                {timeline.map((item) => (
-                  <article key={item.id} className={`max-w-[78%] rounded-3xl border px-4 py-3 ${item.role === 'me' ? 'ml-auto border-orange-300/30 bg-orange-400/15' : item.role === 'system' ? 'mx-auto max-w-full border-white/10 bg-slate-900/70 text-center' : 'border-teal-300/20 bg-teal-300/10'}`}>
-                    <div className="mb-1 flex items-center justify-between gap-4 text-xs text-slate-400">
-                      <span className="font-bold text-slate-200">{item.role === 'system' ? '系统' : item.sender}</span>
-                      <span>{item.time}</span>
-                    </div>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-100">{item.text}</p>
-                  </article>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={refreshLobby}
+                className="grid size-9 place-items-center rounded-lg bg-[#2b3442] text-sm font-black text-[#c9d4df] transition hover:bg-[#3a4657]"
+                title="刷新"
+              >
+                R
+              </button>
             </div>
 
-            <footer className="grid gap-3 border-t border-white/10 bg-slate-950/40 p-4 sm:grid-cols-[minmax(0,1fr)_112px]">
+            <label className="grid gap-2 text-xs font-bold text-[#97a6b7]">
+              当前身份
+              <select
+                value={selectedUserId}
+                disabled={loadingUsers || isConnected}
+                onChange={(event) => handleUserChange(event.target.value)}
+                className="h-11 rounded-lg border border-white/10 bg-[#11161d] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#6ee7b7] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {mockUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.displayName} / {roleLabel[user.role]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {currentUser && (
+              <div className="mt-3 rounded-lg bg-[#11161d] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="grid size-10 place-items-center rounded-lg bg-[#6ee7b7] text-sm font-black text-[#0f1720]">
+                    {currentUser.displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-white">{currentUser.displayName}</p>
+                    <p className="text-xs text-[#93a4b7]">{roleLabel[currentUser.role]}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="min-h-0 flex-1 overflow-y-auto p-3">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <h2 className="text-xs font-black uppercase tracking-[0.16em] text-[#8696a8]">频道</h2>
+              {loadingChannels && <span className="text-xs text-[#8696a8]">加载中</span>}
+            </div>
+
+            {lobbyError && <p className="mb-2 rounded-lg bg-[#3a1f25] p-3 text-sm text-[#fecdd3]">{lobbyError}</p>}
+
+            <div className="grid gap-1">
+              {channels.map((channel) => (
+                <button
+                  key={channel.id}
+                  type="button"
+                  disabled={isConnected}
+                  onClick={() => pickChannel(channel.id)}
+                  className={`group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-2 text-left transition ${
+                    channel.id === channelId
+                      ? 'bg-[#374151] text-white'
+                      : 'text-[#aeb9c5] hover:bg-[#2a313d] hover:text-white'
+                  } disabled:cursor-not-allowed disabled:opacity-70`}
+                >
+                  <span className="text-center text-base font-black text-[#7dd3fc]">#</span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">{channel.name}</span>
+                    <span className="block truncate text-xs text-[#7f8da0]">{channel.description}</span>
+                  </span>
+                  <span className="rounded-md bg-black/20 px-1.5 py-1 text-[10px] font-black text-[#b6c3d1]">
+                    {typeLabel[channel.type]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="border-t border-white/8 p-3">
+            <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
+              status === 'connected' ? 'bg-[#10352e] text-[#bbf7d0]' : status === 'connecting' ? 'bg-[#3b2d13] text-[#fde68a]' : 'bg-[#11161d] text-[#aeb9c5]'
+            }`}>
+              <span className={`size-2 rounded-full ${status === 'connected' ? 'bg-[#34d399]' : status === 'connecting' ? 'bg-[#facc15]' : 'bg-[#64748b]'}`} />
+              <span className="text-sm font-bold">{statusText[status]}</span>
+            </div>
+          </section>
+        </aside>
+
+        <section className="grid min-h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] bg-[#202632]">
+          <header className="flex items-center justify-between gap-4 border-b border-white/8 px-5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black text-[#7dd3fc]">#</span>
+                <h2 className="truncate text-lg font-black text-white">{activeChannel?.name || '选择频道'}</h2>
+              </div>
+              <p className="truncate text-xs text-[#94a3b8]">{activeChannel?.description || '请选择一个可访问频道'}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                disabled={!canConnect}
+                onClick={connect}
+                className="h-9 rounded-lg bg-[#6ee7b7] px-4 text-sm font-black text-[#0f1720] transition hover:bg-[#86efac] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                连接
+              </button>
+              <button
+                type="button"
+                disabled={!isConnected}
+                onClick={disconnect}
+                className="h-9 rounded-lg bg-[#374151] px-4 text-sm font-black text-white transition hover:bg-[#4b5563] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                断开
+              </button>
+            </div>
+          </header>
+
+          <div className="min-h-0 overflow-y-auto px-5 py-4">
+            {timeline.length === 0 && (
+              <div className="flex h-full min-h-80 items-center justify-center">
+                <div className="max-w-sm text-center">
+                  <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#2f3846] text-2xl font-black text-[#7dd3fc]">#</div>
+                  <p className="mt-4 text-lg font-black text-white">{activeChannel ? activeChannel.name : '还没有选择频道'}</p>
+                  <p className="mt-2 text-sm leading-6 text-[#98a6b5]">{activeChannel?.description || '从左侧频道列表进入一个空间。'}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-3">
+              {timeline.map((item) => (
+                <article
+                  key={item.id}
+                  className={`grid gap-1 rounded-lg px-3 py-2 ${
+                    item.role === 'me'
+                      ? 'ml-auto w-fit max-w-[82%] bg-[#f59e0b] text-[#18120a]'
+                      : item.role === 'system'
+                        ? 'mx-auto w-fit max-w-[90%] bg-[#2c3441] text-[#c8d2dd]'
+                        : 'mr-auto w-fit max-w-[82%] bg-[#2a3340] text-[#eef2f4]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <span className="font-black">{item.role === 'system' ? '系统' : item.sender}</span>
+                    <span className={item.role === 'me' ? 'text-[#5c3b05]' : 'text-[#8b9aad]'}>{item.time}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-6">{item.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <footer className="border-t border-white/8 bg-[#1b2029] p-4">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_96px]">
               <textarea
                 value={draft}
                 maxLength={100}
                 disabled={!isConnected}
                 onKeyDown={handleSendKeyDown}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="输入消息，按 Enter 发送，Shift + Enter 换行"
-                className="min-h-24 resize-none rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-300/70 focus:ring-4 focus:ring-orange-300/10 disabled:cursor-not-allowed disabled:opacity-60"
+                placeholder={isConnected ? `发送到 #${activeChannel?.name || channelId}` : '连接频道后开始聊天'}
+                className="min-h-20 resize-none rounded-lg border border-white/10 bg-[#11161d] px-4 py-3 text-sm text-white outline-none transition placeholder:text-[#6f7d8e] focus:border-[#f59e0b] disabled:cursor-not-allowed disabled:opacity-60"
               />
               <button
                 type="button"
                 disabled={!canSend}
                 onClick={sendChat}
-                className="rounded-2xl bg-orange-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-[#f59e0b] px-5 py-3 text-sm font-black text-[#18120a] transition hover:bg-[#fbbf24] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 发送
               </button>
-            </footer>
-          </section>
+            </div>
+          </footer>
         </section>
+
+        <aside className="hidden min-h-screen border-l border-white/8 bg-[#1c2129] p-4 xl:block">
+          <section>
+            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[#8ea0b3]">频道资料</h2>
+            <div className="mt-3 rounded-lg bg-[#11161d] p-4">
+              {loadingChannelDetail && <p className="text-sm text-[#94a3b8]">加载中</p>}
+              {!loadingChannelDetail && activeChannel && (
+                <div className="grid gap-3">
+                  <div>
+                    <p className="text-xs text-[#8796a8]">名称</p>
+                    <p className="mt-1 text-base font-black text-white">{activeChannel.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#8796a8]">类型</p>
+                    <p className="mt-1 text-sm font-bold text-[#7dd3fc]">{typeLabel[activeChannel.type]}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#8796a8]">Scope</p>
+                    <p className="mt-1 break-all text-sm font-bold text-[#d3dce6]">{activeChannel.scopeId}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="mt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[#8ea0b3]">在线成员</h2>
+              <span className="rounded-md bg-[#2f3846] px-2 py-1 text-xs font-black text-[#d3dce6]">
+                {activeChannelDetail?.onlineCount ?? 0}
+              </span>
+            </div>
+
+            <div className="mt-3 grid gap-2">
+              {onlineUsers.length === 0 && <p className="rounded-lg bg-[#11161d] p-3 text-sm text-[#94a3b8]">暂无在线成员</p>}
+              {onlineUsers.map((name) => (
+                <div key={name} className="flex items-center gap-3 rounded-lg bg-[#11161d] p-3">
+                  <div className="grid size-9 place-items-center rounded-lg bg-[#2f3846] text-sm font-black text-[#7dd3fc]">
+                    {name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-white">{name}</p>
+                    <p className="text-xs text-[#7d8da0]">online</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
     </main>
   );
