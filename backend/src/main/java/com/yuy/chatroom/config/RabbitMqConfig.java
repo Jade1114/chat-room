@@ -7,7 +7,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,8 +16,8 @@ public class RabbitMqConfig {
   private final String EXCHANGE_NAME = "exchange01";
 
   @Bean
-  public JacksonJsonMessageConverter rabbitMessageConverter() {
-    return new JacksonJsonMessageConverter();
+  public Jackson2JsonMessageConverter rabbitMessageConverter() {
+    return new Jackson2JsonMessageConverter();
   }
 
   private String buildBucketQueueName(int bucketIndex) {
@@ -87,7 +87,7 @@ public class RabbitMqConfig {
 
   @Bean
   RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
-      JacksonJsonMessageConverter rabbitMessageConverter) {
+      Jackson2JsonMessageConverter rabbitMessageConverter) {
     RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
     rabbitTemplate.setMessageConverter(rabbitMessageConverter);
     return rabbitTemplate;
@@ -95,7 +95,7 @@ public class RabbitMqConfig {
 
   @Bean
   SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory,
-      JacksonJsonMessageConverter rabbitMessageConverter) {
+      Jackson2JsonMessageConverter rabbitMessageConverter) {
     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
     factory.setConnectionFactory(connectionFactory);
     factory.setMessageConverter(rabbitMessageConverter);

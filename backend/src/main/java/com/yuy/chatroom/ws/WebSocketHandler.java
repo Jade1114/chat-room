@@ -11,8 +11,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.yuy.chatroom.model.Message;
 import com.yuy.chatroom.service.MessageProcessor;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {

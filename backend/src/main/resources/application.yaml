@@ -3,22 +3,23 @@ spring:
     name: chat-room-backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: root
+    url: ${CHAT_ROOM_DB_URL:jdbc:mysql://localhost:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${CHAT_ROOM_DB_USERNAME:root}
+    password: ${CHAT_ROOM_DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${CHAT_ROOM_REDIS_HOST:localhost}
+      port: ${CHAT_ROOM_REDIS_PORT:6379}
+      password: ${CHAT_ROOM_REDIS_PASSWORD:}
 
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    virtual-host: /
+    host: ${CHAT_ROOM_RABBITMQ_HOST:localhost}
+    port: ${CHAT_ROOM_RABBITMQ_PORT:5672}
+    username: ${CHAT_ROOM_RABBITMQ_USERNAME:guest}
+    password: ${CHAT_ROOM_RABBITMQ_PASSWORD:guest}
+    virtual-host: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:/}
 
 mybatis:
   configuration:
