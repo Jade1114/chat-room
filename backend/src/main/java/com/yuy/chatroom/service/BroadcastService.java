@@ -42,4 +42,18 @@ public class BroadcastService {
 
         return exceptionSessions;
     }
+
+    public boolean sendMessage(WebSocketSession session, Message message) {
+        if (session == null || !session.isOpen()) {
+            return false;
+        }
+
+        try {
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+            return true;
+        } catch (IOException e) {
+            log.warn("消息发送失败，sessionId={} message={}", session.getId(), message);
+            return false;
+        }
+    }
 }

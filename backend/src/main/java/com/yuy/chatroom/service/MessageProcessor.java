@@ -1,5 +1,8 @@
 package com.yuy.chatroom.service;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,13 +21,16 @@ public class MessageProcessor {
 
     private final SessionManager sessionManager;
     private final BroadcastDispatcher broadcastDispatcher;
+    private final BroadcastService broadcastService;
     private final ChannelPresenceService channelPresenceService;
     private final ChatMessagePublisher chatMessagePublisher;
 
     public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
-            ChannelPresenceService channelPresenceService, ChatMessagePublisher chatMessagePublisher) {
+            BroadcastService broadcastService, ChannelPresenceService channelPresenceService,
+            ChatMessagePublisher chatMessagePublisher) {
         this.sessionManager = sessionManager;
         this.broadcastDispatcher = broadcastDispatcher;
+        this.broadcastService = broadcastService;
         this.channelPresenceService = channelPresenceService;
         this.chatMessagePublisher = chatMessagePublisher;
     }
@@ -40,7 +46,12 @@ public class MessageProcessor {
                     UserSessionInfo info = sessionManager.getSessionInfo(session);
                     message.setSender(info.getUsername());
                     message.setRoomId(info.getRoomId());
-                    if (!chatMessagePublisher.publishMessage(message)) {
+                    message.setMessageId(UUID.randomUUID().toString());
+                    message.setSentAt(Instant.now());
+                    if (chatMessagePublisher.publishMessage(message)) {
+                        sendAck(session, message, "ACCEPTED");
+                    } else {
+                        sendAck(session, message, "FAILED");
                         log.warn("消息发送失败, 详情: {}", message);
                     }
                 }
@@ -75,6 +86,15 @@ public class MessageProcessor {
             broadcastDispatcher.submit(message);
         } else {
             log.warn("{} 未绑定用户信息但正在断开连接", session.getId());
+        }
+    }
+
+    private void sendAck(WebSocketSession session, Message message, String status) {
+        Message ack = new Message(MessageType.MESSAGE_ACK, "system", status, message.getRoomId());
+        ack.setMessageId(message.getMessageId());
+        ack.setSentAt(message.getSentAt());
+        if (!broadcastService.sendMessage(session, ack)) {
+            log.warn("消息回执发送失败, messageId={} status={}", message.getMessageId(), status);
         }
     }
 
