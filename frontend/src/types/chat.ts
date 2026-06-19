@@ -1,6 +1,6 @@
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected';
 
-export type MessageType = 'USER_JOIN' | 'USER_LEAVE' | 'USER_CHAT';
+export type MessageType = 'USER_JOIN' | 'USER_LEAVE' | 'USER_CHAT' | 'MESSAGE_ACK';
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
 export type ChannelType = 'SCHOOL' | 'DEPARTMENT' | 'CLASS' | 'COURSE';
 
@@ -9,7 +9,11 @@ export interface ChatMessagePayload {
   sender: string;
   roomId: string;
   content: string;
+  messageId?: string;
+  sentAt?: string;
 }
+
+export type DeliveryStatus = 'sending' | 'accepted' | 'delivered' | 'failed';
 
 export interface TimelineItem {
   id: string;
@@ -17,6 +21,8 @@ export interface TimelineItem {
   text: string;
   time: string;
   sender?: string;
+  messageId?: string;
+  deliveryStatus?: DeliveryStatus;
 }
 
 export interface CurrentUser {

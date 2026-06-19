@@ -47,6 +47,13 @@ const statusText = {
   connected: '已连接'
 } as const;
 
+const deliveryText = {
+  sending: '发送中',
+  accepted: '已接收',
+  delivered: '已送达',
+  failed: '失败'
+} as const;
+
 export function ChatPage() {
   const [draft, setDraft] = useAtom(draftAtom);
   const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
@@ -256,6 +263,11 @@ export function ChatPage() {
                     <span className={item.role === 'me' ? 'text-[#5c3b05]' : 'text-[#8b9aad]'}>{item.time}</span>
                   </div>
                   <p className="whitespace-pre-wrap break-words text-sm leading-6">{item.text}</p>
+                  {item.role === 'me' && item.deliveryStatus && (
+                    <div className="flex justify-end text-[11px] font-bold text-[#6d4608]">
+                      {deliveryText[item.deliveryStatus]}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

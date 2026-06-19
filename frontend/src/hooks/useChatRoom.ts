@@ -22,15 +22,14 @@ import {
 } from '../state/chatAtoms';
 import type { ChatMessagePayload, TimelineItem } from '../types/chat';
 
-function nowLabel() {
-  const now = new Date();
-  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function nowLabel(value = new Date()) {
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function createTimelineItem(payload: Omit<TimelineItem, 'id' | 'time'>): TimelineItem {
+function createTimelineItem(payload: Omit<TimelineItem, 'id' | 'time'> & { time?: string }): TimelineItem {
   return {
-    id: `${Date.now()}-${Math.random()}`,
-    time: nowLabel(),
+    id: payload.messageId || `${Date.now()}-${Math.random()}`,
+    time: payload.time || nowLabel(),
     ...payload
   };
 }
@@ -63,15 +62,36 @@ export function useChatRoom() {
   );
 
   const pushChat = useCallback(
-    (sender: string, text: string) => {
-      setTimeline((current) => [
-        ...current,
-        createTimelineItem({
-          role: sender === displayName ? 'me' : 'user',
-          sender,
-          text
-        })
-      ]);
+    (message: Partial<ChatMessagePayload>) => {
+      const messageId = message.messageId;
+      const sender = message.sender || '未知用户';
+      const sentAt = message.sentAt ? new Date(message.sentAt) : undefined;
+      const role = sender === displayName ? 'me' : 'user';
+
+      setTimeline((current) => {
+        if (messageId) {
+          const existingIndex = current.findIndex((item) => item.messageId === messageId);
+          if (existingIndex >= 0) {
+            return current.map((item, index) =>
+              index === existingIndex
+                ? { ...item, deliveryStatus: role === 'me' ? 'delivered' : item.deliveryStatus }
+                : item
+            );
+          }
+        }
+
+        return [
+          ...current,
+          createTimelineItem({
+            role,
+            sender,
+            text: message.content || '',
+            messageId,
+            time: sentAt ? nowLabel(sentAt) : undefined,
+            deliveryStatus: role === 'me' ? 'delivered' : undefined
+          })
+        ];
+      });
     },
     [displayName, setTimeline]
   );
@@ -174,7 +194,26 @@ export function useChatRoom() {
 
       switch (message.type) {
         case 'USER_CHAT':
-          pushChat(message.sender || '未知用户', message.content || '');
+          pushChat(message);
+          break;
+        case 'MESSAGE_ACK':
+          setTimeline((current) => {
+            const pendingIndex = current.findIndex(
+              (item) => item.role === 'me' && item.deliveryStatus === 'sending'
+            );
+            if (pendingIndex < 0) {
+              return current;
+            }
+            return current.map((item, index) =>
+              index === pendingIndex
+                ? {
+                    ...item,
+                    messageId: message.messageId,
+                    deliveryStatus: message.content === 'ACCEPTED' ? 'accepted' : 'failed'
+                  }
+                : item
+            );
+          });
           break;
         case 'USER_JOIN':
         case 'USER_LEAVE':
@@ -244,6 +283,16 @@ export function useChatRoom() {
     }
 
     const text = draft.trim();
+    setTimeline((current) => [
+      ...current,
+      createTimelineItem({
+        role: 'me',
+        sender: displayName,
+        text,
+        deliveryStatus: 'sending'
+      })
+    ]);
+
     socketRef.current.send(
       JSON.stringify({
         type: 'USER_CHAT',
@@ -253,7 +302,7 @@ export function useChatRoom() {
       } satisfies ChatMessagePayload)
     );
     setDraft('');
-  }, [canSend, displayName, draft, selectedChannelId, setDraft]);
+  }, [canSend, displayName, draft, selectedChannelId, setDraft, setTimeline]);
 
   const pickChannel = useCallback(
     (targetChannelId: string) => {
