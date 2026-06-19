@@ -18,14 +18,14 @@ public class MessageProcessor {
 
     private final SessionManager sessionManager;
     private final BroadcastDispatcher broadcastDispatcher;
-    private final RoomPresenceManager roomPresenceManager;
+    private final ChannelPresenceService channelPresenceService;
     private final ChatMessagePublisher chatMessagePublisher;
 
     public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
-            RoomPresenceManager roomPresenceManager, ChatMessagePublisher chatMessagePublisher) {
+            ChannelPresenceService channelPresenceService, ChatMessagePublisher chatMessagePublisher) {
         this.sessionManager = sessionManager;
         this.broadcastDispatcher = broadcastDispatcher;
-        this.roomPresenceManager = roomPresenceManager;
+        this.channelPresenceService = channelPresenceService;
         this.chatMessagePublisher = chatMessagePublisher;
     }
 
@@ -48,25 +48,8 @@ public class MessageProcessor {
             case USER_JOIN:
                 if (isValidJoinMessage(message)) {
                     if (sessionManager.tryRegister(session, message.getSender(), message.getRoomId())) {
-                        boolean userToRoom = roomPresenceManager.addUserToRoom(message.getSender(),
-                                message.getRoomId());
-                        if (userToRoom == false) {
-                            for (int i = 0; i < 3; i++) {
-                                userToRoom = roomPresenceManager.addUserToRoom(message.getSender(),
-                                        message.getRoomId());
-                                if (userToRoom) {
-                                    break;
-                                }
-                            }
-                            if (userToRoom == false) {
-                                log.warn("{}, {} redis 映射添加失败", message.getSender(), message.getRoomId());
-                            } else {
-                                log.info("{}, {} redis 映射添加成功", message.getSender(), message.getRoomId());
-                            }
-                        } else {
-                            log.info("{}, {} redis 映射添加成功", message.getSender(), message.getRoomId());
-                        }
-
+                        channelPresenceService.join(message.getRoomId(), message.getSender());
+                        log.info("{}, {} Redis 在线状态添加成功", message.getSender(), message.getRoomId());
                         broadcastDispatcher.submit(message);
                     } else {
                         log.warn("错误：用户名已被占用");
@@ -87,23 +70,8 @@ public class MessageProcessor {
         UserSessionInfo info = sessionManager.removeSession(session);
         if (info != null) {
             Message message = new Message(MessageType.USER_LEAVE, info.getUsername(), "离开了当前频道", info.getRoomId());
-            boolean removeUserFromRoom = roomPresenceManager.removeUserFromRoom(message.getSender(),
-                    message.getRoomId());
-            if (removeUserFromRoom) {
-                log.info("{}, {} redis映射删除成功", message.getSender(), message.getRoomId());
-            } else {
-                for (int i = 0; i < 3; i++) {
-                    removeUserFromRoom = roomPresenceManager.removeUserFromRoom(message.getSender(),
-                            message.getRoomId());
-                    if (removeUserFromRoom) {
-                        log.info("{}, {} redis映射删除成功", message.getSender(), message.getRoomId());
-                        break;
-                    }
-                }
-                if (removeUserFromRoom == false) {
-                    log.warn("{}, {} redis映射删除失败, 请注意检查redis", message.getSender(), message.getRoomId());
-                }
-            }
+            channelPresenceService.leave(info.getRoomId(), info.getUsername());
+            log.info("{}, {} Redis 在线状态删除成功", message.getSender(), message.getRoomId());
             broadcastDispatcher.submit(message);
         } else {
             log.warn("{} 未绑定用户信息但正在断开连接", session.getId());

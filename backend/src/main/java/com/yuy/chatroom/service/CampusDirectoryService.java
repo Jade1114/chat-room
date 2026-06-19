@@ -86,6 +86,9 @@ public class CampusDirectoryService {
 
   private ChannelDetail toChannelDetail(Channel channel) {
     Set<String> onlineUserIds = presenceService.getOnlineUserIds(channel.getId());
+    if (onlineUserIds == null) {
+      onlineUserIds = Set.of();
+    }
     // Resolve userIds to display names.
     // TODO: N+1 — batch-load user display names instead of querying one by one.
     Map<String, String> idToName = onlineUserIds.stream()

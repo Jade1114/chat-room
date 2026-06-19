@@ -8,6 +8,7 @@ import static org.mockito.Mockito.lenient;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,12 +31,13 @@ public class CampusDirectoryServiceTest {
   @Mock
   private ChannelMapper channelMapper;
 
+  @Mock
   private ChannelPresenceService presenceService;
+
   private CampusDirectoryService service;
 
   @BeforeEach
   void setUp() {
-    presenceService = new ChannelPresenceService();
     service = new CampusDirectoryService(userMapper, channelMapper, presenceService);
 
     lenient().when(userMapper.findById("u-stu-1")).thenReturn(studentYuy());
@@ -107,7 +109,7 @@ public class CampusDirectoryServiceTest {
 
   @Test
   void shouldReflectOnlinePresenceInChannelDetail() {
-    presenceService.join("ch-java", "u-stu-1");
+    lenient().when(presenceService.getOnlineUserIds("ch-java")).thenReturn(Set.of("u-stu-1"));
 
     Optional<ChannelDetail> detail = service.getAccessibleChannelDetail("u-stu-1", "ch-java");
 
@@ -118,6 +120,8 @@ public class CampusDirectoryServiceTest {
 
   @Test
   void shouldReturnZeroOnlineWhenNoUsersJoined() {
+    lenient().when(presenceService.getOnlineUserIds("ch-java")).thenReturn(Set.of());
+
     Optional<ChannelDetail> detail = service.getAccessibleChannelDetail("u-stu-1", "ch-java");
 
     assertTrue(detail.isPresent());

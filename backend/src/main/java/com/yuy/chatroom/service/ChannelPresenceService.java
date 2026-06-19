@@ -1,67 +1,59 @@
 package com.yuy.chatroom.service;
 
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Tracks which users are currently online in each channel.
+ * Redis-backed source of truth for channel presence.
  *
- * <p>⚠️ TODO: Redis — migrate from ConcurrentHashMap to Redis Set/SortedSet
- * for cross-node presence when the system goes multi-instance.
- * The Redis key pattern would be: {@code channel:presence:{channelId}} (Set of userIds).
- *
- * <p>⚠️ TODO: WebSocket lifecycle — wire {@link #join} and {@link #leave} into
- * WebSocket connection/disconnection events, replacing the current
- * {@code SessionManager} room-based tracking.
- *
- * <p>⚠️ TODO: Multi-threading — current ConcurrentHashMap is thread-safe for
- * single-node operations. Multi-node deployment requires Redis Pub/Sub to
- * propagate join/leave events across instances.
+ * <p>Key pattern: {@code channel:presence:{channelId}} -> Redis Set of userIds.
  */
 @Service
 public class ChannelPresenceService {
-    private final ConcurrentHashMap<String, Set<String>> channelOnlineUsers = new ConcurrentHashMap<>();
+    private static final String CHANNEL_PRESENCE_KEY_PREFIX = "channel:presence:";
+
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public ChannelPresenceService(RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * Register a user as online in a channel.
-     * Idempotent — calling join twice for the same user and channel is safe.
+     * Idempotent because Redis Set ignores duplicate members.
      */
     public void join(String channelId, String userId) {
-        channelOnlineUsers
-                .computeIfAbsent(channelId, key -> ConcurrentHashMap.newKeySet())
-                .add(userId);
+        redisTemplate.opsForSet().add(buildPresenceKey(channelId), userId);
     }
 
     /**
      * Remove a user from a channel's online set.
-     * Safe to call even if the user or channel doesn't exist.
      */
     public void leave(String channelId, String userId) {
-        Set<String> users = channelOnlineUsers.get(channelId);
-        if (users != null) {
-            users.remove(userId);
+        redisTemplate.opsForSet().remove(buildPresenceKey(channelId), userId);
+    }
+
+    /**
+     * Remove a user from all known channel presence sets.
+     */
+    public void leaveAllChannels(String userId) {
+        Set<String> keys = redisTemplate.keys(CHANNEL_PRESENCE_KEY_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+
+        for (String key : keys) {
+            redisTemplate.opsForSet().remove(key, userId);
         }
     }
 
     /**
-     * Remove a user from ALL channels they are in.
-     * Called on WebSocket disconnect when we don't know which channel(s) the session is in.
-     *
-     * <p>⚠️ TODO: Multi-threading — this is O(channel count). If many channels exist,
-     * consider maintaining a reverse index {@code userId -> Set<channelId>}.
-     */
-    public void leaveAllChannels(String userId) {
-        channelOnlineUsers.values().forEach(users -> users.remove(userId));
-    }
-
-    /**
      * Returns a snapshot of online userIds for a channel.
-     * Returns an empty set (not null) for unknown channels.
      */
     public Set<String> getOnlineUserIds(String channelId) {
-        Set<String> users = channelOnlineUsers.get(channelId);
+        Set<String> users = redisTemplate.opsForSet().members(buildPresenceKey(channelId));
         return users == null ? Set.of() : Set.copyOf(users);
     }
 
@@ -69,7 +61,11 @@ public class ChannelPresenceService {
      * Returns the number of online users in a channel.
      */
     public int getOnlineCount(String channelId) {
-        Set<String> users = channelOnlineUsers.get(channelId);
-        return users == null ? 0 : users.size();
+        Long size = redisTemplate.opsForSet().size(buildPresenceKey(channelId));
+        return size == null ? 0 : size.intValue();
+    }
+
+    private String buildPresenceKey(String channelId) {
+        return CHANNEL_PRESENCE_KEY_PREFIX + channelId;
     }
 }
