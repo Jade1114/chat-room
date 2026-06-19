@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @MapperScan("com.yuy.chatroom.mapper")
 public class ChatRoomBackendApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(ChatRoomBackendApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(ChatRoomBackendApplication.class, args);
+  }
 }
