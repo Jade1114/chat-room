@@ -36,40 +36,58 @@ const assignmentsRoute = createRoute({
   )
 });
 
-const directMessagesRoute = createRoute({
+const teacherCommunicationRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/direct-messages',
+  path: '/teacher-communication',
   component: () => (
     <FeaturePlaceholderPage
-      eyebrow="Direct messages"
-      title="师生私聊"
-      description="为课程之外的一对一沟通提供独立空间，并与公开频道消息保持清晰分离。"
-      actions={['按成员发起会话', '保留个人会话列表', '支持未读提醒与消息历史']}
-      icon={<Icon className="size-6"><path d="M8 18H5l-3 3v-5a4 4 0 0 1-1-2.7V7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" /><path d="M14 13h6a2 2 0 0 1 2 2v6l-3-2h-5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Z" /></Icon>}
+      eyebrow="Teacher communication"
+      title="师生交流"
+      description="围绕课程、公告和作业建立定向沟通，让问题与教学上下文保持关联，而不是扩展成泛社交私聊。"
+      actions={['从课程或作业发起交流', '保留问题所属的教学上下文', '集中查看教师回复与处理进度']}
+      icon={<Icon className="size-6"><path d="m2 7 10-4 10 4-10 4Z" /><path d="M6 9.5V14c3 2 9 2 12 0V9.5" /><path d="M16 19h5l2 2v-7a2 2 0 0 0-2-2h-1" /></Icon>}
     />
   )
 });
 
-const membersRoute = createRoute({
+const clubsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/members',
+  path: '/clubs',
   component: () => (
     <FeaturePlaceholderPage
-      eyebrow="Directory"
-      title="校园成员"
-      description="按学校、院系、班级和课程关系查找成员，为频道协作与私聊提供统一入口。"
-      actions={['按组织关系浏览成员', '搜索教师与学生', '查看身份和课程归属']}
-      icon={<Icon className="size-6"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></Icon>}
+      eyebrow="Club plaza"
+      title="社团广场"
+      description="用宣传墙集中展示社团介绍、招新和活动内容，让学生发现校园组织，并进入感兴趣的社团频道持续交流。"
+      actions={['浏览社团宣传墙与分类', '发布招新和校园活动', '从宣传内容进入社团频道']}
+      icon={<Icon className="size-6"><path d="m3 11 17-5v12L3 14Z" /><path d="M11.6 16.5 13 21H7l-1.8-6" /><path d="M20 10a2 2 0 0 1 0 4" /></Icon>}
     />
   )
+});
+
+const legacyDirectMessagesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/direct-messages',
+  beforeLoad: () => {
+    throw redirect({ to: '/teacher-communication' });
+  }
+});
+
+const legacyMembersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/members',
+  beforeLoad: () => {
+    throw redirect({ to: '/clubs' });
+  }
 });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   messagesRoute,
   assignmentsRoute,
-  directMessagesRoute,
-  membersRoute
+  teacherCommunicationRoute,
+  clubsRoute,
+  legacyDirectMessagesRoute,
+  legacyMembersRoute
 ]);
 
 export const router = createRouter({ routeTree });
