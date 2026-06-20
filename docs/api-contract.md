@@ -153,75 +153,14 @@ GET /api/channels/{channelId}?userId={userId}
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| onlineCount | int | ⚠️ TODO: Redis — 当前返回 0，后续通过 Redis 维护频道在线人数 |
-| onlineUsers | string[] | ⚠️ TODO: Redis — 当前仅返回请求用户自身，后续通过 Redis 维护在线用户列表 |
-
----
-
-### 2.5 加入频道在线状态
-
-```http
-POST /api/channels/{channelId}/join?userId={userId}
-```
-
-**说明**：将当前用户标记为在该频道在线。返回 403 如果用户无权访问该频道。
-
-⚠️ TODO: WebSocket — 此端点仅用于测试/演示在线状态。后续由 WebSocket 连接事件自动调用。
-
-**响应**（200）：无 body。
-**响应**（403）：无 body。
-
----
-
-### 2.6 离开频道在线状态
-
-```http
-POST /api/channels/{channelId}/leave?userId={userId}
-```
-
-**说明**：将当前用户从该频道在线集合中移除。
-
-⚠️ TODO: WebSocket — 同 2.5，后续由 WebSocket 断开事件自动调用。
-
-**响应**（200）：无 body。
-
----
-
-### 2.7 获取房间列表（旧接口，待废弃）
-
-```http
-GET /api/rooms
-```
-
-**说明**：当前聊天室原型使用的房间大厅接口。后续迁移到 `/api/channels` 后废弃。
-
-**响应**：
-
-```json
-[
-  { "roomId": "room-1", "onlineCount": 2 }
-]
-```
-
----
-
-### 2.6 获取房间详情（旧接口，待废弃）
-
-```http
-GET /api/rooms/{roomId}
-```
-
-**说明**：当前原型中的房间详情接口。后续废弃。
-
-**响应**：
-
-```json
-{
-  "roomId": "room-1",
-  "onlineCount": 2,
-  "usernames": ["Yuy", "Mina"]
-}
-```
+| id | string | 频道唯一标识 |
+| name | string | 频道显示名称 |
+| type | enum | SCHOOL / DEPARTMENT / CLASS / COURSE |
+| scopeId | string | 频道所属组织 ID |
+| description | string | 频道描述 |
+| readonly | boolean | 是否只读 |
+| onlineCount | int | Redis presence 维护的频道在线用户数，统计 `channel:presence:{channelId}` 中去重后的 userId 数量；同一用户多个 WebSocket session 只计 1 |
+| onlineUsers | string[] | Redis presence 维护的在线用户显示名列表，由 `channel:presence:{channelId}` 中的 userId 解析得到 |
 
 ---
 
@@ -294,13 +233,14 @@ ws://localhost:8080/ws/chat
 
 | 能力 | 涉及技术 | 状态 |
 | --- | --- | --- |
-| 频道在线人数统计 | Redis Set / Sorted Set | 标记，待设计 |
-| 频道在线用户列表 | Redis Hash / Set | 标记，待设计 |
+| 频道在线人数统计 | Redis Set | 已实现：`channel:presence:{channelId}` 存去重 userId，`SCARD` 得到在线用户数 |
+| 频道在线用户列表 | Redis Set + 用户目录查询 | 已实现：`SMEMBERS channel:presence:{channelId}` 得到 userId 后解析显示名 |
+| 同一用户多 session presence | Redis Set | 已实现：`channel:user:sessions:{channelId}:{userId}` 存 sessionId；最后一个 session 离开时才移除用户 presence |
 | 消息广播分发 | RabbitMQ Topic Exchange | 已实现（bucket queue），后续需接入 channelId |
 | 消息历史持久化 | 数据库 + Redis 缓存 | 标记，待设计 |
 | 多频道并发 WebSocket 心跳 | 多线程 / 虚拟线程 | 标记，待设计 |
 | 消息已读/未读 | Redis + 数据库 | 标记，待设计 |
-| 跨节点 WebSocket 广播 | Redis Pub/Sub | 标记，待设计 |
+| 跨节点 WebSocket 广播 | RabbitMQ / Redis Pub/Sub | 标记，待设计 |
 
 ---
 
@@ -337,3 +277,4 @@ SCHOOL | DEPARTMENT | CLASS | COURSE
 | 日期 | 变更内容 |
 | --- | --- |
 | 2026-06-17 | 初始版本：定义 `/api/me`、`/api/mock-users`、`/api/channels`、`/api/channels/{channelId}`、WebSocket 协议、旧接口、待设计方案标记 |
+| 2026-06-20 | Redis presence 改为由 WebSocket 生命周期维护；移除 REST join/leave 与旧 `/api/rooms` 接口；明确在线人数为去重在线用户数而非 session 数 |

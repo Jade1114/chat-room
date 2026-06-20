@@ -19,16 +19,6 @@ export async function fetchCurrentUser(userId?: string): Promise<CurrentUser> {
   return response.json();
 }
 
-export async function fetchMockUsers(): Promise<CurrentUser[]> {
-  const response = await fetch(`${apiBaseUrl}/api/mock-users`);
-
-  if (!response.ok) {
-    throw new Error(`mock users status ${response.status}`);
-  }
-
-  return response.json();
-}
-
 export async function fetchChannels(userId?: string): Promise<Channel[]> {
   const response = await fetch(withUserId('/api/channels', userId));
 
