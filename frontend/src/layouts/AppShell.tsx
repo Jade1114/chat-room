@@ -2,6 +2,7 @@ import { useAtomValue } from 'jotai';
 import { Link, Outlet } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
+import { useTheme } from '../features/theme/useTheme';
 import { useWorkspaceSession } from '../features/workspace/useWorkspaceSession';
 import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
 import type { UserRole } from '../types/chat';
@@ -43,6 +44,7 @@ const navigationItems: NavigationItem[] = [
 
 export function AppShell() {
   useWorkspaceSession();
+  const { theme, toggleTheme } = useTheme();
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
@@ -51,10 +53,10 @@ export function AppShell() {
     : '正在加载用户';
 
   return (
-    <main className="min-h-screen bg-[#080d13] text-[#e8edf2]">
+    <main className="min-h-screen bg-app text-primary">
       <div className="grid min-h-screen grid-cols-[64px_minmax(0,1fr)] max-md:grid-cols-[56px_minmax(0,1fr)]">
-        <aside className="flex min-h-screen flex-col items-center border-r border-white/[0.06] bg-[#090f16] px-2 py-4">
-          <div className="grid size-10 place-items-center rounded-[14px] border border-emerald-200/20 bg-emerald-300 text-[#07120f] shadow-[0_8px_28px_rgba(52,211,153,0.14)]" title="星河大学">
+        <aside className="flex min-h-screen flex-col items-center border-r border-divider bg-rail px-2 py-4">
+          <div className="grid size-10 place-items-center rounded-[14px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="星河大学">
             <Icon className="size-5"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
 
@@ -64,21 +66,35 @@ export function AppShell() {
                 key={item.to}
                 to={item.to}
                 title={item.label}
-                className="group relative grid size-10 place-items-center rounded-xl text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300 data-[status=active]:bg-emerald-300/10 data-[status=active]:text-emerald-300"
+                className="group relative grid size-10 place-items-center rounded-xl text-faint transition hover:bg-hover hover:text-muted data-[status=active]:bg-accent-soft data-[status=active]:text-accent"
               >
-                <span className="absolute -left-2 h-5 w-0.5 rounded-r-full bg-emerald-300 opacity-0 transition group-data-[status=active]:opacity-100" />
+                <span className="absolute -left-2 h-5 w-0.5 rounded-r-full bg-accent opacity-0 transition group-data-[status=active]:opacity-100" />
                 <Icon className="size-[19px]">{item.icon}</Icon>
               </Link>
             ))}
           </nav>
 
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? '切换为浅色主题' : '切换为深色主题'}
+            aria-label={theme === 'dark' ? '切换为浅色主题' : '切换为深色主题'}
+            className="mb-2 grid size-10 place-items-center rounded-xl text-faint transition hover:bg-hover hover:text-primary"
+          >
+            {theme === 'dark' ? (
+              <Icon className="size-[18px]"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" /></Icon>
+            ) : (
+              <Icon className="size-[18px]"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></Icon>
+            )}
+          </button>
+
           <div
             aria-label={userTitle}
             title={userTitle}
-            className="relative mb-1 grid size-10 place-items-center rounded-xl bg-white/[0.06] text-xs font-bold text-slate-300"
+            className="relative mb-1 grid size-10 place-items-center rounded-xl bg-active text-xs font-bold text-primary"
           >
             {currentUser?.displayName.slice(0, 1).toUpperCase() || '?'}
-            <span className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#090f16] ${isConnected ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+            <span className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-rail ${isConnected ? 'bg-online' : 'bg-faint'}`} />
           </div>
         </aside>
 

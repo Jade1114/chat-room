@@ -50,7 +50,7 @@ export function ChatWorkspace() {
         onRefresh={refreshLobby}
       />
 
-      <section className="grid min-h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] bg-[#101821]">
+      <section className="grid min-h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] bg-content">
         <MessageHeader channel={activeChannel} />
         <MessageTimeline channel={activeChannel} connected={isConnected} items={timeline} />
         <MessageComposer

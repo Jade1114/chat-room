@@ -1,12 +1,149 @@
 @import 'tailwindcss';
 
+@theme inline {
+  --color-app: var(--theme-app);
+  --color-rail: var(--theme-rail);
+  --color-sidebar: var(--theme-sidebar);
+  --color-content: var(--theme-content);
+  --color-elevated: var(--theme-elevated);
+  --color-card: var(--theme-card);
+  --color-hover: var(--theme-hover);
+  --color-active: var(--theme-active);
+  --color-divider: var(--theme-divider);
+  --color-primary: var(--theme-text-primary);
+  --color-strong: var(--theme-text-strong);
+  --color-muted: var(--theme-text-muted);
+  --color-subtle: var(--theme-text-subtle);
+  --color-faint: var(--theme-text-faint);
+  --color-accent: var(--theme-accent);
+  --color-accent-hover: var(--theme-accent-hover);
+  --color-accent-strong: var(--theme-accent-strong);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-accent-wash: var(--theme-accent-wash);
+  --color-on-accent: var(--theme-on-accent);
+  --color-online: var(--theme-online);
+  --color-info: var(--theme-info);
+  --color-info-soft: var(--theme-info-soft);
+  --color-violet: var(--theme-violet);
+  --color-violet-soft: var(--theme-violet-soft);
+  --color-danger: var(--theme-danger);
+  --color-danger-soft: var(--theme-danger-soft);
+  --color-danger-border: var(--theme-danger-border);
+  --shadow-panel: 0 24px 80px var(--theme-shadow);
+  --shadow-composer: 0 16px 48px var(--theme-shadow-soft);
+  --shadow-accent: 0 8px 28px var(--theme-accent-shadow);
+}
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --theme-app: #edf2f1;
+  --theme-rail: #e4ebe9;
+  --theme-sidebar: #f3f6f5;
+  --theme-content: #f8faf9;
+  --theme-elevated: #ffffff;
+  --theme-card: #ffffff;
+  --theme-hover: rgb(15 23 42 / 0.045);
+  --theme-active: rgb(15 23 42 / 0.07);
+  --theme-divider: rgb(15 23 42 / 0.09);
+  --theme-text-primary: #26343d;
+  --theme-text-strong: #101b24;
+  --theme-text-muted: #4e606b;
+  --theme-text-subtle: #5b6d78;
+  --theme-text-faint: #647680;
+  --theme-accent: #0f9f75;
+  --theme-accent-hover: #0b8a66;
+  --theme-accent-strong: #08785a;
+  --theme-accent-soft: rgb(15 159 117 / 0.11);
+  --theme-accent-wash: rgb(15 159 117 / 0.045);
+  --theme-on-accent: #ffffff;
+  --theme-online: #16a66f;
+  --theme-info: #087da4;
+  --theme-info-soft: rgb(8 125 164 / 0.1);
+  --theme-violet: #7657bd;
+  --theme-violet-soft: rgb(118 87 189 / 0.1);
+  --theme-danger: #be475e;
+  --theme-danger-soft: rgb(190 71 94 / 0.08);
+  --theme-danger-border: rgb(190 71 94 / 0.18);
+  --theme-shadow: rgb(31 45 52 / 0.12);
+  --theme-shadow-soft: rgb(31 45 52 / 0.1);
+  --theme-accent-shadow: rgb(15 159 117 / 0.16);
   font-family: Inter, "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --theme-app: #080d13;
+  --theme-rail: #090f16;
+  --theme-sidebar: #0e151e;
+  --theme-content: #101821;
+  --theme-elevated: #0b121a;
+  --theme-card: #0d151e;
+  --theme-hover: rgb(255 255 255 / 0.05);
+  --theme-active: rgb(255 255 255 / 0.07);
+  --theme-divider: rgb(255 255 255 / 0.07);
+  --theme-text-primary: #d8e0e7;
+  --theme-text-strong: #f8fafc;
+  --theme-text-muted: #a0aec0;
+  --theme-text-subtle: #7b8ba1;
+  --theme-text-faint: #718096;
+  --theme-accent: #6ee7b7;
+  --theme-accent-hover: #a7f3d0;
+  --theme-accent-strong: #a7f3d0;
+  --theme-accent-soft: rgb(110 231 183 / 0.1);
+  --theme-accent-wash: rgb(110 231 183 / 0.035);
+  --theme-on-accent: #07120f;
+  --theme-online: #34d399;
+  --theme-info: #7dd3fc;
+  --theme-info-soft: rgb(125 211 252 / 0.1);
+  --theme-violet: #c4b5fd;
+  --theme-violet-soft: rgb(196 181 253 / 0.1);
+  --theme-danger: #fda4af;
+  --theme-danger-soft: rgb(251 113 133 / 0.06);
+  --theme-danger-border: rgb(251 113 133 / 0.14);
+  --theme-shadow: rgb(0 0 0 / 0.2);
+  --theme-shadow-soft: rgb(0 0 0 / 0.22);
+  --theme-accent-shadow: rgb(52 211 153 / 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --theme-app: #080d13;
+    --theme-rail: #090f16;
+    --theme-sidebar: #0e151e;
+    --theme-content: #101821;
+    --theme-elevated: #0b121a;
+    --theme-card: #0d151e;
+    --theme-hover: rgb(255 255 255 / 0.05);
+    --theme-active: rgb(255 255 255 / 0.07);
+    --theme-divider: rgb(255 255 255 / 0.07);
+    --theme-text-primary: #d8e0e7;
+    --theme-text-strong: #f8fafc;
+    --theme-text-muted: #a0aec0;
+    --theme-text-subtle: #7b8ba1;
+    --theme-text-faint: #718096;
+    --theme-accent: #6ee7b7;
+    --theme-accent-hover: #a7f3d0;
+    --theme-accent-strong: #a7f3d0;
+    --theme-accent-soft: rgb(110 231 183 / 0.1);
+    --theme-accent-wash: rgb(110 231 183 / 0.035);
+    --theme-on-accent: #07120f;
+    --theme-online: #34d399;
+    --theme-info: #7dd3fc;
+    --theme-info-soft: rgb(125 211 252 / 0.1);
+    --theme-violet: #c4b5fd;
+    --theme-violet-soft: rgb(196 181 253 / 0.1);
+    --theme-danger: #fda4af;
+    --theme-danger-soft: rgb(251 113 133 / 0.06);
+    --theme-danger-border: rgb(251 113 133 / 0.14);
+    --theme-shadow: rgb(0 0 0 / 0.2);
+    --theme-shadow-soft: rgb(0 0 0 / 0.22);
+    --theme-accent-shadow: rgb(52 211 153 / 0.14);
+  }
 }
 
 * {
@@ -21,7 +158,9 @@ body,
 
 body {
   margin: 0;
-  background: #080d13;
+  background: var(--theme-app);
+  color: var(--theme-text-primary);
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 button,
@@ -38,12 +177,12 @@ select {
 button:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgb(110 231 183 / 0.55);
+  outline: 2px solid var(--theme-accent);
   outline-offset: 2px;
 }
 
 * {
-  scrollbar-color: rgb(71 85 105 / 0.45) transparent;
+  scrollbar-color: var(--theme-text-faint) transparent;
   scrollbar-width: thin;
 }
 
@@ -53,7 +192,7 @@ textarea:focus-visible {
 
 *::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgb(71 85 105 / 0.45);
+  background: var(--theme-text-faint);
 }
 
 *::-webkit-scrollbar-track {
