@@ -67,3 +67,16 @@ HELP.md
 # ===============================
 node_modules/
 dist/
+
+
+#
+# teach 教学资料
+#
+
+MISSION.md
+NOTES.md
+RESOURCES.md
+assets/
+learning-records/
+lessons/
+reference/
