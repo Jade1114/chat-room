@@ -229,8 +229,8 @@ export function useChatRoom() {
     [pushChat, pushSystem, refreshChannelDetail]
   );
 
-  const connect = useCallback(() => {
-    if (!currentUser || !displayName || !selectedChannelId) {
+  const connect = useCallback((targetChannelId = selectedChannelId) => {
+    if (!currentUser || !displayName || !targetChannelId) {
       pushSystem('请选择用户和频道后再连接。');
       return;
     }
@@ -245,12 +245,12 @@ export function useChatRoom() {
 
     socket.onopen = () => {
       setStatus('connected');
-      pushSystem(`已进入 ${selectedChannelId}`);
+      pushSystem(`已进入 ${targetChannelId}`);
       socket.send(
         JSON.stringify({
           type: 'USER_JOIN',
           sender: displayName,
-          roomId: selectedChannelId,
+          roomId: targetChannelId,
           content: '进入了当前频道'
         } satisfies ChatMessagePayload)
       );
@@ -266,16 +266,15 @@ export function useChatRoom() {
     };
 
     socket.onclose = () => {
+      if (socketRef.current !== socket) {
+        return;
+      }
       setStatus('idle');
       pushSystem('连接已关闭。');
       socketRef.current = null;
       refreshChannelDetail();
     };
   }, [currentUser, displayName, handleServerMessage, pushSystem, refreshChannelDetail, selectedChannelId, setStatus]);
-
-  const disconnect = useCallback(() => {
-    socketRef.current?.close();
-  }, []);
 
   const sendChat = useCallback(() => {
     if (!canSend || !socketRef.current) {
@@ -306,20 +305,15 @@ export function useChatRoom() {
 
   const pickChannel = useCallback(
     (targetChannelId: string) => {
+      if (targetChannelId === selectedChannelId) {
+        return;
+      }
+      socketRef.current?.close();
+      setTimeline([]);
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
     },
-    [refreshChannelDetail, setChannelId]
-  );
-
-  const switchUser = useCallback(
-    (targetUserId: string) => {
-      socketRef.current?.close();
-      setTimeline([]);
-      setSelectedUserId(targetUserId);
-      setActiveChannelDetail(null);
-    },
-    [setActiveChannelDetail, setSelectedUserId, setTimeline]
+    [refreshChannelDetail, selectedChannelId, setChannelId, setTimeline]
   );
 
   useEffect(() => {
@@ -340,6 +334,13 @@ export function useChatRoom() {
   }, [refreshLobby, selectedUserId]);
 
   useEffect(() => {
+    if (!currentUser || !selectedChannelId) {
+      return;
+    }
+    connect(selectedChannelId);
+  }, [connect, currentUser, selectedChannelId]);
+
+  useEffect(() => {
     return () => {
       socketRef.current?.close();
     };
@@ -347,11 +348,9 @@ export function useChatRoom() {
 
   return {
     connect,
-    disconnect,
     pickChannel,
     refreshChannelDetail,
     refreshLobby,
     sendChat,
-    switchUser
   };
 }

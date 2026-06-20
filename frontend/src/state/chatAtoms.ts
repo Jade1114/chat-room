@@ -18,7 +18,4 @@ export const lobbyErrorAtom = atom('');
 export const displayNameAtom = atom((get) => get(currentUserAtom)?.displayName.trim() || '');
 export const selectedChannelIdAtom = atom((get) => get(channelIdAtom).trim());
 export const isConnectedAtom = atom((get) => get(statusAtom) === 'connected');
-export const canConnectAtom = atom((get) => {
-  return !get(isConnectedAtom) && Boolean(get(currentUserAtom)) && get(selectedChannelIdAtom).length > 0;
-});
 export const canSendAtom = atom((get) => get(isConnectedAtom) && get(draftAtom).trim().length > 0);
