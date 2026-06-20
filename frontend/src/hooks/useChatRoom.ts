@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
 import { wsUrl } from '../config';
-import { fetchChannelDetail, fetchChannels, fetchCurrentUser, fetchMockUsers } from '../lib/chatApi';
+import { fetchChannelDetail, fetchChannels } from '../lib/chatApi';
 import {
   activeChannelDetailAtom,
   canSendAtom,
@@ -12,11 +12,8 @@ import {
   draftAtom,
   loadingChannelDetailAtom,
   loadingChannelsAtom,
-  loadingUsersAtom,
   lobbyErrorAtom,
-  mockUsersAtom,
   selectedChannelIdAtom,
-  selectedUserIdAtom,
   statusAtom,
   timelineAtom
 } from '../state/chatAtoms';
@@ -36,23 +33,21 @@ function createTimelineItem(payload: Omit<TimelineItem, 'id' | 'time'> & { time?
 
 export function useChatRoom() {
   const [draft, setDraft] = useAtom(draftAtom);
-  const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
   const selectedChannelId = useAtomValue(selectedChannelIdAtom);
   const displayName = useAtomValue(displayNameAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const canSend = useAtomValue(canSendAtom);
   const setStatus = useSetAtom(statusAtom);
   const setTimeline = useSetAtom(timelineAtom);
-  const setMockUsers = useSetAtom(mockUsersAtom);
-  const setCurrentUser = useSetAtom(currentUserAtom);
   const setChannels = useSetAtom(channelsAtom);
   const setChannelId = useSetAtom(channelIdAtom);
   const setActiveChannelDetail = useSetAtom(activeChannelDetailAtom);
-  const setLoadingUsers = useSetAtom(loadingUsersAtom);
   const setLoadingChannels = useSetAtom(loadingChannelsAtom);
   const setLoadingChannelDetail = useSetAtom(loadingChannelDetailAtom);
   const setLobbyError = useSetAtom(lobbyErrorAtom);
   const socketRef = useRef<WebSocket | null>(null);
+  const socketChannelRef = useRef('');
+  const detailRequestRef = useRef(0);
 
   const pushSystem = useCallback(
     (text: string) => {
@@ -97,89 +92,68 @@ export function useChatRoom() {
   );
 
   const refreshChannelDetail = useCallback(
-    async (targetChannelId = selectedChannelId, targetUserId = selectedUserId) => {
-      if (!targetChannelId) {
+    async (targetChannelId = selectedChannelId, targetUserId = currentUser?.id || '') => {
+      const requestId = ++detailRequestRef.current;
+
+      if (!targetChannelId || !targetUserId) {
         setActiveChannelDetail(null);
         return;
       }
 
       setLoadingChannelDetail(true);
       try {
-        setActiveChannelDetail(await fetchChannelDetail(targetChannelId, targetUserId));
+        const detail = await fetchChannelDetail(targetChannelId, targetUserId);
+        if (requestId === detailRequestRef.current) {
+          setActiveChannelDetail(detail);
+        }
       } catch {
-        setActiveChannelDetail(null);
+        if (requestId === detailRequestRef.current) {
+          setActiveChannelDetail(null);
+        }
       } finally {
-        setLoadingChannelDetail(false);
+        if (requestId === detailRequestRef.current) {
+          setLoadingChannelDetail(false);
+        }
       }
     },
-    [selectedChannelId, selectedUserId, setActiveChannelDetail, setLoadingChannelDetail]
+    [currentUser?.id, selectedChannelId, setActiveChannelDetail, setLoadingChannelDetail]
   );
 
   const refreshChannels = useCallback(
-    async (targetUserId = selectedUserId) => {
+    async (targetUserId = currentUser?.id || '') => {
+      if (!targetUserId) {
+        return '';
+      }
+
       setLoadingChannels(true);
       setLobbyError('');
       try {
         const nextChannels = await fetchChannels(targetUserId);
+        const nextChannelId = nextChannels.some((channel) => channel.id === selectedChannelId)
+          ? selectedChannelId
+          : nextChannels[0]?.id || '';
         setChannels(nextChannels);
-        setChannelId((currentChannelId) => {
-          if (nextChannels.some((channel) => channel.id === currentChannelId)) {
-            return currentChannelId;
-          }
-          return nextChannels[0]?.id || '';
-        });
+        setChannelId(nextChannelId);
+        return nextChannelId;
       } catch {
         setChannels([]);
         setLobbyError('频道加载失败');
+        return '';
       } finally {
         setLoadingChannels(false);
       }
     },
-    [selectedUserId, setChannelId, setChannels, setLoadingChannels, setLobbyError]
-  );
-
-  const refreshUser = useCallback(
-    async (targetUserId = selectedUserId) => {
-      setLoadingUsers(true);
-      setLobbyError('');
-      try {
-        const user = await fetchCurrentUser(targetUserId);
-        setCurrentUser(user);
-        if (!targetUserId) {
-          setSelectedUserId(user.id);
-        }
-        return user;
-      } catch {
-        setCurrentUser(null);
-        setLobbyError('用户加载失败');
-        return null;
-      } finally {
-        setLoadingUsers(false);
-      }
-    },
-    [selectedUserId, setCurrentUser, setLoadingUsers, setLobbyError, setSelectedUserId]
+    [currentUser?.id, selectedChannelId, setChannelId, setChannels, setLoadingChannels, setLobbyError]
   );
 
   const refreshLobby = useCallback(async () => {
-    const user = await refreshUser(selectedUserId);
-    const userId = user?.id || selectedUserId;
-    await refreshChannels(userId);
-    await refreshChannelDetail(selectedChannelId, userId);
-  }, [refreshChannelDetail, refreshChannels, refreshUser, selectedChannelId, selectedUserId]);
-
-  const loadMockUsers = useCallback(async () => {
-    setLoadingUsers(true);
-    try {
-      const users = await fetchMockUsers();
-      setMockUsers(users);
-      setSelectedUserId((current) => current || users[0]?.id || '');
-    } catch {
-      setMockUsers([]);
-      setLobbyError('模拟用户加载失败');
-    } finally {
-      setLoadingUsers(false);
+    if (!currentUser) {
+      return;
     }
-  }, [setLoadingUsers, setLobbyError, setMockUsers, setSelectedUserId]);
+
+    const nextChannelId = await refreshChannels(currentUser.id);
+    await refreshChannelDetail(nextChannelId, currentUser.id);
+  }, [currentUser, refreshChannelDetail, refreshChannels]);
 
   const handleServerMessage = useCallback(
     (raw: string) => {
@@ -226,24 +200,37 @@ export function useChatRoom() {
 
       refreshChannelDetail();
     },
-    [pushChat, pushSystem, refreshChannelDetail]
+    [pushChat, pushSystem, refreshChannelDetail, setTimeline]
   );
 
-  const connect = useCallback((targetChannelId = selectedChannelId) => {
+  const connect = useCallback((targetChannelId: string) => {
     if (!currentUser || !displayName || !targetChannelId) {
-      pushSystem('请选择用户和频道后再连接。');
       return;
     }
 
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
+    const activeSocket = socketRef.current;
+    const socketIsActive = activeSocket?.readyState === WebSocket.CONNECTING || activeSocket?.readyState === WebSocket.OPEN;
+    if (socketIsActive && socketChannelRef.current === targetChannelId) {
       return;
+    }
+
+    if (activeSocket) {
+      socketRef.current = null;
+      socketChannelRef.current = '';
+      activeSocket.close();
     }
 
     setStatus('connecting');
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
+    socketChannelRef.current = targetChannelId;
 
     socket.onopen = () => {
+      if (socketRef.current !== socket) {
+        socket.close();
+        return;
+      }
+
       setStatus('connected');
       pushSystem(`已进入 ${targetChannelId}`);
       socket.send(
@@ -254,30 +241,47 @@ export function useChatRoom() {
           content: '进入了当前频道'
         } satisfies ChatMessagePayload)
       );
-      refreshChannelDetail();
+      refreshChannelDetail(targetChannelId, currentUser.id);
     };
 
     socket.onmessage = (event) => {
-      handleServerMessage(event.data as string);
+      if (socketRef.current === socket) {
+        handleServerMessage(event.data as string);
+      }
     };
 
     socket.onerror = () => {
-      pushSystem('连接出错，请检查服务状态或地址。');
+      if (socketRef.current === socket) {
+        pushSystem('连接出错，请检查服务状态或地址。');
+      }
     };
 
     socket.onclose = () => {
       if (socketRef.current !== socket) {
         return;
       }
+      socketRef.current = null;
+      socketChannelRef.current = '';
       setStatus('idle');
       pushSystem('连接已关闭。');
-      socketRef.current = null;
-      refreshChannelDetail();
+      refreshChannelDetail(targetChannelId, currentUser.id);
     };
-  }, [currentUser, displayName, handleServerMessage, pushSystem, refreshChannelDetail, selectedChannelId, setStatus]);
+  }, [currentUser, displayName, handleServerMessage, pushSystem, refreshChannelDetail, setStatus]);
+
+  const closeSocket = useCallback(() => {
+    const socket = socketRef.current;
+    socketRef.current = null;
+    socketChannelRef.current = '';
+    setStatus('idle');
+
+    if (socket && socket.readyState !== WebSocket.CLOSED) {
+      socket.close();
+    }
+  }, [setStatus]);
 
   const sendChat = useCallback(() => {
-    if (!canSend || !socketRef.current) {
+    const socket = socketRef.current;
+    if (!canSend || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
 
@@ -292,7 +296,7 @@ export function useChatRoom() {
       })
     ]);
 
-    socketRef.current.send(
+    socket.send(
       JSON.stringify({
         type: 'USER_CHAT',
         sender: displayName,
@@ -308,49 +312,35 @@ export function useChatRoom() {
       if (targetChannelId === selectedChannelId) {
         return;
       }
-      socketRef.current?.close();
       setTimeline([]);
+      setActiveChannelDetail(null);
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
     },
-    [refreshChannelDetail, selectedChannelId, setChannelId, setTimeline]
+    [refreshChannelDetail, selectedChannelId, setActiveChannelDetail, setChannelId, setTimeline]
   );
 
   useEffect(() => {
-    loadMockUsers();
-  }, [loadMockUsers]);
-
-  useEffect(() => {
-    if (!selectedUserId) {
+    if (!currentUser) {
       return;
     }
 
     refreshLobby();
     const pollingTimer = window.setInterval(refreshLobby, 5000);
-
-    return () => {
-      window.clearInterval(pollingTimer);
-    };
-  }, [refreshLobby, selectedUserId]);
+    return () => window.clearInterval(pollingTimer);
+  }, [currentUser, refreshLobby]);
 
   useEffect(() => {
-    if (!currentUser || !selectedChannelId) {
-      return;
+    if (currentUser && selectedChannelId) {
+      connect(selectedChannelId);
     }
-    connect(selectedChannelId);
   }, [connect, currentUser, selectedChannelId]);
 
-  useEffect(() => {
-    return () => {
-      socketRef.current?.close();
-    };
-  }, []);
+  useEffect(() => closeSocket, [closeSocket]);
 
   return {
-    connect,
     pickChannel,
-    refreshChannelDetail,
     refreshLobby,
-    sendChat,
+    sendChat
   };
 }

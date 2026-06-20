@@ -1,16 +1,13 @@
 import { atom } from 'jotai';
 import type { Channel, ChannelDetail, ConnectionStatus, CurrentUser, TimelineItem } from '../types/chat';
 
-export const selectedUserIdAtom = atom('');
 export const currentUserAtom = atom<CurrentUser | null>(null);
-export const mockUsersAtom = atom<CurrentUser[]>([]);
 export const channelIdAtom = atom('');
 export const draftAtom = atom('');
 export const statusAtom = atom<ConnectionStatus>('idle');
 export const timelineAtom = atom<TimelineItem[]>([]);
 export const channelsAtom = atom<Channel[]>([]);
 export const activeChannelDetailAtom = atom<ChannelDetail | null>(null);
-export const loadingUsersAtom = atom(false);
 export const loadingChannelsAtom = atom(false);
 export const loadingChannelDetailAtom = atom(false);
 export const lobbyErrorAtom = atom('');
