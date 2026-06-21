@@ -174,7 +174,11 @@ ws://localhost:8080/ws/chat
 
 ### 3.2 消息格式
 
-所有 WebSocket 消息为 JSON，包含以下公共字段：
+所有 WebSocket 消息为 JSON。用户身份字段和展示字段分开：
+
+- `userId`：稳定用户身份，用于后端 session 绑定和 Redis presence；`USER_JOIN` 必填。
+- `sender`：展示名称，用于 UI 展示；不作为唯一身份。
+- `roomId`：当前仍表示频道 ID，后续可统一重命名为 `channelId`。
 
 ```json
 {
@@ -192,22 +196,28 @@ ws://localhost:8080/ws/chat
 ```json
 {
   "type": "USER_JOIN",
+  "userId": "u-stu-1",
   "sender": "Yuy",
   "roomId": "room-1",
   "content": "进入了当前频道"
 }
 ```
 
+**说明**：`USER_JOIN` 是建立 WebSocket session 身份绑定的入口，必须携带 `userId`。后端会用 `userId + sender + roomId` 绑定当前 session，并用 `userId` 写入 Redis presence。
+
 #### 3.3.2 用户离开
 
 ```json
 {
   "type": "USER_LEAVE",
+  "userId": "u-stu-1",
   "sender": "Yuy",
   "roomId": "room-1",
   "content": "离开了频道"
 }
 ```
+
+**说明**：客户端当前不主动发送 `USER_LEAVE`。后端在 WebSocket 断开时根据 session 绑定信息生成离开消息，并用 `userId` 清理 Redis presence。
 
 #### 3.3.3 聊天消息
 
@@ -220,12 +230,14 @@ ws://localhost:8080/ws/chat
 }
 ```
 
+**说明**：客户端发送 `USER_CHAT` 时不需要携带 `userId`。后端不会信任聊天消息中的身份字段，而是使用当前 WebSocket session 已绑定的 `userId`、`sender` 和 `roomId` 覆盖消息后再广播。
+
 ### 3.4 待升级字段
 
 | 当前字段 | 目标字段 | 状态 |
 | --- | --- | --- |
 | `roomId` | `channelId` | ⚠️ TODO: 待频道系统稳定后统一迁移 |
-| `sender` | `userId` | ⚠️ TODO: 待前端接入真实用户 ID 后迁移 |
+| `sender` | `displayName` | ⚠️ TODO: 当前 `sender` 语义已收敛为展示名，后续可重命名为 `displayName` |
 
 ### 3.5 ⚠️ 待设计方案
 
@@ -278,3 +290,4 @@ SCHOOL | DEPARTMENT | CLASS | COURSE
 | --- | --- |
 | 2026-06-17 | 初始版本：定义 `/api/me`、`/api/mock-users`、`/api/channels`、`/api/channels/{channelId}`、WebSocket 协议、旧接口、待设计方案标记 |
 | 2026-06-20 | Redis presence 改为由 WebSocket 生命周期维护；移除 REST join/leave 与旧 `/api/rooms` 接口；明确在线人数为去重在线用户数而非 session 数 |
+| 2026-06-21 | WebSocket 身份字段拆分：`userId` 用于稳定身份和 Redis presence，`sender` 保留为展示名；聊天消息身份以后端 session 绑定为准 |
