@@ -12,6 +12,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class UserSessionInfo {
-    private String username;
-    private String roomId;
+  private String userId;
+  private String displayName;
+  private String roomId;
 }

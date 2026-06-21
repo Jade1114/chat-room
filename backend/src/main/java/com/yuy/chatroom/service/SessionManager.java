@@ -49,7 +49,7 @@ public class SessionManager {
     }
   }
 
-  public synchronized boolean tryRegister(WebSocketSession session, String username, String roomId) {
+  public synchronized boolean tryRegister(WebSocketSession session, String userId, String displayName, String roomId) {
 
     if (sessionToUserMap.containsKey(session)) {
       log.warn("当前Session: {} 已被使用", session.getId());
@@ -59,7 +59,7 @@ public class SessionManager {
     Set<WebSocketSession> roomSessions = roomToSessionsMap.computeIfAbsent(roomId,
         key -> ConcurrentHashMap.newKeySet());
 
-    sessionToUserMap.put(session, new UserSessionInfo(username, roomId));
+    sessionToUserMap.put(session, new UserSessionInfo(userId, displayName, roomId));
     roomSessions.add(session);
     return true;
   }

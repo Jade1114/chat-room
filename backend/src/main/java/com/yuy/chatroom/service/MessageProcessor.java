@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
+import com.yuy.chatroom.model.CurrentUser;
 import com.yuy.chatroom.model.Message;
 import com.yuy.chatroom.model.MessageType;
 import com.yuy.chatroom.model.UserSessionInfo;
@@ -24,15 +25,17 @@ public class MessageProcessor {
   private final BroadcastService broadcastService;
   private final ChannelPresenceService channelPresenceService;
   private final ChatMessagePublisher chatMessagePublisher;
+  private final CampusDirectoryService campusDirectoryService;
 
   public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
       BroadcastService broadcastService, ChannelPresenceService channelPresenceService,
-      ChatMessagePublisher chatMessagePublisher) {
+      ChatMessagePublisher chatMessagePublisher, CampusDirectoryService campusDirectoryService) {
     this.sessionManager = sessionManager;
     this.broadcastDispatcher = broadcastDispatcher;
     this.broadcastService = broadcastService;
     this.channelPresenceService = channelPresenceService;
     this.chatMessagePublisher = chatMessagePublisher;
+    this.campusDirectoryService = campusDirectoryService;
   }
 
   public void processMessage(WebSocketSession session, Message message) {
@@ -44,7 +47,8 @@ public class MessageProcessor {
       case USER_CHAT:
         if (isValidChatMessage(message, session)) {
           UserSessionInfo info = sessionManager.getSessionInfo(session);
-          message.setSender(info.getUsername());
+          message.setUserId(info.getUserId());
+          message.setSender(info.getDisplayName());
           message.setRoomId(info.getRoomId());
           message.setMessageId(UUID.randomUUID().toString());
           message.setSentAt(Instant.now());
@@ -58,12 +62,22 @@ public class MessageProcessor {
         break;
       case USER_JOIN:
         if (isValidJoinMessage(message)) {
-          if (sessionManager.tryRegister(session, message.getSender(), message.getRoomId())) {
-            channelPresenceService.join(message.getRoomId(), message.getSender(), session.getId());
-            log.info("{}, {} Redis 在线状态添加成功", message.getSender(), message.getRoomId());
+          CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
+
+          if (user == null || !campusDirectoryService.canAccess(user.getId(), message.getRoomId())) {
+            log.warn("错误：用户无权访问频道, userId={},roomId={}", message.getUserId(), message.getRoomId());
+            return;
+          }
+
+          message.setUserId(user.getId());
+          message.setSender(user.getDisplayName());
+
+          if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), message.getRoomId())) {
+            channelPresenceService.join(message.getRoomId(), user.getId(), session.getId());
+            log.info("{}, {} Redis 在线状态添加成功", user.getDisplayName(), message.getRoomId());
             broadcastDispatcher.submit(message);
           } else {
-            log.warn("错误：用户名已被占用");
+            log.warn("错误：Session 注册失败");
           }
         }
         break;
@@ -80,8 +94,9 @@ public class MessageProcessor {
   public void handleDisconnect(WebSocketSession session) {
     UserSessionInfo info = sessionManager.removeSession(session);
     if (info != null) {
-      Message message = new Message(MessageType.USER_LEAVE, info.getUsername(), "离开了当前频道", info.getRoomId());
-      channelPresenceService.leave(info.getRoomId(), info.getUsername(), session.getId());
+      Message message = new Message(MessageType.USER_LEAVE, info.getUserId(), info.getDisplayName(), "离开了当前频道",
+          info.getRoomId());
+      channelPresenceService.leave(info.getRoomId(), info.getUserId(), session.getId());
       log.info("{}, {} Redis 在线状态删除成功", message.getSender(), message.getRoomId());
       broadcastDispatcher.submit(message);
     } else {
@@ -99,6 +114,12 @@ public class MessageProcessor {
   }
 
   private boolean isValidJoinMessage(Message message) {
+    String userId = message.getUserId();
+    if (userId == null || userId.trim().isEmpty() || userId.matches(".*\\s.*")) {
+      log.warn("错误：用户 ID 不合规");
+      return false;
+    }
+
     String name = message.getSender();
     if (name == null || name.trim().isEmpty() || name.matches(".*\\s.*") || name.length() > USERNAME_MAX_LENGTH) {
       log.warn("错误：用户名不合规");

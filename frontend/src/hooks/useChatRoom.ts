@@ -1,7 +1,7 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect, useRef } from 'react';
-import { wsUrl } from '../config';
-import { fetchChannelDetail, fetchChannels } from '../lib/chatApi';
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useCallback, useEffect, useRef } from "react";
+import { wsUrl } from "../config";
+import { fetchChannelDetail, fetchChannels } from "../lib/chatApi";
 import {
   activeChannelDetailAtom,
   canSendAtom,
@@ -15,19 +15,21 @@ import {
   lobbyErrorAtom,
   selectedChannelIdAtom,
   statusAtom,
-  timelineAtom
-} from '../state/chatAtoms';
-import type { ChatMessagePayload, TimelineItem } from '../types/chat';
+  timelineAtom,
+} from "../state/chatAtoms";
+import type { ChatMessagePayload, TimelineItem } from "../types/chat";
 
 function nowLabel(value = new Date()) {
-  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function createTimelineItem(payload: Omit<TimelineItem, 'id' | 'time'> & { time?: string }): TimelineItem {
+function createTimelineItem(
+  payload: Omit<TimelineItem, "id" | "time"> & { time?: string }
+): TimelineItem {
   return {
     id: payload.messageId || `${Date.now()}-${Math.random()}`,
     time: payload.time || nowLabel(),
-    ...payload
+    ...payload,
   };
 }
 
@@ -46,12 +48,15 @@ export function useChatRoom() {
   const setLoadingChannelDetail = useSetAtom(loadingChannelDetailAtom);
   const setLobbyError = useSetAtom(lobbyErrorAtom);
   const socketRef = useRef<WebSocket | null>(null);
-  const socketChannelRef = useRef('');
+  const socketChannelRef = useRef("");
   const detailRequestRef = useRef(0);
 
   const pushSystem = useCallback(
     (text: string) => {
-      setTimeline((current) => [...current, createTimelineItem({ role: 'system', text })]);
+      setTimeline((current) => [
+        ...current,
+        createTimelineItem({ role: "system", text }),
+      ]);
     },
     [setTimeline]
   );
@@ -59,17 +64,23 @@ export function useChatRoom() {
   const pushChat = useCallback(
     (message: Partial<ChatMessagePayload>) => {
       const messageId = message.messageId;
-      const sender = message.sender || '未知用户';
+      const sender = message.sender || "未知用户";
       const sentAt = message.sentAt ? new Date(message.sentAt) : undefined;
-      const role = sender === displayName ? 'me' : 'user';
+      const role = sender === displayName ? "me" : "user";
 
       setTimeline((current) => {
         if (messageId) {
-          const existingIndex = current.findIndex((item) => item.messageId === messageId);
+          const existingIndex = current.findIndex(
+            (item) => item.messageId === messageId
+          );
           if (existingIndex >= 0) {
             return current.map((item, index) =>
               index === existingIndex
-                ? { ...item, deliveryStatus: role === 'me' ? 'delivered' : item.deliveryStatus }
+                ? {
+                    ...item,
+                    deliveryStatus:
+                      role === "me" ? "delivered" : item.deliveryStatus,
+                  }
                 : item
             );
           }
@@ -80,11 +91,11 @@ export function useChatRoom() {
           createTimelineItem({
             role,
             sender,
-            text: message.content || '',
+            text: message.content || "",
             messageId,
             time: sentAt ? nowLabel(sentAt) : undefined,
-            deliveryStatus: role === 'me' ? 'delivered' : undefined
-          })
+            deliveryStatus: role === "me" ? "delivered" : undefined,
+          }),
         ];
       });
     },
@@ -92,7 +103,10 @@ export function useChatRoom() {
   );
 
   const refreshChannelDetail = useCallback(
-    async (targetChannelId = selectedChannelId, targetUserId = currentUser?.id || '') => {
+    async (
+      targetChannelId = selectedChannelId,
+      targetUserId = currentUser?.id || ""
+    ) => {
       const requestId = ++detailRequestRef.current;
 
       if (!targetChannelId || !targetUserId) {
@@ -116,34 +130,48 @@ export function useChatRoom() {
         }
       }
     },
-    [currentUser?.id, selectedChannelId, setActiveChannelDetail, setLoadingChannelDetail]
+    [
+      currentUser?.id,
+      selectedChannelId,
+      setActiveChannelDetail,
+      setLoadingChannelDetail,
+    ]
   );
 
   const refreshChannels = useCallback(
-    async (targetUserId = currentUser?.id || '') => {
+    async (targetUserId = currentUser?.id || "") => {
       if (!targetUserId) {
-        return '';
+        return "";
       }
 
       setLoadingChannels(true);
-      setLobbyError('');
+      setLobbyError("");
       try {
         const nextChannels = await fetchChannels(targetUserId);
-        const nextChannelId = nextChannels.some((channel) => channel.id === selectedChannelId)
+        const nextChannelId = nextChannels.some(
+          (channel) => channel.id === selectedChannelId
+        )
           ? selectedChannelId
-          : nextChannels[0]?.id || '';
+          : nextChannels[0]?.id || "";
         setChannels(nextChannels);
         setChannelId(nextChannelId);
         return nextChannelId;
       } catch {
         setChannels([]);
-        setLobbyError('频道加载失败');
-        return '';
+        setLobbyError("频道加载失败");
+        return "";
       } finally {
         setLoadingChannels(false);
       }
     },
-    [currentUser?.id, selectedChannelId, setChannelId, setChannels, setLoadingChannels, setLobbyError]
+    [
+      currentUser?.id,
+      selectedChannelId,
+      setChannelId,
+      setChannels,
+      setLoadingChannels,
+      setLobbyError,
+    ]
   );
 
   const refreshLobby = useCallback(async () => {
@@ -162,18 +190,18 @@ export function useChatRoom() {
       try {
         message = JSON.parse(raw) as Partial<ChatMessagePayload>;
       } catch {
-        pushSystem('收到无法解析的消息。');
+        pushSystem("收到无法解析的消息。");
         return;
       }
 
       switch (message.type) {
-        case 'USER_CHAT':
+        case "USER_CHAT":
           pushChat(message);
           break;
-        case 'MESSAGE_ACK':
+        case "MESSAGE_ACK":
           setTimeline((current) => {
             const pendingIndex = current.findIndex(
-              (item) => item.role === 'me' && item.deliveryStatus === 'sending'
+              (item) => item.role === "me" && item.deliveryStatus === "sending"
             );
             if (pendingIndex < 0) {
               return current;
@@ -183,18 +211,21 @@ export function useChatRoom() {
                 ? {
                     ...item,
                     messageId: message.messageId,
-                    deliveryStatus: message.content === 'ACCEPTED' ? 'accepted' : 'failed'
+                    deliveryStatus:
+                      message.content === "ACCEPTED" ? "accepted" : "failed",
                   }
                 : item
             );
           });
           break;
-        case 'USER_JOIN':
-        case 'USER_LEAVE':
-          pushSystem(`${message.sender || '未知用户'} ${message.content || ''}`.trim());
+        case "USER_JOIN":
+        case "USER_LEAVE":
+          pushSystem(
+            `${message.sender || "未知用户"} ${message.content || ""}`.trim()
+          );
           break;
         default:
-          pushSystem('收到未知消息类型。');
+          pushSystem("收到未知消息类型。");
           break;
       }
 
@@ -203,76 +234,89 @@ export function useChatRoom() {
     [pushChat, pushSystem, refreshChannelDetail, setTimeline]
   );
 
-  const connect = useCallback((targetChannelId: string) => {
-    if (!currentUser || !displayName || !targetChannelId) {
-      return;
-    }
-
-    const activeSocket = socketRef.current;
-    const socketIsActive = activeSocket?.readyState === WebSocket.CONNECTING || activeSocket?.readyState === WebSocket.OPEN;
-    if (socketIsActive && socketChannelRef.current === targetChannelId) {
-      return;
-    }
-
-    if (activeSocket) {
-      socketRef.current = null;
-      socketChannelRef.current = '';
-      activeSocket.close();
-    }
-
-    setStatus('connecting');
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
-    socketChannelRef.current = targetChannelId;
-
-    socket.onopen = () => {
-      if (socketRef.current !== socket) {
-        socket.close();
+  const connect = useCallback(
+    (targetChannelId: string) => {
+      if (!currentUser || !displayName || !targetChannelId) {
         return;
       }
 
-      setStatus('connected');
-      pushSystem(`已进入 ${targetChannelId}`);
-      socket.send(
-        JSON.stringify({
-          type: 'USER_JOIN',
-          sender: displayName,
-          roomId: targetChannelId,
-          content: '进入了当前频道'
-        } satisfies ChatMessagePayload)
-      );
-      refreshChannelDetail(targetChannelId, currentUser.id);
-    };
-
-    socket.onmessage = (event) => {
-      if (socketRef.current === socket) {
-        handleServerMessage(event.data as string);
-      }
-    };
-
-    socket.onerror = () => {
-      if (socketRef.current === socket) {
-        pushSystem('连接出错，请检查服务状态或地址。');
-      }
-    };
-
-    socket.onclose = () => {
-      if (socketRef.current !== socket) {
+      const activeSocket = socketRef.current;
+      const socketIsActive =
+        activeSocket?.readyState === WebSocket.CONNECTING ||
+        activeSocket?.readyState === WebSocket.OPEN;
+      if (socketIsActive && socketChannelRef.current === targetChannelId) {
         return;
       }
-      socketRef.current = null;
-      socketChannelRef.current = '';
-      setStatus('idle');
-      pushSystem('连接已关闭。');
-      refreshChannelDetail(targetChannelId, currentUser.id);
-    };
-  }, [currentUser, displayName, handleServerMessage, pushSystem, refreshChannelDetail, setStatus]);
+
+      if (activeSocket) {
+        socketRef.current = null;
+        socketChannelRef.current = "";
+        activeSocket.close();
+      }
+
+      setStatus("connecting");
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+      socketChannelRef.current = targetChannelId;
+
+      socket.onopen = () => {
+        if (socketRef.current !== socket) {
+          socket.close();
+          return;
+        }
+
+        setStatus("connected");
+        pushSystem(`已进入 ${targetChannelId}`);
+        socket.send(
+          JSON.stringify({
+            type: "USER_JOIN",
+            sender: displayName,
+            roomId: targetChannelId,
+            content: "进入了当前频道",
+            userId: currentUser.id,
+          } satisfies ChatMessagePayload)
+        );
+        refreshChannelDetail(targetChannelId, currentUser.id);
+      };
+
+      socket.onmessage = (event) => {
+        if (socketRef.current === socket) {
+          handleServerMessage(event.data as string);
+        }
+      };
+
+      socket.onerror = () => {
+        if (socketRef.current === socket) {
+          pushSystem("连接出错，请检查服务状态或地址。");
+        }
+      };
+
+      socket.onclose = () => {
+        if (socketRef.current !== socket) {
+          return;
+        }
+        socketRef.current = null;
+        socketChannelRef.current = "";
+        setStatus("idle");
+        pushSystem("连接已关闭。");
+        refreshChannelDetail(targetChannelId, currentUser.id);
+      };
+    },
+    [
+      currentUser,
+      displayName,
+      handleServerMessage,
+      pushSystem,
+      refreshChannelDetail,
+      setStatus,
+    ]
+  );
 
   const closeSocket = useCallback(() => {
     const socket = socketRef.current;
     socketRef.current = null;
-    socketChannelRef.current = '';
-    setStatus('idle');
+    socketChannelRef.current = "";
+    setStatus("idle");
 
     if (socket && socket.readyState !== WebSocket.CLOSED) {
       socket.close();
@@ -281,7 +325,12 @@ export function useChatRoom() {
 
   const sendChat = useCallback(() => {
     const socket = socketRef.current;
-    if (!canSend || !socket || socket.readyState !== WebSocket.OPEN) {
+    if (
+      !canSend ||
+      !currentUser ||
+      !socket ||
+      socket.readyState !== WebSocket.OPEN
+    ) {
       return;
     }
 
@@ -289,23 +338,31 @@ export function useChatRoom() {
     setTimeline((current) => [
       ...current,
       createTimelineItem({
-        role: 'me',
+        role: "me",
         sender: displayName,
         text,
-        deliveryStatus: 'sending'
-      })
+        deliveryStatus: "sending",
+      }),
     ]);
 
     socket.send(
       JSON.stringify({
-        type: 'USER_CHAT',
+        type: "USER_CHAT",
         sender: displayName,
         roomId: selectedChannelId,
-        content: text
+        content: text,
       } satisfies ChatMessagePayload)
     );
-    setDraft('');
-  }, [canSend, displayName, draft, selectedChannelId, setDraft, setTimeline]);
+    setDraft("");
+  }, [
+    canSend,
+    currentUser,
+    displayName,
+    draft,
+    selectedChannelId,
+    setDraft,
+    setTimeline,
+  ]);
 
   const pickChannel = useCallback(
     (targetChannelId: string) => {
@@ -317,7 +374,13 @@ export function useChatRoom() {
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
     },
-    [refreshChannelDetail, selectedChannelId, setActiveChannelDetail, setChannelId, setTimeline]
+    [
+      refreshChannelDetail,
+      selectedChannelId,
+      setActiveChannelDetail,
+      setChannelId,
+      setTimeline,
+    ]
   );
 
   useEffect(() => {
@@ -341,6 +404,6 @@ export function useChatRoom() {
   return {
     pickChannel,
     refreshLobby,
-    sendChat
+    sendChat,
   };
 }

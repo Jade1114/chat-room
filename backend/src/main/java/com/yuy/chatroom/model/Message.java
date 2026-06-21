@@ -14,17 +14,23 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class Message {
-    private MessageType type;
-    private String sender;
-    private String content;
-    private String roomId;
-    private String messageId;
-    private Instant sentAt;
+  private MessageType type;
+  private String userId;
+  private String sender;
+  private String content;
+  private String roomId;
+  private String messageId;
+  private Instant sentAt;
 
-    public Message(MessageType type, String sender, String content, String roomId) {
-        this.type = type;
-        this.sender = sender;
-        this.content = content;
-        this.roomId = roomId;
-    }
+  public Message(MessageType type, String sender, String content, String roomId) {
+    this(type, null, sender, content, roomId);
+  }
+
+  public Message(MessageType type, String userId, String sender, String content, String roomId) {
+    this.type = type;
+    this.userId = userId;
+    this.sender = sender;
+    this.content = content;
+    this.roomId = roomId;
+  }
 }
