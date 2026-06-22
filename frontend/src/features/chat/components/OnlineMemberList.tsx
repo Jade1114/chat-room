@@ -2,11 +2,16 @@ interface OnlineMemberListProps {
   count: number;
   loading: boolean;
   users: string[];
+  sidebar?: boolean;
 }
 
-export function OnlineMemberList({ count, loading, users }: OnlineMemberListProps) {
+export function OnlineMemberList({ count, loading, users, sidebar = true }: OnlineMemberListProps) {
+  const asideClasses = sidebar
+    ? "hidden min-h-screen border-l border-divider bg-sidebar px-4 py-5 2xl:block"
+    : "px-4 py-5";
+
   return (
-    <aside className="hidden min-h-screen border-l border-divider bg-sidebar px-4 py-5 2xl:block">
+    <aside className={asideClasses}>
       <section>
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">在线成员</p>

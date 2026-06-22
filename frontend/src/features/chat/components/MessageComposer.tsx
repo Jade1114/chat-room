@@ -12,7 +12,7 @@ interface MessageComposerProps {
 
 export function MessageComposer({ canSend, channelName, connected, draft, onDraftChange, onSend }: MessageComposerProps) {
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       onSend();
     }
