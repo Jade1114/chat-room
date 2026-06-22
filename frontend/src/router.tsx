@@ -3,6 +3,7 @@ import { AssignmentsPrototype } from './features/assignments/AssignmentsPrototyp
 import { ChatWorkspace } from './features/chat/ChatWorkspace';
 import { ClubsPrototype } from './features/clubs/ClubsPrototype';
 import { TeacherCommunicationPrototype } from './features/communication/TeacherCommunicationPrototype';
+import { LoginPage } from './features/workspace/LoginPage';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -13,8 +14,14 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/messages' });
+    throw redirect({ to: '/login' });
   }
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage
 });
 
 const messagesRoute = createRoute({
@@ -59,6 +66,7 @@ const legacyMembersRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  loginRoute,
   messagesRoute,
   assignmentsRoute,
   teacherCommunicationRoute,

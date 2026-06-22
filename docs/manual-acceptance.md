@@ -38,19 +38,27 @@
 
 后端默认连接本机服务：
 
-| 依赖 | 默认地址 | 说明 |
-|---|---|---|
-| MySQL | `localhost:3306` | 数据库名：`chat_room` |
-| Redis | `localhost:6379` | 维护频道在线状态 |
-| RabbitMQ | `localhost:5672` | 聊天消息分发 |
-| Backend | `localhost:8080` | Spring Boot 服务 |
-| Frontend | Vite dev server | React 前端 |
+| 依赖     | 默认地址         | 说明                  |
+| -------- | ---------------- | --------------------- |
+| MySQL    | `localhost:3306` | 数据库名：`chat_room` |
+| Redis    | `localhost:6379` | 维护频道在线状态      |
+| RabbitMQ | `localhost:5672` | 聊天消息分发          |
+| Backend  | `localhost:8080` | Spring Boot 服务      |
+| Frontend | Vite dev server  | React 前端            |
 
 后端配置见：
 
 ```text
 backend/src/main/resources/application.yaml
 ```
+
+后端启动时会通过 Spring Boot Config Data 读取 `backend/.env`：
+
+```yaml
+spring.config.import: optional:file:.env[.properties]
+```
+
+本地首次启动前，确认 `backend/.env` 已存在；如果不存在，可参考 `backend/.env.example` 创建。`.env` 文件被 `.gitignore` 忽略，不应提交真实本地密码。
 
 前端配置见：
 
@@ -80,22 +88,22 @@ mysql -u root -p < backend/sql/seed.sql
 
 ### 3.1 用户
 
-| userId | displayName | role |
-|---|---|---|
-| `u-stu-1` | Yuy | STUDENT |
-| `u-stu-2` | Mina | STUDENT |
-| `u-teacher-1` | Chen | TEACHER |
-| `u-admin-1` | Admin | ADMIN |
+| userId        | displayName | role    |
+| ------------- | ----------- | ------- |
+| `u-stu-1`     | Yuy         | STUDENT |
+| `u-stu-2`     | Mina        | STUDENT |
+| `u-teacher-1` | Chen        | TEACHER |
+| `u-admin-1`   | Admin       | ADMIN   |
 
 ### 3.2 频道
 
-| channelId | name | type |
-|---|---|---|
-| `ch-school` | 全校大厅 | SCHOOL |
-| `ch-cs` | 计算机学院 | DEPARTMENT |
-| `ch-cs-2401` | 计科 2401 班 | CLASS |
-| `ch-java` | Java 后端开发 | COURSE |
-| `ch-websocket` | 分布式实时通信 | COURSE |
+| channelId      | name           | type       |
+| -------------- | -------------- | ---------- |
+| `ch-school`    | 全校大厅       | SCHOOL     |
+| `ch-cs`        | 计算机学院     | DEPARTMENT |
+| `ch-cs-2401`   | 计科 2401 班   | CLASS      |
+| `ch-java`      | Java 后端开发  | COURSE     |
+| `ch-websocket` | 分布式实时通信 | COURSE     |
 
 ---
 
@@ -316,13 +324,24 @@ websocat ws://localhost:8080/ws/chat
 发送加入消息：
 
 ```json
-{"type":"USER_JOIN","userId":"u-stu-1","displayName":"Yuy","channelId":"ch-java","content":"进入了当前频道"}
+{
+  "type": "USER_JOIN",
+  "userId": "u-stu-1",
+  "displayName": "Yuy",
+  "channelId": "ch-java",
+  "content": "进入了当前频道"
+}
 ```
 
 发送聊天消息：
 
 ```json
-{"type":"USER_CHAT","displayName":"Yuy","channelId":"ch-java","content":"hello from websocat"}
+{
+  "type": "USER_CHAT",
+  "displayName": "Yuy",
+  "channelId": "ch-java",
+  "content": "hello from websocat"
+}
 ```
 
 期望：
@@ -336,7 +355,13 @@ websocat ws://localhost:8080/ws/chat
 用 `u-stu-1` 尝试加入 `ch-linear-algebra`：
 
 ```json
-{"type":"USER_JOIN","userId":"u-stu-1","displayName":"Yuy","channelId":"ch-linear-algebra","content":"进入了当前频道"}
+{
+  "type": "USER_JOIN",
+  "userId": "u-stu-1",
+  "displayName": "Yuy",
+  "channelId": "ch-linear-algebra",
+  "content": "进入了当前频道"
+}
 ```
 
 期望：
@@ -557,3 +582,46 @@ RabbitMQ 验收：通过 / 失败
 发现的问题：
 下一步：
 ```
+
+## 11. 验收记录
+
+### 2026-06-22 第一轮 MVP 验收
+
+```text
+分支 / commit：f9f858c feat(docs): add manual acceptance checklist for MVP validation
+后端构建：通过（mvn test -> BUILD SUCCESS, No tests to run）
+前端构建：通过（pnpm build -> ✓ built）
+后端启动：通过（Spring Boot started on localhost:8080）
+REST 验收：通过
+WebSocket 验收：通过
+Redis presence 验收：通过
+RabbitMQ 验收：通过
+```
+
+发现的问题：
+
+- 后端默认不会自动读取 `backend/.env`，导致 `application.yaml` 中的环境变量占位符无法解析，启动时曾在 Redis port 绑定阶段失败。
+
+处理结果：
+
+- 在 `application.yaml` 中加入 `spring.config.import: optional:file:.env[.properties]`，使 Spring Boot 启动时读取 `backend/.env`。
+- 验证后端可正常启动，并且 Hikari 能建立 MySQL 连接。
+
+本轮实际验证结果：
+
+- `/api/me?userId=u-stu-1` 返回 Yuy；
+- `/api/channels?userId=u-stu-1` 返回 5 个学生可访问频道；
+- `/api/channels?userId=u-teacher-1` 返回 4 个教师相关频道；
+- `/api/channels?userId=u-admin-1` 返回 9 个全部频道；
+- `/api/channels/ch-linear-algebra?userId=u-stu-1` 返回 404；
+- 两个 WebSocket 客户端进入 `ch-java` 后，频道详情显示 `onlineCount=2`，在线用户为 Yuy 和 Chen；
+- Yuy 发送消息后，Yuy 和 Chen 都收到 `USER_CHAT`；
+- Yuy 收到 `MESSAGE_ACK: ACCEPTED`；
+- RabbitMQ 日志显示发布成功和消费成功；
+- 关闭 WebSocket 后，Redis presence 和用户 session key 被清理。
+
+下一步：
+
+- 提交 `.env` 加载修复和本轮验收记录；
+- 前端已补齐 Mock 登录页：进入系统前先选择身份，选择后再进入频道工作区；
+- 后续可以继续做前端真实页面验收，或开始补 Redis presence 的设计说明。

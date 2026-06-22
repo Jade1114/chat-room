@@ -9,11 +9,11 @@ function withUserId(path: string, userId?: string) {
   return url.toString();
 }
 
-export async function fetchCurrentUser(userId?: string): Promise<CurrentUser> {
-  const response = await fetch(withUserId('/api/me', userId));
+export async function fetchMockUsers(): Promise<CurrentUser[]> {
+  const response = await fetch(`${apiBaseUrl}/api/mock-users`);
 
   if (!response.ok) {
-    throw new Error(`current user status ${response.status}`);
+    throw new Error(`mock users status ${response.status}`);
   }
 
   return response.json();

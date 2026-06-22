@@ -3,7 +3,7 @@ import { Link, Outlet } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { useTheme } from '../features/theme/useTheme';
-import { useWorkspaceSession } from '../features/workspace/useWorkspaceSession';
+import { LoginPage } from '../features/workspace/LoginPage';
 import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
 import type { UserRole } from '../types/chat';
 
@@ -43,14 +43,16 @@ const navigationItems: NavigationItem[] = [
 ];
 
 export function AppShell() {
-  useWorkspaceSession();
   const { theme, toggleTheme } = useTheme();
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
-  const userTitle = currentUser
-    ? `${currentUser.displayName} · ${roleLabel[currentUser.role]}`
-    : '正在加载用户';
+
+  if (!currentUser) {
+    return <LoginPage />;
+  }
+
+  const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
 
   return (
     <main className="min-h-screen bg-app text-primary">
