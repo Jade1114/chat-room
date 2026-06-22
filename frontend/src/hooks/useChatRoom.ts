@@ -64,9 +64,9 @@ export function useChatRoom() {
   const pushChat = useCallback(
     (message: Partial<ChatMessagePayload>) => {
       const messageId = message.messageId;
-      const sender = message.sender || "未知用户";
+      const messageDisplayName = message.displayName || "未知用户";
       const sentAt = message.sentAt ? new Date(message.sentAt) : undefined;
-      const role = sender === displayName ? "me" : "user";
+      const role = messageDisplayName === displayName ? "me" : "user";
 
       setTimeline((current) => {
         if (messageId) {
@@ -90,7 +90,7 @@ export function useChatRoom() {
           ...current,
           createTimelineItem({
             role,
-            sender,
+            displayName: messageDisplayName,
             text: message.content || "",
             messageId,
             time: sentAt ? nowLabel(sentAt) : undefined,
@@ -221,7 +221,7 @@ export function useChatRoom() {
         case "USER_JOIN":
         case "USER_LEAVE":
           pushSystem(
-            `${message.sender || "未知用户"} ${message.content || ""}`.trim()
+            `${message.displayName || "未知用户"} ${message.content || ""}`.trim()
           );
           break;
         default:
@@ -270,8 +270,8 @@ export function useChatRoom() {
         socket.send(
           JSON.stringify({
             type: "USER_JOIN",
-            sender: displayName,
-            roomId: targetChannelId,
+            displayName,
+            channelId: targetChannelId,
             content: "进入了当前频道",
             userId: currentUser.id,
           } satisfies ChatMessagePayload)
@@ -339,7 +339,7 @@ export function useChatRoom() {
       ...current,
       createTimelineItem({
         role: "me",
-        sender: displayName,
+        displayName,
         text,
         deliveryStatus: "sending",
       }),
@@ -348,8 +348,8 @@ export function useChatRoom() {
     socket.send(
       JSON.stringify({
         type: "USER_CHAT",
-        sender: displayName,
-        roomId: selectedChannelId,
+        displayName,
+        channelId: selectedChannelId,
         content: text,
       } satisfies ChatMessagePayload)
     );

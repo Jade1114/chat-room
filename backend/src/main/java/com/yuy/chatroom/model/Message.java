@@ -16,21 +16,21 @@ import lombok.ToString;
 public class Message {
   private MessageType type;
   private String userId;
-  private String sender;
+  private String displayName;
   private String content;
-  private String roomId;
+  private String channelId;
   private String messageId;
   private Instant sentAt;
 
-  public Message(MessageType type, String sender, String content, String roomId) {
-    this(type, null, sender, content, roomId);
+  public Message(MessageType type, String displayName, String content, String channelId) {
+    this(type, null, displayName, content, channelId);
   }
 
-  public Message(MessageType type, String userId, String sender, String content, String roomId) {
+  public Message(MessageType type, String userId, String displayName, String content, String channelId) {
     this.type = type;
     this.userId = userId;
-    this.sender = sender;
+    this.displayName = displayName;
     this.content = content;
-    this.roomId = roomId;
+    this.channelId = channelId;
   }
 }

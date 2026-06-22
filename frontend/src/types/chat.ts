@@ -10,8 +10,8 @@ export type ChannelType = "SCHOOL" | "DEPARTMENT" | "CLASS" | "COURSE";
 
 export interface ChatMessagePayload {
   type: MessageType;
-  sender: string;
-  roomId: string;
+  displayName: string;
+  channelId: string;
   content: string;
   messageId?: string;
   sentAt?: string;
@@ -25,7 +25,7 @@ export interface TimelineItem {
   role: "system" | "me" | "user";
   text: string;
   time: string;
-  sender?: string;
+  displayName?: string;
   messageId?: string;
   deliveryStatus?: DeliveryStatus;
 }

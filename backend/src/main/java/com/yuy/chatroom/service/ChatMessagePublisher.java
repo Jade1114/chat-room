@@ -33,12 +33,12 @@ public class ChatMessagePublisher {
             return false;
         }
 
-        String roomId = message.getRoomId();
-        if (roomId == null) {
+        String channelId = message.getChannelId();
+        if (channelId == null) {
             return false;
         }
 
-        int bucketIndex = resolveBucketIndex(roomId);
+        int bucketIndex = resolveBucketIndex(channelId);
 
         if (!declaredBuckets.contains(bucketIndex)) {
             if (!declareBucketResources(bucketIndex)) {
@@ -51,9 +51,9 @@ public class ChatMessagePublisher {
 
         try {
             rabbitTemplate.convertAndSend(EXCHANGE_NAME, key, message);
-            log.info("RabbitMQ 发布成功 roomId={} bucketIndex={} message={}", roomId, bucketIndex, message);
+            log.info("RabbitMQ 发布成功 channelId={} bucketIndex={} message={}", channelId, bucketIndex, message);
         } catch (AmqpException e) {
-            log.warn("RabbitMQ 发布失败 roomId={} bucketIndex={} message={}", roomId, bucketIndex, message);
+            log.warn("RabbitMQ 发布失败 channelId={} bucketIndex={} message={}", channelId, bucketIndex, message);
             return false;
         }
 
@@ -64,8 +64,8 @@ public class ChatMessagePublisher {
         return true;
     }
 
-    private int resolveBucketIndex(String roomId) {
-        return Math.abs(roomId.hashCode()) % BUCKET_COUNT;
+    private int resolveBucketIndex(String channelId) {
+        return Math.abs(channelId.hashCode()) % BUCKET_COUNT;
     }
 
     private String buildBucketRoutingKey(int bucketIndex) {

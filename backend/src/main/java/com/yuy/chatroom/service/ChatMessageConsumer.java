@@ -48,14 +48,15 @@ public class ChatMessageConsumer {
             return false;
         }
 
-        log.info("RabbitMQ 消费成功 roomId={} message={}", message.getRoomId(), message);
+        String channelId = message.getChannelId();
+        log.info("RabbitMQ 消费成功 channelId={} message={}", channelId, message);
 
         try {
             Set<WebSocketSession> broadcastMessage = broadcastService.broadcastMessage(message,
-                    sessionManager.getSessionsByRoomId(message.getRoomId()));
+                    sessionManager.getSessionsByChannelId(channelId));
             sessionManager.removeSessions(broadcastMessage);
         } catch (Exception e) {
-            log.warn("广播过程异常 消息：{} 房间号：{}", message, message.getRoomId());
+            log.warn("广播过程异常 消息：{} 频道ID：{}", message, channelId);
             return false;
         }
 

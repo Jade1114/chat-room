@@ -14,5 +14,5 @@ import lombok.ToString;
 public class UserSessionInfo {
   private String userId;
   private String displayName;
-  private String roomId;
+  private String channelId;
 }

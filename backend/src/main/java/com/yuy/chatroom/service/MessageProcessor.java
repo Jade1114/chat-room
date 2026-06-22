@@ -15,9 +15,9 @@ import com.yuy.chatroom.model.UserSessionInfo;
 
 @Service
 public class MessageProcessor {
-  private final static int USERNAME_MAX_LENGTH = 20;
+  private final static int DISPLAY_NAME_MAX_LENGTH = 20;
   private final static int MESSAGE_MAX_LENGTH = 100;
-  private final static int ROOMID_MAX_LENGTH = 10;
+  private final static int CHANNEL_ID_MAX_LENGTH = 10;
   private final static Logger log = LoggerFactory.getLogger(MessageProcessor.class);
 
   private final SessionManager sessionManager;
@@ -48,8 +48,8 @@ public class MessageProcessor {
         if (isValidChatMessage(message, session)) {
           UserSessionInfo info = sessionManager.getSessionInfo(session);
           message.setUserId(info.getUserId());
-          message.setSender(info.getDisplayName());
-          message.setRoomId(info.getRoomId());
+          message.setDisplayName(info.getDisplayName());
+          message.setChannelId(info.getChannelId());
           message.setMessageId(UUID.randomUUID().toString());
           message.setSentAt(Instant.now());
           if (chatMessagePublisher.publishMessage(message)) {
@@ -64,17 +64,18 @@ public class MessageProcessor {
         if (isValidJoinMessage(message)) {
           CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
 
-          if (user == null || !campusDirectoryService.canAccess(user.getId(), message.getRoomId())) {
-            log.warn("错误：用户无权访问频道, userId={},roomId={}", message.getUserId(), message.getRoomId());
+          String channelId = message.getChannelId();
+          if (user == null || !campusDirectoryService.canAccess(user.getId(), channelId)) {
+            log.warn("错误：用户无权访问频道, userId={}, channelId={}", message.getUserId(), channelId);
             return;
           }
 
           message.setUserId(user.getId());
-          message.setSender(user.getDisplayName());
+          message.setDisplayName(user.getDisplayName());
 
-          if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), message.getRoomId())) {
-            channelPresenceService.join(message.getRoomId(), user.getId(), session.getId());
-            log.info("{}, {} Redis 在线状态添加成功", user.getDisplayName(), message.getRoomId());
+          if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), channelId)) {
+            channelPresenceService.join(channelId, user.getId(), session.getId());
+            log.info("{}, {} Redis 在线状态添加成功", user.getDisplayName(), channelId);
             broadcastDispatcher.submit(message);
           } else {
             log.warn("错误：Session 注册失败");
@@ -95,9 +96,9 @@ public class MessageProcessor {
     UserSessionInfo info = sessionManager.removeSession(session);
     if (info != null) {
       Message message = new Message(MessageType.USER_LEAVE, info.getUserId(), info.getDisplayName(), "离开了当前频道",
-          info.getRoomId());
-      channelPresenceService.leave(info.getRoomId(), info.getUserId(), session.getId());
-      log.info("{}, {} Redis 在线状态删除成功", message.getSender(), message.getRoomId());
+          info.getChannelId());
+      channelPresenceService.leave(info.getChannelId(), info.getUserId(), session.getId());
+      log.info("{}, {} Redis 在线状态删除成功", message.getDisplayName(), info.getChannelId());
       broadcastDispatcher.submit(message);
     } else {
       log.warn("{} 未绑定用户信息但正在断开连接", session.getId());
@@ -105,7 +106,7 @@ public class MessageProcessor {
   }
 
   private void sendAck(WebSocketSession session, Message message, String status) {
-    Message ack = new Message(MessageType.MESSAGE_ACK, "system", status, message.getRoomId());
+    Message ack = new Message(MessageType.MESSAGE_ACK, "system", status, message.getChannelId());
     ack.setMessageId(message.getMessageId());
     ack.setSentAt(message.getSentAt());
     if (!broadcastService.sendMessage(session, ack)) {
@@ -120,16 +121,16 @@ public class MessageProcessor {
       return false;
     }
 
-    String name = message.getSender();
-    if (name == null || name.trim().isEmpty() || name.matches(".*\\s.*") || name.length() > USERNAME_MAX_LENGTH) {
-      log.warn("错误：用户名不合规");
+    String displayName = message.getDisplayName();
+    if (displayName == null || displayName.trim().isEmpty() || displayName.matches(".*\s.*") || displayName.length() > DISPLAY_NAME_MAX_LENGTH) {
+      log.warn("错误：展示名称不合规");
       return false;
     }
 
-    String roomId = message.getRoomId();
-    if (roomId == null || roomId.trim().isEmpty() || roomId.matches(".*\\s.*")
-        || roomId.length() > ROOMID_MAX_LENGTH) {
-      log.warn("错误：房间名不合规");
+    String channelId = message.getChannelId();
+    if (channelId == null || channelId.trim().isEmpty() || channelId.matches(".*\s.*")
+        || channelId.length() > CHANNEL_ID_MAX_LENGTH) {
+      log.warn("错误：频道 ID 不合规");
       return false;
     }
 

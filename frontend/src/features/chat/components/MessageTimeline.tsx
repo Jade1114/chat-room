@@ -37,11 +37,11 @@ export function MessageTimeline({ channel, connected, items }: MessageTimelinePr
         ) : (
           <article key={item.id} className={`group flex gap-3 rounded-xl px-3 py-3 transition hover:bg-hover ${item.role === 'me' ? 'bg-accent-wash' : ''}`}>
             <div className={`grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold ${item.role === 'me' ? 'bg-accent text-on-accent' : 'bg-info-soft text-info'}`}>
-              {(item.sender || '匿').slice(0, 1).toUpperCase()}
+              {(item.displayName || '匿').slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
-                <span className={`text-sm font-semibold ${item.role === 'me' ? 'text-accent-strong' : 'text-primary'}`}>{item.sender || '匿名用户'}</span>
+                <span className={`text-sm font-semibold ${item.role === 'me' ? 'text-accent-strong' : 'text-primary'}`}>{item.displayName || '匿名用户'}</span>
                 <span className="text-[10px] text-faint">{item.time}</span>
               </div>
               <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-primary">{item.text}</p>

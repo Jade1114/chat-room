@@ -13,12 +13,12 @@ import com.yuy.chatroom.model.UserSessionInfo;
 @Service
 public class SessionManager {
   private final ConcurrentHashMap<WebSocketSession, UserSessionInfo> sessionToUserMap = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, Set<WebSocketSession>> roomToSessionsMap = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Set<WebSocketSession>> channelToSessionsMap = new ConcurrentHashMap<>();
 
   private final static Logger log = LoggerFactory.getLogger(SessionManager.class);
 
-  public Set<WebSocketSession> getSessionsByRoomId(String roomId) {
-    return roomToSessionsMap.getOrDefault(roomId, Set.of());
+  public Set<WebSocketSession> getSessionsByChannelId(String channelId) {
+    return channelToSessionsMap.getOrDefault(channelId, Set.of());
   }
 
   public UserSessionInfo getSessionInfo(WebSocketSession session) {
@@ -32,12 +32,12 @@ public class SessionManager {
       return null;
     }
 
-    Set<WebSocketSession> roomSessions = roomToSessionsMap.get(info.getRoomId());
+    Set<WebSocketSession> channelSessions = channelToSessionsMap.get(info.getChannelId());
 
-    if (roomSessions != null) {
-      roomSessions.remove(session);
-      if (roomSessions.isEmpty()) {
-        roomToSessionsMap.remove(info.getRoomId());
+    if (channelSessions != null) {
+      channelSessions.remove(session);
+      if (channelSessions.isEmpty()) {
+        channelToSessionsMap.remove(info.getChannelId());
       }
     }
     return info;
@@ -49,18 +49,18 @@ public class SessionManager {
     }
   }
 
-  public synchronized boolean tryRegister(WebSocketSession session, String userId, String displayName, String roomId) {
+  public synchronized boolean tryRegister(WebSocketSession session, String userId, String displayName, String channelId) {
 
     if (sessionToUserMap.containsKey(session)) {
       log.warn("当前Session: {} 已被使用", session.getId());
       return false;
     }
 
-    Set<WebSocketSession> roomSessions = roomToSessionsMap.computeIfAbsent(roomId,
+    Set<WebSocketSession> channelSessions = channelToSessionsMap.computeIfAbsent(channelId,
         key -> ConcurrentHashMap.newKeySet());
 
-    sessionToUserMap.put(session, new UserSessionInfo(userId, displayName, roomId));
-    roomSessions.add(session);
+    sessionToUserMap.put(session, new UserSessionInfo(userId, displayName, channelId));
+    channelSessions.add(session);
     return true;
   }
 
