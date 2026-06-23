@@ -101,7 +101,8 @@ export function useChatRoom() {
 
   const pushChat = useCallback(
     (message: Partial<ChatMessagePayload>) => {
-      if (message.channelId && message.channelId !== selectedChannelId) {
+      const currentChannelId = selectedChannelRef.current;
+      if (message.channelId && message.channelId !== currentChannelId) {
         return;
       }
 
@@ -140,7 +141,7 @@ export function useChatRoom() {
         return [...current, newItem];
       });
     },
-    [displayName, selectedChannelId, setTimeline]
+    [displayName, setTimeline]
   );
 
   const refreshChannelDetail = useCallback(
