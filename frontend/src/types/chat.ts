@@ -6,7 +6,8 @@ export type MessageType =
   | "USER_CHAT"
   | "MESSAGE_ACK"
   | "WORKSPACE_JOIN"
-  | "CHANNEL_VIEW_CHANGED";
+  | "CHANNEL_VIEW_CHANGED"
+  | "UNREAD_CHANGED";
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN";
 export type ChannelType = "SCHOOL" | "DEPARTMENT" | "CLASS" | "COURSE";
 
@@ -49,6 +50,7 @@ export interface Channel {
   scopeId: string;
   description: string;
   readonly: boolean;
+  unreadCount: number;
 }
 
 export interface ChannelDetail extends Channel {

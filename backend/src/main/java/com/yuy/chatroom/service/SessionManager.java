@@ -2,6 +2,7 @@ package com.yuy.chatroom.service;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,21 @@ public class SessionManager {
 
   public Set<WebSocketSession> getSessionsByChannelId(String channelId) {
     return channelToViewingSessionsMap.getOrDefault(channelId, Set.of());
+  }
+
+  public Set<String> getViewingUserIdsByChannelId(String channelId) {
+    return getSessionsByChannelId(channelId).stream()
+        .map(sessionToUserMap::get)
+        .filter(info -> info != null)
+        .map(UserSessionInfo::getUserId)
+        .collect(Collectors.toSet());
+  }
+
+  public Set<WebSocketSession> getSessionsByUserId(String userId) {
+    return sessionToUserMap.entrySet().stream()
+        .filter(entry -> entry.getValue() != null && entry.getValue().getUserId().equals(userId))
+        .map(entry -> entry.getKey())
+        .collect(Collectors.toSet());
   }
 
   public UserSessionInfo getSessionInfo(WebSocketSession session) {

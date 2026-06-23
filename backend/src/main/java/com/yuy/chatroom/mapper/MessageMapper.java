@@ -39,4 +39,14 @@ public interface MessageMapper {
       @Param("channelId") String channelId,
       @Param("before") Instant before,
       @Param("limit") int limit);
+
+  @Select("""
+      SELECT COUNT(*)
+      FROM chat_message
+      WHERE channel_id = #{channelId}
+        AND sent_at > #{lastReadAt}
+      """)
+  long countAfter(
+      @Param("channelId") String channelId,
+      @Param("lastReadAt") Instant lastReadAt);
 }

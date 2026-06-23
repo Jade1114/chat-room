@@ -16,6 +16,7 @@ import com.yuy.chatroom.model.CurrentUser;
 import com.yuy.chatroom.model.Message;
 import com.yuy.chatroom.service.CampusDirectoryService;
 import com.yuy.chatroom.service.MessageHistoryService;
+import com.yuy.chatroom.service.UnreadMessageService;
 
 import lombok.AllArgsConstructor;
 
@@ -24,6 +25,7 @@ import lombok.AllArgsConstructor;
 public class CampusController {
   private final CampusDirectoryService campusDirectoryService;
   private final MessageHistoryService messageHistoryService;
+  private final UnreadMessageService unreadMessageService;
 
   @GetMapping("/api/me")
   public CurrentUser getCurrentUser(@RequestParam(required = false) String userId) {
@@ -37,7 +39,16 @@ public class CampusController {
 
   @GetMapping("/api/channels")
   public List<Channel> getChannels(@RequestParam(required = false) String userId) {
-    return campusDirectoryService.getAccessibleChannels(userId);
+    List<Channel> channels = campusDirectoryService.getAccessibleChannels(userId);
+    CurrentUser user = campusDirectoryService.getCurrentUser(userId);
+    if (user == null) {
+      return channels;
+    }
+
+    for (Channel channel : channels) {
+      channel.setUnreadCount(unreadMessageService.getUnreadCount(user.getId(), channel.getId()));
+    }
+    return channels;
   }
 
   @GetMapping("/api/channels/{channelId}")

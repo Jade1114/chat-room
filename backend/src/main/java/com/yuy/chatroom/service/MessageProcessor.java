@@ -27,11 +27,12 @@ public class MessageProcessor {
   private final ChatMessagePublisher chatMessagePublisher;
   private final MessageHistoryService messageHistoryService;
   private final CampusDirectoryService campusDirectoryService;
+  private final UnreadMessageService unreadMessageService;
 
   public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
       BroadcastService broadcastService, ChannelPresenceService channelPresenceService,
       ChatMessagePublisher chatMessagePublisher, MessageHistoryService messageHistoryService,
-      CampusDirectoryService campusDirectoryService) {
+      CampusDirectoryService campusDirectoryService, UnreadMessageService unreadMessageService) {
     this.sessionManager = sessionManager;
     this.broadcastDispatcher = broadcastDispatcher;
     this.broadcastService = broadcastService;
@@ -39,6 +40,7 @@ public class MessageProcessor {
     this.chatMessagePublisher = chatMessagePublisher;
     this.messageHistoryService = messageHistoryService;
     this.campusDirectoryService = campusDirectoryService;
+    this.unreadMessageService = unreadMessageService;
   }
 
   public void processMessage(WebSocketSession session, Message message) {
@@ -146,6 +148,7 @@ public class MessageProcessor {
 
     if (sessionManager.updateCurrentChannel(session, channelId)) {
       channelPresenceService.setCurrentChannel(session.getId(), channelId);
+      unreadMessageService.clearUnread(info.getUserId(), channelId);
       log.info("{}, 当前查看频道更新为 {}", info.getDisplayName(), channelId);
     }
   }

@@ -1,6 +1,4 @@
-import { useAtomValue } from 'jotai';
 import { Icon } from '../../../components/Icon';
-import { unreadChannelsAtom } from '../../../state/chatAtoms';
 import type { Channel, ChannelType } from '../../../types/chat';
 
 const typeLabel: Record<ChannelType, string> = {
@@ -25,8 +23,6 @@ interface ChannelSidebarProps {
 }
 
 export function ChannelSidebar({ activeChannelId, error, groups, loading, onPickChannel, onRefresh }: ChannelSidebarProps) {
-  const unreadChannels = useAtomValue(unreadChannelsAtom);
-
   return (
     <aside className="flex min-h-screen flex-col border-r border-divider bg-sidebar max-md:hidden">
       <section className="border-b border-divider p-3">
@@ -58,8 +54,10 @@ export function ChannelSidebar({ activeChannelId, error, groups, loading, onPick
                   >
                     <span className={`text-lg font-light ${channel.id === activeChannelId ? 'text-accent' : 'text-faint group-hover:text-muted'}`}>#</span>
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">{channel.name}</span>
-                    {unreadChannels.includes(channel.id) && channel.id !== activeChannelId && (
-                      <span className="size-2 rounded-full bg-danger" />
+                    {channel.unreadCount > 0 && channel.id !== activeChannelId && (
+                      <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                        {channel.unreadCount > 99 ? '99+' : channel.unreadCount}
+                      </span>
                     )}
                     {channel.id === activeChannelId && <span className="size-1.5 rounded-full bg-accent" />}
                   </button>

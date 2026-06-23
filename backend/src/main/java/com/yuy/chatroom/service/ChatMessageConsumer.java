@@ -9,18 +9,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.yuy.chatroom.model.Message;
+import com.yuy.chatroom.model.MessageType;
 
 @Service
 public class ChatMessageConsumer {
     private final BroadcastService broadcastService;
     private final SessionManager sessionManager;
+    private final UnreadMessageService unreadMessageService;
 
     private final Logger log = LoggerFactory.getLogger(ChatMessageConsumer.class);
 
     public ChatMessageConsumer(BroadcastService broadcastService,
-            SessionManager sessionManager) {
+            SessionManager sessionManager,
+            UnreadMessageService unreadMessageService) {
         this.broadcastService = broadcastService;
         this.sessionManager = sessionManager;
+        this.unreadMessageService = unreadMessageService;
     }
 
     @RabbitListener(queues = "chat.queue.0", containerFactory = "rabbitListenerContainerFactory")
@@ -55,6 +59,14 @@ public class ChatMessageConsumer {
             Set<WebSocketSession> broadcastMessage = broadcastService.broadcastMessage(message,
                     sessionManager.getSessionsByChannelId(channelId));
             sessionManager.removeSessions(broadcastMessage);
+
+            Set<String> unreadUserIds = unreadMessageService.incrementUnreadForMessage(message);
+            for (String userId : unreadUserIds) {
+                Message unreadMessage = new Message(MessageType.UNREAD_CHANGED, "system", "1", channelId);
+                Set<WebSocketSession> failedSessions = broadcastService.broadcastMessage(unreadMessage,
+                        sessionManager.getSessionsByUserId(userId));
+                sessionManager.removeSessions(failedSessions);
+            }
         } catch (Exception e) {
             log.warn("广播过程异常 消息：{} 频道ID：{}", message, channelId);
             return false;

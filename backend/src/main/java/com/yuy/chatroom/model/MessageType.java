@@ -6,5 +6,6 @@ public enum MessageType {
     USER_LEAVE,
     MESSAGE_ACK,
     WORKSPACE_JOIN,
-    CHANNEL_VIEW_CHANGED
+    CHANNEL_VIEW_CHANGED,
+    UNREAD_CHANGED
 }

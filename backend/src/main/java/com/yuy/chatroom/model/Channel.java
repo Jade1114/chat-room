@@ -20,4 +20,6 @@ public class Channel {
 
     @JsonProperty("readonly")
     private boolean isReadonly;
+
+    private long unreadCount;
 }

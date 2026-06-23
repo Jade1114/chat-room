@@ -209,7 +209,10 @@ export function useChatRoom() {
   );
 
   const refreshChannels = useCallback(
-    async (targetUserId = currentUser?.id || "") => {
+    async (
+      targetUserId = currentUser?.id || "",
+      preferredChannelId = selectedChannelRef.current
+    ) => {
       if (!targetUserId) {
         return "";
       }
@@ -219,9 +222,9 @@ export function useChatRoom() {
       try {
         const nextChannels = await fetchChannels(targetUserId);
         const nextChannelId = nextChannels.some(
-          (channel) => channel.id === selectedChannelId
+          (channel) => channel.id === preferredChannelId
         )
-          ? selectedChannelId
+          ? preferredChannelId
           : nextChannels[0]?.id || "";
         setChannels(nextChannels);
         setChannelId(nextChannelId);
@@ -236,7 +239,6 @@ export function useChatRoom() {
     },
     [
       currentUser?.id,
-      selectedChannelId,
       setChannelId,
       setChannels,
       setLoadingChannels,
@@ -291,6 +293,18 @@ export function useChatRoom() {
             );
           });
           break;
+        case "UNREAD_CHANGED":
+          if (message.channelId && message.channelId !== selectedChannelRef.current) {
+            const increment = Number.parseInt(message.content || "1", 10) || 1;
+            setChannels((current) =>
+              current.map((channel) =>
+                channel.id === message.channelId
+                  ? { ...channel, unreadCount: channel.unreadCount + increment }
+                  : channel
+              )
+            );
+          }
+          break;
         case "USER_JOIN":
         case "USER_LEAVE":
           break;
@@ -330,8 +344,13 @@ export function useChatRoom() {
         } satisfies ChatMessagePayload)
       );
       refreshChannelDetail(targetChannelId, currentUser.id);
+      setChannels((current) =>
+        current.map((channel) =>
+          channel.id === targetChannelId ? { ...channel, unreadCount: 0 } : channel
+        )
+      );
     },
-    [currentUser, displayName, refreshChannelDetail]
+    [currentUser, displayName, refreshChannelDetail, setChannels]
   );
 
   const connectWorkspace = useCallback(() => {
@@ -481,6 +500,7 @@ export function useChatRoom() {
       if (targetChannelId === selectedChannelId) {
         return;
       }
+      selectedChannelRef.current = targetChannelId;
       setTimeline((current) => {
         if (selectedChannelId) {
           channelTimelinesRef.current.set(selectedChannelId, current);
@@ -511,9 +531,12 @@ export function useChatRoom() {
 
     refreshLobby();
     connectWorkspace();
-    const pollingTimer = window.setInterval(() => refreshChannelDetail(), 5000);
+    const pollingTimer = window.setInterval(
+      () => refreshChannelDetail(selectedChannelRef.current, currentUser.id),
+      5000
+    );
     return () => window.clearInterval(pollingTimer);
-  }, [connectWorkspace, currentUser, refreshChannelDetail, refreshLobby]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     selectedChannelRef.current = selectedChannelId;
