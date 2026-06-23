@@ -9,14 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yuy.chatroom.dto.AdminUserDto;
 import com.yuy.chatroom.dto.AssignChannelRequest;
-import com.yuy.chatroom.dto.UpdateOrgRequest;
 import com.yuy.chatroom.mapper.ChannelMapper;
 import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.Channel;
@@ -124,25 +122,6 @@ public class AdminController {
     }
 
     userMapper.deleteUserCourse(req.getUserId(), channel.getScopeId());
-    return ResponseEntity.ok(Map.of("ok", true));
-  }
-
-  @PutMapping("/users/org")
-  public ResponseEntity<?> updateOrg(@RequestBody UpdateOrgRequest req,
-      HttpServletRequest request) {
-    if (!isAdmin(request)) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "仅管理员可访问"));
-    }
-
-    if (isBlank(req.getUserId())) {
-      return ResponseEntity.badRequest().body(Map.of("error", "userId 不能为空"));
-    }
-
-    if (userMapper.findById(req.getUserId()) == null) {
-      return ResponseEntity.badRequest().body(Map.of("error", "用户不存在"));
-    }
-
-    userMapper.updateOrg(req.getUserId(), req.getSchoolId(), req.getDepartmentId(), req.getClassId());
     return ResponseEntity.ok(Map.of("ok", true));
   }
 

@@ -12,9 +12,6 @@ interface AdminUser {
   id: string;
   displayName: string;
   role: string;
-  schoolId: string | null;
-  departmentId: string | null;
-  classId: string | null;
   assignedChannels: AssignedChannel[];
 }
 
@@ -32,11 +29,6 @@ export function AdminPage() {
   const [error, setError] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [actionError, setActionError] = useState('');
-  const [orgSchoolId, setOrgSchoolId] = useState('');
-  const [orgDeptId, setOrgDeptId] = useState('');
-  const [orgClassId, setOrgClassId] = useState('');
-  const [orgSaving, setOrgSaving] = useState(false);
-  const [orgSaved, setOrgSaved] = useState(false);
 
   function buildHeaders(): Record<string, string> {
     const token = getToken();
@@ -66,13 +58,6 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  useEffect(() => {
-    const u = users.find(u => u.id === selectedUserId);
-    setOrgSchoolId(u?.schoolId || '');
-    setOrgDeptId(u?.departmentId || '');
-    setOrgClassId(u?.classId || '');
-  }, [selectedUserId, users]);
 
   async function assign(channelId: string) {
     if (!selectedUserId) return;
@@ -105,28 +90,6 @@ export function AdminPage() {
     }
   }
 
-  async function saveOrg() {
-    if (!selectedUserId) return;
-    setOrgSaving(true);
-    setOrgSaved(false);
-    setActionError('');
-    try {
-      const h = buildHeaders();
-      const res = await fetch('/api/admin/users/org', {
-        method: 'PUT', headers: h,
-        body: JSON.stringify({ userId: selectedUserId, schoolId: orgSchoolId || null, departmentId: orgDeptId || null, classId: orgClassId || null }),
-      });
-      if (!res.ok) throw new Error('保存失败');
-      setOrgSaved(true);
-      setTimeout(() => setOrgSaved(false), 2000);
-      await loadData();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : '保存失败');
-    } finally {
-      setOrgSaving(false);
-    }
-  }
-
   const selectedUser = users.find(u => u.id === selectedUserId);
 
   if (currentUser?.role !== 'ADMIN') {
@@ -142,9 +105,9 @@ export function AdminPage() {
       <div className="mx-auto max-w-6xl">
         <section className="rounded-[2rem] border border-divider bg-elevated p-7 shadow-panel">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-strong">Admin</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-strong">用户频道管理</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-strong">用户课程管理</h1>
           <p className="mt-3 text-sm leading-7 text-muted">
-            为学生和教师分配课程频道的访问权限。分配后，用户即可在侧边栏看到对应课程频道。
+            当前阶段所有注册用户默认进入同一个公开组织。管理员只需要为学生和教师分配课程频道访问权限。
           </p>
 
           {error && (
@@ -241,53 +204,6 @@ export function AdminPage() {
                       {courses.filter(c => !selectedUser.assignedChannels.some(ch => ch.channelId === c.id)).length === 0 && (
                         <p className="px-3 py-4 text-xs text-muted">所有课程已分配</p>
                       )}
-                    </div>
-
-                    {/* Organization assignment */}
-                    <h3 className="mt-5 text-xs font-semibold text-muted">组织归属</h3>
-                    <div className="mt-2 grid gap-2">
-                      <label className="grid gap-1">
-                        <span className="text-[10px] text-faint">学校 ID（如 school-1）</span>
-                        <input
-                          type="text"
-                          value={orgSchoolId}
-                          onChange={e => setOrgSchoolId(e.target.value)}
-                          placeholder="school-1"
-                          className="rounded-lg border border-divider bg-elevated px-3 py-2 text-xs text-primary outline-none focus:border-accent"
-                        />
-                      </label>
-                      <label className="grid gap-1">
-                        <span className="text-[10px] text-faint">院系 ID（如 dept-cs）</span>
-                        <input
-                          type="text"
-                          value={orgDeptId}
-                          onChange={e => setOrgDeptId(e.target.value)}
-                          placeholder="dept-cs"
-                          className="rounded-lg border border-divider bg-elevated px-3 py-2 text-xs text-primary outline-none focus:border-accent"
-                        />
-                      </label>
-                      <label className="grid gap-1">
-                        <span className="text-[10px] text-faint">班级 ID（如 class-cs-2401）</span>
-                        <input
-                          type="text"
-                          value={orgClassId}
-                          onChange={e => setOrgClassId(e.target.value)}
-                          placeholder="class-cs-2401"
-                          className="rounded-lg border border-divider bg-elevated px-3 py-2 text-xs text-primary outline-none focus:border-accent"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={saveOrg}
-                        disabled={orgSaving}
-                        className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-                          orgSaved
-                            ? 'bg-green-500 text-white'
-                            : 'bg-accent text-on-accent hover:bg-accent-hover'
-                        } disabled:opacity-40`}
-                      >
-                        {orgSaving ? '保存中...' : orgSaved ? '已保存 ✓' : '保存组织'}
-                      </button>
                     </div>
                   </>
                 ) : (

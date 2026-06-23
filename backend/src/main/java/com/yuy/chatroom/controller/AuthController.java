@@ -34,6 +34,7 @@ public class AuthController {
   private final JwtTokenProvider jwtTokenProvider;
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
   private final Logger log = LoggerFactory.getLogger(AuthController.class);
+  private static final String DEFAULT_SCHOOL_ID = "school-1";
 
   public AuthController(UserMapper userMapper, JwtTokenProvider jwtTokenProvider) {
     this.userMapper = userMapper;
@@ -53,7 +54,10 @@ public class AuthController {
     String userId = "u-" + UUID.randomUUID().toString().substring(0, 8);
     String hash = passwordEncoder.encode(request.getPassword());
 
-    userMapper.insertUser(userId, request.getUsername(), request.getDisplayName(), hash, "STUDENT");
+    // 当前阶段不启用多组织/多高校选择。新注册用户默认进入同一个公开组织。
+    // 后续多组织邀请 / 自我管理模式上线后，再把这里改为邀请或组织选择链路。
+    userMapper.insertUser(userId, request.getUsername(), request.getDisplayName(), hash, "STUDENT",
+        DEFAULT_SCHOOL_ID, null, null);
 
     String token = jwtTokenProvider.createToken(userId, "STUDENT", request.getDisplayName());
 

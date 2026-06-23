@@ -29,11 +29,12 @@ public interface UserMapper {
   @Select("SELECT id, display_name, role, password_hash FROM campus_user WHERE username = #{username}")
   Map<String, Object> findAuthByUsername(String username);
 
-  @Insert("INSERT INTO campus_user (id, username, display_name, password_hash, role) " +
-          "VALUES (#{id}, #{username}, #{displayName}, #{passwordHash}, #{role})")
+  @Insert("INSERT INTO campus_user (id, username, display_name, password_hash, role, school_id, department_id, class_id) " +
+          "VALUES (#{id}, #{username}, #{displayName}, #{passwordHash}, #{role}, #{schoolId}, #{departmentId}, #{classId})")
   void insertUser(@Param("id") String id, @Param("username") String username,
                   @Param("displayName") String displayName, @Param("passwordHash") String passwordHash,
-                  @Param("role") String role);
+                  @Param("role") String role, @Param("schoolId") String schoolId,
+                  @Param("departmentId") String departmentId, @Param("classId") String classId);
 
   @Insert("INSERT INTO user_course (user_id, course_id) VALUES (#{userId}, #{courseId})")
   void insertUserCourse(@Param("userId") String userId, @Param("courseId") String courseId);
