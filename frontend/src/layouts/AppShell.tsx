@@ -15,11 +15,16 @@ const roleLabel: Record<UserRole, string> = {
 
 interface NavigationItem {
   label: string;
-  to: '/messages' | '/assignments' | '/teacher-communication' | '/clubs';
+  to: '/dashboard' | '/messages' | '/assignments' | '/teacher-communication' | '/clubs';
   icon: ReactNode;
 }
 
 const navigationItems: NavigationItem[] = [
+  {
+    label: '首页',
+    to: '/dashboard',
+    icon: <><path d="M3 11 12 3l9 8" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" /></>
+  },
   {
     label: '消息',
     to: '/messages',

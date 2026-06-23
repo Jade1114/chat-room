@@ -81,7 +81,7 @@ export function LoginPage() {
     setDraft('');
     setStatus('idle');
     setLobbyError('');
-    navigate({ to: '/messages' });
+    navigate({ to: '/dashboard' });
   }
 
   return (

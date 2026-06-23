@@ -4,6 +4,7 @@ import { ChatWorkspace } from './features/chat/ChatWorkspace';
 import { ClubsPrototype } from './features/clubs/ClubsPrototype';
 import { TeacherCommunicationPrototype } from './features/communication/TeacherCommunicationPrototype';
 import { LoginPage } from './features/workspace/LoginPage';
+import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -28,6 +29,12 @@ const messagesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/messages',
   component: ChatWorkspace
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard',
+  component: WorkspaceDashboard
 });
 
 const assignmentsRoute = createRoute({
@@ -67,6 +74,7 @@ const legacyMembersRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  dashboardRoute,
   messagesRoute,
   assignmentsRoute,
   teacherCommunicationRoute,

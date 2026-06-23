@@ -226,7 +226,7 @@ export function useChatRoom() {
           (channel) => channel.id === preferredChannelId
         )
           ? preferredChannelId
-          : nextChannels[0]?.id || "";
+          : "";
         setChannels(nextChannels);
         setChannelId(nextChannelId);
         return nextChannelId;
@@ -252,12 +252,13 @@ export function useChatRoom() {
       return;
     }
 
-    const nextChannelId = await refreshChannels(currentUser.id);
+    const preferredChannelId = selectedChannelRef.current || selectedChannelId;
+    const nextChannelId = await refreshChannels(currentUser.id, preferredChannelId);
     await Promise.all([
       refreshChannelDetail(nextChannelId, currentUser.id),
       loadRecentMessages(nextChannelId, currentUser.id),
     ]);
-  }, [currentUser, loadRecentMessages, refreshChannelDetail, refreshChannels]);
+  }, [currentUser, loadRecentMessages, refreshChannelDetail, refreshChannels, selectedChannelId]);
 
   const handleServerMessage = useCallback(
     (raw: string) => {

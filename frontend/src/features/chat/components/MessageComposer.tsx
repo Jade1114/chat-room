@@ -1,4 +1,5 @@
-import type { KeyboardEvent } from 'react';
+import type { CompositionEvent, KeyboardEvent } from 'react';
+import { useRef } from 'react';
 import { Icon } from '../../../components/Icon';
 
 interface MessageComposerProps {
@@ -11,8 +12,25 @@ interface MessageComposerProps {
 }
 
 export function MessageComposer({ canSend, channelName, connected, draft, onDraftChange, onSend }: MessageComposerProps) {
+  const lastCompositionEndAtRef = useRef(0);
+
+  function handleCompositionEnd(_: CompositionEvent<HTMLTextAreaElement>) {
+    lastCompositionEndAtRef.current = performance.now();
+  }
+
+  function isConfirmingImeSelection(event: KeyboardEvent<HTMLTextAreaElement>) {
+    const nativeEvent = event.nativeEvent;
+    const justEndedComposition = performance.now() - lastCompositionEndAtRef.current < 80;
+
+    return nativeEvent.isComposing || nativeEvent.keyCode === 229 || justEndedComposition;
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      if (isConfirmingImeSelection(event)) {
+        return;
+      }
+
       event.preventDefault();
       onSend();
     }
@@ -26,6 +44,7 @@ export function MessageComposer({ canSend, channelName, connected, draft, onDraf
           maxLength={100}
           disabled={!connected}
           onKeyDown={handleKeyDown}
+          onCompositionEnd={handleCompositionEnd}
           onChange={(event) => onDraftChange(event.target.value)}
           placeholder={connected ? `发送消息到 #${channelName}` : '正在连接频道...'}
           className="min-h-16 w-full resize-none bg-transparent px-3 py-2 text-sm leading-6 text-primary outline-none placeholder:text-faint disabled:cursor-not-allowed disabled:opacity-50"
