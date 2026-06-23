@@ -1,25 +1,22 @@
--- Chat Room: Seed data for campus MVP
--- Run after schema.sql
+-- Docker Compose init: seed data
+-- Keep this file in sync with backend/sql/seed.sql.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE chat_room;
 
--- Users
 INSERT INTO campus_user (id, display_name, role, school_id, department_id, class_id) VALUES
 ('u-stu-1',      'Yuy',   'STUDENT',  'school-1', 'dept-cs',  'class-cs-2401'),
 ('u-stu-2',      'Mina',  'STUDENT',  'school-1', 'dept-cs',  'class-cs-2402'),
 ('u-teacher-1',  'Chen',  'TEACHER',  'school-1', 'dept-cs',  NULL),
 ('u-admin-1',    'Admin', 'ADMIN',    'school-1', NULL,       NULL);
 
--- User-course links
 INSERT INTO user_course (user_id, course_id) VALUES
 ('u-stu-1',      'course-java'),
 ('u-stu-2',      'course-java'),
 ('u-teacher-1',  'course-java'),
 ('u-teacher-1',  'course-websocket');
 
--- Channels
 INSERT INTO campus_channel (id, name, type, scope_id, description, is_readonly) VALUES
 ('ch-school',        '全校大厅',          'SCHOOL',      'school-1',        '星河大学公共频道',                      0),
 ('ch-cs',            '计算机学院',        'DEPARTMENT',  'dept-cs',         '计算机学院公共频道',                    0),

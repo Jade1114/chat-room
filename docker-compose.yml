@@ -1,0 +1,91 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: chat-room-mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_DATABASE: chat_room
+      MYSQL_ROOT_PASSWORD: ${CHAT_ROOM_DB_ROOT_PASSWORD}
+      MYSQL_USER: ${CHAT_ROOM_DB_USERNAME}
+      MYSQL_PASSWORD: ${CHAT_ROOM_DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: chat-room-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: chat-room-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${CHAT_ROOM_RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${CHAT_ROOM_RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:-/}
+    ports:
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: chat-room-backend
+    environment:
+      CHAT_ROOM_DB_URL: jdbc:mysql://mysql:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC
+      CHAT_ROOM_DB_USERNAME: ${CHAT_ROOM_DB_USERNAME}
+      CHAT_ROOM_DB_PASSWORD: ${CHAT_ROOM_DB_PASSWORD}
+      CHAT_ROOM_REDIS_HOST: redis
+      CHAT_ROOM_REDIS_PORT: 6379
+      CHAT_ROOM_REDIS_PASSWORD: ""
+      CHAT_ROOM_RABBITMQ_HOST: rabbitmq
+      CHAT_ROOM_RABBITMQ_PORT: 5672
+      CHAT_ROOM_RABBITMQ_USERNAME: ${CHAT_ROOM_RABBITMQ_USERNAME}
+      CHAT_ROOM_RABBITMQ_PASSWORD: ${CHAT_ROOM_RABBITMQ_PASSWORD}
+      CHAT_ROOM_RABBITMQ_VIRTUAL_HOST: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:-/}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_WS_URL: ""
+    container_name: chat-room-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

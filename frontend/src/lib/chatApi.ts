@@ -1,8 +1,12 @@
 import { apiBaseUrl } from '../config';
 import type { Channel, ChannelDetail, ChatMessagePayload, CurrentUser } from '../types/chat';
 
+function buildApiUrl(path: string) {
+  return new URL(`${apiBaseUrl}${path}`, window.location.origin);
+}
+
 function withUserId(path: string, userId?: string, extraParams?: Record<string, string | number | undefined>) {
-  const url = new URL(`${apiBaseUrl}${path}`);
+  const url = buildApiUrl(path);
   if (userId) {
     url.searchParams.set('userId', userId);
   }
@@ -17,7 +21,7 @@ function withUserId(path: string, userId?: string, extraParams?: Record<string, 
 }
 
 export async function fetchMockUsers(): Promise<CurrentUser[]> {
-  const response = await fetch(`${apiBaseUrl}/api/mock-users`);
+  const response = await fetch(buildApiUrl('/api/mock-users'));
 
   if (!response.ok) {
     throw new Error(`mock users status ${response.status}`);

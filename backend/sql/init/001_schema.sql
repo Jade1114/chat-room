@@ -1,5 +1,5 @@
--- Chat Room: Campus Identity & Channel Schema
--- Run this first, then seed.sql
+-- Docker Compose init: base schema
+-- Keep this file in sync with backend/sql/schema.sql.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -13,7 +13,6 @@ ALTER DATABASE chat_room
 
 USE chat_room;
 
--- campus_user stores user identity and organization membership.
 CREATE TABLE campus_user (
     id              VARCHAR(32)     PRIMARY KEY,
     display_name    VARCHAR(64)     NOT NULL,
@@ -23,7 +22,6 @@ CREATE TABLE campus_user (
     class_id        VARCHAR(32)     NULL
 ) ENGINE=InnoDB;
 
--- user_course links a user to courses they are enrolled in or teach.
 CREATE TABLE user_course (
     user_id     VARCHAR(32) NOT NULL,
     course_id   VARCHAR(32) NOT NULL,
@@ -32,7 +30,6 @@ CREATE TABLE user_course (
         FOREIGN KEY (user_id) REFERENCES campus_user(id)
 ) ENGINE=InnoDB;
 
--- campus_channel stores system-preset channels.
 CREATE TABLE campus_channel (
     id              VARCHAR(32)     PRIMARY KEY,
     name            VARCHAR(64)     NOT NULL,
@@ -42,7 +39,6 @@ CREATE TABLE campus_channel (
     is_readonly     TINYINT(1)      NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
 
--- chat_message is the durable source of truth for channel history.
 CREATE TABLE chat_message (
     message_id      VARCHAR(64)     PRIMARY KEY,
     channel_id      VARCHAR(32)     NOT NULL,
@@ -58,7 +54,6 @@ CREATE TABLE chat_message (
         FOREIGN KEY (user_id) REFERENCES campus_user(id)
 ) ENGINE=InnoDB;
 
--- user_channel_read_state stores durable read markers so Redis unread counts can be rebuilt.
 CREATE TABLE user_channel_read_state (
     user_id          VARCHAR(32)     NOT NULL,
     channel_id       VARCHAR(32)     NOT NULL,
