@@ -3,8 +3,10 @@ import { AssignmentsPrototype } from './features/assignments/AssignmentsPrototyp
 import { ChatWorkspace } from './features/chat/ChatWorkspace';
 import { ClubsPrototype } from './features/clubs/ClubsPrototype';
 import { TeacherCommunicationPrototype } from './features/communication/TeacherCommunicationPrototype';
+import { RegisterPage } from './features/auth/RegisterPage';
 import { LoginPage } from './features/workspace/LoginPage';
 import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
+import { AdminPage } from './features/admin/AdminPage';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -23,6 +25,12 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: LoginPage
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  component: RegisterPage
 });
 
 const messagesRoute = createRoute({
@@ -55,6 +63,12 @@ const clubsRoute = createRoute({
   component: ClubsPrototype
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  component: AdminPage
+});
+
 const legacyDirectMessagesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/direct-messages',
@@ -74,11 +88,13 @@ const legacyMembersRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  registerRoute,
   dashboardRoute,
   messagesRoute,
   assignmentsRoute,
   teacherCommunicationRoute,
   clubsRoute,
+  adminRoute,
   legacyDirectMessagesRoute,
   legacyMembersRoute
 ]);

@@ -1,10 +1,12 @@
 import { useAtomValue } from 'jotai';
+import { useEffect, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { Link, Outlet } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { useTheme } from '../features/theme/useTheme';
-import { LoginPage } from '../features/workspace/LoginPage';
 import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
+import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/chat';
 
 const roleLabel: Record<UserRole, string> = {
@@ -15,7 +17,7 @@ const roleLabel: Record<UserRole, string> = {
 
 interface NavigationItem {
   label: string;
-  to: '/dashboard' | '/messages' | '/assignments' | '/teacher-communication' | '/clubs';
+  to: '/dashboard' | '/messages' | '/assignments' | '/teacher-communication' | '/clubs' | '/admin';
   icon: ReactNode;
 }
 
@@ -49,12 +51,40 @@ const navigationItems: NavigationItem[] = [
 
 export function AppShell() {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
+  const { restoreSession } = useAuth();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    restoreSession().finally(() => {
+      if (!cancelled) setChecking(false);
+    });
+    return () => { cancelled = true; };
+  }, [restoreSession]);
+
+  useEffect(() => {
+    if (!checking && !currentUser) {
+      const publicPaths = ['/login', '/register'];
+      if (!publicPaths.includes(window.location.pathname)) {
+        navigate({ to: '/login', replace: true });
+      }
+    }
+  }, [checking, currentUser, navigate]);
+
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-app flex items-center justify-center text-muted text-sm">
+        加载中...
+      </main>
+    );
+  }
 
   if (!currentUser) {
-    return <LoginPage />;
+    return <Outlet />;
   }
 
   const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
@@ -79,6 +109,16 @@ export function AppShell() {
                 <Icon className="size-[19px]">{item.icon}</Icon>
               </Link>
             ))}
+            {currentUser?.role === 'ADMIN' && (
+              <Link
+                to="/admin"
+                title="管理"
+                className="group relative grid size-10 place-items-center rounded-xl text-faint transition hover:bg-hover hover:text-muted data-[status=active]:bg-accent-soft data-[status=active]:text-accent"
+              >
+                <span className="absolute -left-2 h-5 w-0.5 rounded-r-full bg-accent opacity-0 transition group-data-[status=active]:opacity-100" />
+                <Icon className="size-[19px]"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></Icon>
+              </Link>
+            )}
           </nav>
 
           <button

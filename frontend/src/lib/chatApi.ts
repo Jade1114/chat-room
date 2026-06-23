@@ -1,4 +1,5 @@
 import { apiBaseUrl } from '../config';
+import { getToken } from './authApi';
 import type { Channel, ChannelDetail, ChatMessagePayload, CurrentUser } from '../types/chat';
 
 function buildApiUrl(path: string) {
@@ -20,8 +21,15 @@ function withUserId(path: string, userId?: string, extraParams?: Record<string, 
   return url.toString();
 }
 
+function buildHeaders(): Record<string, string> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return headers;
+}
+
 export async function fetchMockUsers(): Promise<CurrentUser[]> {
-  const response = await fetch(buildApiUrl('/api/mock-users'));
+  const response = await fetch(buildApiUrl('/api/mock-users'), { headers: buildHeaders() });
 
   if (!response.ok) {
     throw new Error(`mock users status ${response.status}`);
@@ -31,7 +39,7 @@ export async function fetchMockUsers(): Promise<CurrentUser[]> {
 }
 
 export async function fetchChannels(userId?: string): Promise<Channel[]> {
-  const response = await fetch(withUserId('/api/channels', userId));
+  const response = await fetch(withUserId('/api/channels', userId), { headers: buildHeaders() });
 
   if (!response.ok) {
     throw new Error(`channels status ${response.status}`);
@@ -41,7 +49,7 @@ export async function fetchChannels(userId?: string): Promise<Channel[]> {
 }
 
 export async function fetchChannelDetail(channelId: string, userId?: string): Promise<ChannelDetail> {
-  const response = await fetch(withUserId(`/api/channels/${encodeURIComponent(channelId)}`, userId));
+  const response = await fetch(withUserId(`/api/channels/${encodeURIComponent(channelId)}`, userId), { headers: buildHeaders() });
 
   if (!response.ok) {
     throw new Error(`channel detail status ${response.status}`);
@@ -59,7 +67,8 @@ export async function fetchChannelMessages(
     withUserId(`/api/channels/${encodeURIComponent(channelId)}/messages`, userId, {
       before: options.before,
       limit: options.limit
-    })
+    }),
+    { headers: buildHeaders() }
   );
 
   if (!response.ok) {

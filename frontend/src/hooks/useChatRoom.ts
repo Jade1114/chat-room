@@ -2,6 +2,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { wsUrl } from "../config";
 import { fetchChannelDetail, fetchChannelMessages, fetchChannels } from "../lib/chatApi";
+import { getToken } from "../lib/authApi";
 import {
   activeChannelDetailAtom,
   canSendAtom,
@@ -375,7 +376,9 @@ export function useChatRoom() {
     }
 
     setStatus("connecting");
-    const socket = new WebSocket(wsUrl);
+    const token = getToken();
+    const wsTarget = token ? `${wsUrl}?token=${encodeURIComponent(token)}` : wsUrl;
+    const socket = new WebSocket(wsTarget);
     socketRef.current = socket;
     socketChannelRef.current = "";
 
