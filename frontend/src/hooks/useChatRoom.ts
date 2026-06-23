@@ -337,7 +337,6 @@ export function useChatRoom() {
         }
 
         setStatus("connected");
-        pushSystem(`已进入 ${targetChannelId}`);
         socket.send(
           JSON.stringify({
             type: "USER_JOIN",
