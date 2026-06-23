@@ -13,7 +13,6 @@ INSERT INTO campus_user (id, display_name, role, school_id, department_id, class
 -- User-course links
 INSERT INTO user_course (user_id, course_id) VALUES
 ('u-stu-1',      'course-java'),
-('u-stu-1',      'course-websocket'),
 ('u-stu-2',      'course-java'),
 ('u-teacher-1',  'course-java'),
 ('u-teacher-1',  'course-websocket');
