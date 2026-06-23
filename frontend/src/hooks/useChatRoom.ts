@@ -16,7 +16,6 @@ import {
   selectedChannelIdAtom,
   statusAtom,
   timelineAtom,
-  unreadChannelsAtom,
 } from "../state/chatAtoms";
 import type { ChatMessagePayload, TimelineItem } from "../types/chat";
 
@@ -48,7 +47,6 @@ export function useChatRoom() {
   const setLoadingChannels = useSetAtom(loadingChannelsAtom);
   const setLoadingChannelDetail = useSetAtom(loadingChannelDetailAtom);
   const setLobbyError = useSetAtom(lobbyErrorAtom);
-  const setUnreadChannels = useSetAtom(unreadChannelsAtom);
   const socketRef = useRef<WebSocket | null>(null);
   const socketChannelRef = useRef("");
   const channelTimelinesRef = useRef<Map<string, TimelineItem[]>>(new Map());
@@ -66,7 +64,10 @@ export function useChatRoom() {
 
   const pushChat = useCallback(
     (message: Partial<ChatMessagePayload>) => {
-      const msgChannelId = message.channelId || socketChannelRef.current;
+      if (message.channelId && message.channelId !== selectedChannelId) {
+        return;
+      }
+
       const messageId = message.messageId;
       const messageDisplayName = message.displayName || "未知用户";
       const sentAt = message.sentAt ? new Date(message.sentAt) : undefined;
@@ -81,37 +82,28 @@ export function useChatRoom() {
         deliveryStatus: role === "me" ? "delivered" : undefined,
       });
 
-      const timelines = channelTimelinesRef.current;
-      const channelTimeline = timelines.get(msgChannelId) || [];
-
-      if (messageId) {
-        const existingIndex = channelTimeline.findIndex(
-          (item) => item.messageId === messageId
-        );
-        if (existingIndex >= 0) {
-          channelTimeline[existingIndex] = {
-            ...channelTimeline[existingIndex],
-            deliveryStatus:
-              role === "me" ? "delivered" : channelTimeline[existingIndex].deliveryStatus,
-          };
-        } else {
-          channelTimeline.push(newItem);
+      setTimeline((current) => {
+        if (messageId) {
+          const existingIndex = current.findIndex(
+            (item) => item.messageId === messageId
+          );
+          if (existingIndex >= 0) {
+            return current.map((item, index) =>
+              index === existingIndex
+                ? {
+                    ...item,
+                    deliveryStatus:
+                      role === "me" ? "delivered" : item.deliveryStatus,
+                  }
+                : item
+            );
+          }
         }
-      } else {
-        channelTimeline.push(newItem);
-      }
 
-      timelines.set(msgChannelId, channelTimeline);
-
-      if (msgChannelId === selectedChannelId) {
-        setTimeline(channelTimeline);
-      } else {
-        setUnreadChannels((prev) =>
-          prev.includes(msgChannelId) ? prev : [...prev, msgChannelId]
-        );
-      }
+        return [...current, newItem];
+      });
     },
-    [displayName, selectedChannelId, setTimeline, setUnreadChannels]
+    [displayName, selectedChannelId, setTimeline]
   );
 
   const refreshChannelDetail = useCallback(
@@ -255,19 +247,14 @@ export function useChatRoom() {
         activeSocket?.readyState === WebSocket.OPEN;
 
       if (socketIsActive) {
-        socketChannelRef.current = targetChannelId;
-        setStatus("connected");
-        activeSocket.send(
-          JSON.stringify({
-            type: "USER_JOIN",
-            displayName,
-            channelId: targetChannelId,
-            content: "进入了当前频道",
-            userId: currentUser.id,
-          } satisfies ChatMessagePayload)
-        );
-        refreshChannelDetail(targetChannelId, currentUser.id);
-        return;
+        if (socketChannelRef.current === targetChannelId) {
+          setStatus("connected");
+          return;
+        }
+
+        socketRef.current = null;
+        socketChannelRef.current = "";
+        activeSocket.close();
       }
 
       setStatus("connecting");
@@ -391,7 +378,6 @@ export function useChatRoom() {
         }
         return channelTimelinesRef.current.get(targetChannelId) || [];
       });
-      setUnreadChannels((prev) => prev.filter((id) => id !== targetChannelId));
       setActiveChannelDetail(null);
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
@@ -402,7 +388,6 @@ export function useChatRoom() {
       setActiveChannelDetail,
       setChannelId,
       setTimeline,
-      setUnreadChannels,
     ]
   );
 

@@ -46,7 +46,7 @@ export function ChatWorkspace() {
   const onlineUsers = activeChannelDetail?.onlineUsers || [];
 
   return (
-    <div className="grid min-h-screen grid-cols-[minmax(220px,272px)_minmax(0,1fr)] 2xl:grid-cols-[272px_minmax(0,1fr)_minmax(180px,292px)] max-md:grid-cols-[minmax(0,1fr)]">
+    <div className="grid h-screen overflow-hidden grid-cols-[minmax(220px,272px)_minmax(0,1fr)] 2xl:grid-cols-[272px_minmax(0,1fr)_minmax(180px,292px)] max-md:grid-cols-[minmax(0,1fr)]">
       <ChannelSidebar
         activeChannelId={channelId}
         error={lobbyError}
@@ -56,7 +56,7 @@ export function ChatWorkspace() {
         onRefresh={refreshLobby}
       />
 
-      <section className="grid min-h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] bg-content">
+      <section className="grid h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] overflow-hidden bg-content">
         <MessageHeader
           channel={activeChannel}
           onlineCount={onlineCount}
