@@ -95,7 +95,7 @@ export function useAuth() {
 
     try {
       const res = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: 'Bearer ' + token },
       });
       if (!res.ok) return null;
       const user = await res.json();

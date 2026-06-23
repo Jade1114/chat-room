@@ -55,8 +55,9 @@ export function AppShell() {
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
-  const { restoreSession } = useAuth();
+  const { restoreSession, logout } = useAuth();
   const [checking, setChecking] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +89,11 @@ export function AppShell() {
   }
 
   const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate({ to: '/login', replace: true });
+  };
 
   return (
     <main className="min-h-screen bg-app text-primary">
@@ -135,13 +141,34 @@ export function AppShell() {
             )}
           </button>
 
-          <div
-            aria-label={userTitle}
-            title={userTitle}
-            className="relative mb-1 grid size-10 place-items-center rounded-xl bg-active text-xs font-bold text-primary"
-          >
-            {currentUser?.displayName.slice(0, 1).toUpperCase() || '?'}
-            <span className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-rail ${isConnected ? 'bg-online' : 'bg-faint'}`} />
+          <div className="relative mb-1">
+            {userMenuOpen && (
+              <div className="absolute bottom-12 left-0 z-20 w-40 rounded-xl border border-divider bg-surface p-2 text-sm shadow-card">
+                <div className="mb-2 border-b border-divider px-2 pb-2">
+                  <div className="truncate font-medium text-primary">{currentUser.displayName}</div>
+                  <div className="text-xs text-muted">{roleLabel[currentUser.role]}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-danger transition hover:bg-hover"
+                >
+                  <Icon className="size-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></Icon>
+                  退出登录
+                </button>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((open) => !open)}
+              aria-label={userTitle}
+              title={userTitle}
+              className="relative grid size-10 place-items-center rounded-xl bg-active text-xs font-bold text-primary transition hover:bg-hover"
+            >
+              {currentUser?.displayName.slice(0, 1).toUpperCase() || '?'}
+              <span className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-rail ${isConnected ? 'bg-online' : 'bg-faint'}`} />
+            </button>
           </div>
         </aside>
 
