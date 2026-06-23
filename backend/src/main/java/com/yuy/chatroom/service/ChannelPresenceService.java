@@ -39,7 +39,9 @@ public class ChannelPresenceService {
     redisTemplate.opsForSet().add(WORKSPACE_ONLINE_KEY, userId);
     redisTemplate.opsForSet().add(buildUserSessionsKey(userId), sessionId);
     redisTemplate.opsForValue().set(buildSessionUserKey(sessionId), userId);
-    setCurrentChannel(sessionId, channelId);
+    if (channelId != null && !channelId.isBlank()) {
+      setCurrentChannel(sessionId, channelId);
+    }
   }
 
   /**

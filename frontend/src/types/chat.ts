@@ -4,15 +4,17 @@ export type MessageType =
   | "USER_JOIN"
   | "USER_LEAVE"
   | "USER_CHAT"
-  | "MESSAGE_ACK";
+  | "MESSAGE_ACK"
+  | "WORKSPACE_JOIN"
+  | "CHANNEL_VIEW_CHANGED";
 export type UserRole = "STUDENT" | "TEACHER" | "ADMIN";
 export type ChannelType = "SCHOOL" | "DEPARTMENT" | "CLASS" | "COURSE";
 
 export interface ChatMessagePayload {
   type: MessageType;
   displayName: string;
-  channelId: string;
-  content: string;
+  channelId?: string;
+  content?: string;
   messageId?: string;
   sentAt?: string;
   userId?: string;

@@ -17,7 +17,7 @@ import com.yuy.chatroom.model.UserSessionInfo;
 public class MessageProcessor {
   private final static int DISPLAY_NAME_MAX_LENGTH = 20;
   private final static int MESSAGE_MAX_LENGTH = 100;
-  private final static int CHANNEL_ID_MAX_LENGTH = 10;
+  private final static int CHANNEL_ID_MAX_LENGTH = 64;
   private final static Logger log = LoggerFactory.getLogger(MessageProcessor.class);
 
   private final SessionManager sessionManager;
@@ -48,49 +48,16 @@ public class MessageProcessor {
     }
     switch (message.getType()) {
       case USER_CHAT:
-        if (isValidChatMessage(message, session)) {
-          UserSessionInfo info = sessionManager.getSessionInfo(session);
-          message.setUserId(info.getUserId());
-          message.setDisplayName(info.getDisplayName());
-          message.setChannelId(info.getChannelId());
-          message.setMessageId(UUID.randomUUID().toString());
-          message.setSentAt(Instant.now());
-          try {
-            messageHistoryService.saveUserMessage(message);
-          } catch (Exception e) {
-            sendAck(session, message, "FAILED");
-            log.warn("消息持久化失败, 详情: {}", message, e);
-            return;
-          }
-          if (chatMessagePublisher.publishMessage(message)) {
-            sendAck(session, message, "ACCEPTED");
-          } else {
-            sendAck(session, message, "FAILED");
-            log.warn("消息发送失败, 详情: {}", message);
-          }
-        }
+        handleUserChat(session, message);
+        break;
+      case WORKSPACE_JOIN:
+        handleWorkspaceJoin(session, message);
+        break;
+      case CHANNEL_VIEW_CHANGED:
+        handleChannelViewChanged(session, message);
         break;
       case USER_JOIN:
-        if (isValidJoinMessage(message)) {
-          CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
-
-          String channelId = message.getChannelId();
-          if (user == null || !campusDirectoryService.canAccess(user.getId(), channelId)) {
-            log.warn("错误：用户无权访问频道, userId={}, channelId={}", message.getUserId(), channelId);
-            return;
-          }
-
-          message.setUserId(user.getId());
-          message.setDisplayName(user.getDisplayName());
-
-          if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), channelId)) {
-            channelPresenceService.connect(user.getId(), session.getId(), channelId);
-            log.info("{}, workspace 在线状态添加成功，当前查看频道 {}", user.getDisplayName(), channelId);
-            broadcastDispatcher.submit(message);
-          } else {
-            log.warn("错误：Session 注册失败");
-          }
-        }
+        handleLegacyUserJoin(session, message);
         break;
       // 当前离开事件由 handleDisconnect(...) 处理
       case USER_LEAVE:
@@ -109,9 +76,100 @@ public class MessageProcessor {
           info.getChannelId());
       channelPresenceService.disconnect(info.getUserId(), session.getId());
       log.info("{}, workspace 在线状态删除成功", message.getDisplayName());
-      broadcastDispatcher.submit(message);
+      if (info.getChannelId() != null && !info.getChannelId().isBlank()) {
+        broadcastDispatcher.submit(message);
+      }
     } else {
       log.warn("{} 未绑定用户信息但正在断开连接", session.getId());
+    }
+  }
+
+  private void handleUserChat(WebSocketSession session, Message message) {
+    if (isValidChatMessage(message, session)) {
+      UserSessionInfo info = sessionManager.getSessionInfo(session);
+      message.setUserId(info.getUserId());
+      message.setDisplayName(info.getDisplayName());
+      message.setChannelId(info.getChannelId());
+      message.setMessageId(UUID.randomUUID().toString());
+      message.setSentAt(Instant.now());
+      try {
+        messageHistoryService.saveUserMessage(message);
+      } catch (Exception e) {
+        sendAck(session, message, "FAILED");
+        log.warn("消息持久化失败, 详情: {}", message, e);
+        return;
+      }
+      if (chatMessagePublisher.publishMessage(message)) {
+        sendAck(session, message, "ACCEPTED");
+      } else {
+        sendAck(session, message, "FAILED");
+        log.warn("消息发送失败, 详情: {}", message);
+      }
+    }
+  }
+
+  private void handleWorkspaceJoin(WebSocketSession session, Message message) {
+    if (!isValidWorkspaceJoinMessage(message)) {
+      return;
+    }
+
+    CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
+    if (user == null) {
+      log.warn("错误：用户不存在, userId={}", message.getUserId());
+      return;
+    }
+
+    if (sessionManager.tryRegisterWorkspaceSession(session, user.getId(), user.getDisplayName())) {
+      channelPresenceService.connect(user.getId(), session.getId(), null);
+      log.info("{}, workspace session 已连接", user.getDisplayName());
+    } else {
+      log.warn("错误：Workspace session 注册失败");
+    }
+  }
+
+  private void handleChannelViewChanged(WebSocketSession session, Message message) {
+    UserSessionInfo info = sessionManager.getSessionInfo(session);
+    if (info == null) {
+      log.warn("错误：当前 session 尚未注册 workspace");
+      return;
+    }
+
+    if (!isValidChannelId(message.getChannelId())) {
+      return;
+    }
+
+    String channelId = message.getChannelId();
+    if (!campusDirectoryService.canAccess(info.getUserId(), channelId)) {
+      log.warn("错误：用户无权访问频道, userId={}, channelId={}", info.getUserId(), channelId);
+      return;
+    }
+
+    if (sessionManager.updateCurrentChannel(session, channelId)) {
+      channelPresenceService.setCurrentChannel(session.getId(), channelId);
+      log.info("{}, 当前查看频道更新为 {}", info.getDisplayName(), channelId);
+    }
+  }
+
+  private void handleLegacyUserJoin(WebSocketSession session, Message message) {
+    if (isValidJoinMessage(message)) {
+      CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
+
+      String channelId = message.getChannelId();
+      if (user == null || !campusDirectoryService.canAccess(user.getId(), channelId)) {
+        log.warn("错误：用户无权访问频道, userId={}, channelId={}", message.getUserId(), channelId);
+        return;
+      }
+
+      message.setUserId(user.getId());
+      message.setDisplayName(user.getDisplayName());
+
+      if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), channelId)) {
+        channelPresenceService.connect(user.getId(), session.getId(), channelId);
+        log.info("{}, workspace 在线状态添加成功，当前查看频道 {}", user.getDisplayName(), channelId);
+        broadcastDispatcher.submit(message);
+      } else {
+        log.warn("错误：Session 注册失败");
+      }
     }
   }
 
@@ -124,7 +182,7 @@ public class MessageProcessor {
     }
   }
 
-  private boolean isValidJoinMessage(Message message) {
+  private boolean isValidWorkspaceJoinMessage(Message message) {
     String userId = message.getUserId();
     if (userId == null || userId.trim().isEmpty() || userId.matches(".*\\s.*")) {
       log.warn("错误：用户 ID 不合规");
@@ -132,13 +190,21 @@ public class MessageProcessor {
     }
 
     String displayName = message.getDisplayName();
-    if (displayName == null || displayName.trim().isEmpty() || displayName.matches(".*\s.*") || displayName.length() > DISPLAY_NAME_MAX_LENGTH) {
+    if (displayName == null || displayName.trim().isEmpty() || displayName.matches(".*\\s.*")
+        || displayName.length() > DISPLAY_NAME_MAX_LENGTH) {
       log.warn("错误：展示名称不合规");
       return false;
     }
 
-    String channelId = message.getChannelId();
-    if (channelId == null || channelId.trim().isEmpty() || channelId.matches(".*\s.*")
+    return true;
+  }
+
+  private boolean isValidJoinMessage(Message message) {
+    return isValidWorkspaceJoinMessage(message) && isValidChannelId(message.getChannelId());
+  }
+
+  private boolean isValidChannelId(String channelId) {
+    if (channelId == null || channelId.trim().isEmpty() || channelId.matches(".*\\s.*")
         || channelId.length() > CHANNEL_ID_MAX_LENGTH) {
       log.warn("错误：频道 ID 不合规");
       return false;
@@ -153,8 +219,14 @@ public class MessageProcessor {
       return false;
     }
 
-    if (sessionManager.getSessionInfo(session) == null) {
+    UserSessionInfo info = sessionManager.getSessionInfo(session);
+    if (info == null) {
       log.warn("错误：当前 session 未注册用户信息");
+      return false;
+    }
+
+    if (info.getChannelId() == null || info.getChannelId().isBlank()) {
+      log.warn("错误：当前 session 未选择频道");
       return false;
     }
 

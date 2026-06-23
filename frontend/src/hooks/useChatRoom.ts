@@ -84,6 +84,7 @@ export function useChatRoom() {
   const setLobbyError = useSetAtom(lobbyErrorAtom);
   const socketRef = useRef<WebSocket | null>(null);
   const socketChannelRef = useRef("");
+  const selectedChannelRef = useRef("");
   const channelTimelinesRef = useRef<Map<string, TimelineItem[]>>(new Map());
   const detailRequestRef = useRef(0);
   const historyRequestRef = useRef(0);
@@ -303,84 +304,125 @@ export function useChatRoom() {
     [pushChat, pushSystem, refreshChannelDetail, setTimeline]
   );
 
-  const connect = useCallback(
+  const sendChannelViewChanged = useCallback(
     (targetChannelId: string) => {
       if (!currentUser || !displayName || !targetChannelId) {
         return;
       }
 
-      const activeSocket = socketRef.current;
-      const socketIsActive =
-        activeSocket?.readyState === WebSocket.CONNECTING ||
-        activeSocket?.readyState === WebSocket.OPEN;
-
-      if (socketIsActive) {
-        if (socketChannelRef.current === targetChannelId) {
-          setStatus("connected");
-          return;
-        }
-
-        socketRef.current = null;
-        socketChannelRef.current = "";
-        activeSocket.close();
+      const socket = socketRef.current;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        return;
       }
 
-      setStatus("connecting");
-      const socket = new WebSocket(wsUrl);
-      socketRef.current = socket;
+      if (socketChannelRef.current === targetChannelId) {
+        return;
+      }
+
       socketChannelRef.current = targetChannelId;
+      socket.send(
+        JSON.stringify({
+          type: "CHANNEL_VIEW_CHANGED",
+          displayName,
+          channelId: targetChannelId,
+          content: "切换当前查看频道",
+          userId: currentUser.id,
+        } satisfies ChatMessagePayload)
+      );
+      refreshChannelDetail(targetChannelId, currentUser.id);
+    },
+    [currentUser, displayName, refreshChannelDetail]
+  );
 
-      socket.onopen = () => {
-        if (socketRef.current !== socket) {
-          socket.close();
-          return;
-        }
+  const connectWorkspace = useCallback(() => {
+    if (!currentUser || !displayName) {
+      return;
+    }
 
-        setStatus("connected");
+    const activeSocket = socketRef.current;
+    const socketIsConnecting = activeSocket?.readyState === WebSocket.CONNECTING;
+    const socketIsOpen = activeSocket?.readyState === WebSocket.OPEN;
+
+    if (socketIsOpen) {
+      setStatus("connected");
+      return;
+    }
+
+    if (socketIsConnecting) {
+      setStatus("connecting");
+      return;
+    }
+
+    setStatus("connecting");
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+    socketChannelRef.current = "";
+
+    socket.onopen = () => {
+      if (socketRef.current !== socket) {
+        socket.close();
+        return;
+      }
+
+      setStatus("connected");
+      socket.send(
+        JSON.stringify({
+          type: "WORKSPACE_JOIN",
+          displayName,
+          content: "进入 workspace",
+          userId: currentUser.id,
+        } satisfies ChatMessagePayload)
+      );
+
+      const currentChannelId = selectedChannelRef.current;
+      if (currentChannelId) {
+        socketChannelRef.current = currentChannelId;
         socket.send(
           JSON.stringify({
-            type: "USER_JOIN",
+            type: "CHANNEL_VIEW_CHANGED",
             displayName,
-            channelId: targetChannelId,
-            content: "进入了当前频道",
+            channelId: currentChannelId,
+            content: "切换当前查看频道",
             userId: currentUser.id,
           } satisfies ChatMessagePayload)
         );
-        refreshChannelDetail(targetChannelId, currentUser.id);
-      };
+        refreshChannelDetail(currentChannelId, currentUser.id);
+      }
+    };
 
-      socket.onmessage = (event) => {
-        if (socketRef.current === socket) {
-          handleServerMessage(event.data as string);
-        }
-      };
+    socket.onmessage = (event) => {
+      if (socketRef.current === socket) {
+        handleServerMessage(event.data as string);
+      }
+    };
 
-      socket.onerror = () => {
-        if (socketRef.current === socket) {
-          pushSystem("连接出错，请检查服务状态或地址。");
-        }
-      };
+    socket.onerror = () => {
+      if (socketRef.current === socket) {
+        pushSystem("连接出错，请检查服务状态或地址。");
+      }
+    };
 
-      socket.onclose = () => {
-        if (socketRef.current !== socket) {
-          return;
-        }
-        socketRef.current = null;
-        socketChannelRef.current = "";
-        setStatus("idle");
-        pushSystem("连接已关闭。");
-        refreshChannelDetail(targetChannelId, currentUser.id);
-      };
-    },
-    [
-      currentUser,
-      displayName,
-      handleServerMessage,
-      pushSystem,
-      refreshChannelDetail,
-      setStatus,
-    ]
-  );
+    socket.onclose = () => {
+      if (socketRef.current !== socket) {
+        return;
+      }
+      const lastChannelId = socketChannelRef.current;
+      socketRef.current = null;
+      socketChannelRef.current = "";
+      setStatus("idle");
+      pushSystem("连接已关闭。");
+      if (lastChannelId) {
+        refreshChannelDetail(lastChannelId, currentUser.id);
+      }
+    };
+  }, [
+    currentUser,
+    displayName,
+    handleServerMessage,
+    pushSystem,
+    refreshChannelDetail,
+    setStatus,
+  ]);
 
   const closeSocket = useCallback(() => {
     const socket = socketRef.current;
@@ -449,11 +491,13 @@ export function useChatRoom() {
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
       loadRecentMessages(targetChannelId);
+      sendChannelViewChanged(targetChannelId);
     },
     [
       loadRecentMessages,
       refreshChannelDetail,
       selectedChannelId,
+      sendChannelViewChanged,
       setActiveChannelDetail,
       setChannelId,
       setTimeline,
@@ -466,15 +510,17 @@ export function useChatRoom() {
     }
 
     refreshLobby();
+    connectWorkspace();
     const pollingTimer = window.setInterval(() => refreshChannelDetail(), 5000);
     return () => window.clearInterval(pollingTimer);
-  }, [currentUser, refreshChannelDetail, refreshLobby]);
+  }, [connectWorkspace, currentUser, refreshChannelDetail, refreshLobby]);
 
   useEffect(() => {
+    selectedChannelRef.current = selectedChannelId;
     if (currentUser && selectedChannelId) {
-      connect(selectedChannelId);
+      sendChannelViewChanged(selectedChannelId);
     }
-  }, [connect, currentUser, selectedChannelId]);
+  }, [currentUser, selectedChannelId, sendChannelViewChanged]);
 
   useEffect(() => closeSocket, [closeSocket]);
 

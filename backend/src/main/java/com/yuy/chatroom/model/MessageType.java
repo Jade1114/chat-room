@@ -4,5 +4,7 @@ public enum MessageType {
     USER_CHAT,
     USER_JOIN,
     USER_LEAVE,
-    MESSAGE_ACK
+    MESSAGE_ACK,
+    WORKSPACE_JOIN,
+    CHANNEL_VIEW_CHANGED
 }
