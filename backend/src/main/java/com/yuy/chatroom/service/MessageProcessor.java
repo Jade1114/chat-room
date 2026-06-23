@@ -25,16 +25,19 @@ public class MessageProcessor {
   private final BroadcastService broadcastService;
   private final ChannelPresenceService channelPresenceService;
   private final ChatMessagePublisher chatMessagePublisher;
+  private final MessageHistoryService messageHistoryService;
   private final CampusDirectoryService campusDirectoryService;
 
   public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
       BroadcastService broadcastService, ChannelPresenceService channelPresenceService,
-      ChatMessagePublisher chatMessagePublisher, CampusDirectoryService campusDirectoryService) {
+      ChatMessagePublisher chatMessagePublisher, MessageHistoryService messageHistoryService,
+      CampusDirectoryService campusDirectoryService) {
     this.sessionManager = sessionManager;
     this.broadcastDispatcher = broadcastDispatcher;
     this.broadcastService = broadcastService;
     this.channelPresenceService = channelPresenceService;
     this.chatMessagePublisher = chatMessagePublisher;
+    this.messageHistoryService = messageHistoryService;
     this.campusDirectoryService = campusDirectoryService;
   }
 
@@ -52,6 +55,13 @@ public class MessageProcessor {
           message.setChannelId(info.getChannelId());
           message.setMessageId(UUID.randomUUID().toString());
           message.setSentAt(Instant.now());
+          try {
+            messageHistoryService.saveUserMessage(message);
+          } catch (Exception e) {
+            sendAck(session, message, "FAILED");
+            log.warn("消息持久化失败, 详情: {}", message, e);
+            return;
+          }
           if (chatMessagePublisher.publishMessage(message)) {
             sendAck(session, message, "ACCEPTED");
           } else {
@@ -74,8 +84,8 @@ public class MessageProcessor {
           message.setDisplayName(user.getDisplayName());
 
           if (sessionManager.tryRegister(session, user.getId(), user.getDisplayName(), channelId)) {
-            channelPresenceService.join(channelId, user.getId(), session.getId());
-            log.info("{}, {} Redis 在线状态添加成功", user.getDisplayName(), channelId);
+            channelPresenceService.connect(user.getId(), session.getId(), channelId);
+            log.info("{}, workspace 在线状态添加成功，当前查看频道 {}", user.getDisplayName(), channelId);
             broadcastDispatcher.submit(message);
           } else {
             log.warn("错误：Session 注册失败");
@@ -97,8 +107,8 @@ public class MessageProcessor {
     if (info != null) {
       Message message = new Message(MessageType.USER_LEAVE, info.getUserId(), info.getDisplayName(), "离开了当前频道",
           info.getChannelId());
-      channelPresenceService.leave(info.getChannelId(), info.getUserId(), session.getId());
-      log.info("{}, {} Redis 在线状态删除成功", message.getDisplayName(), info.getChannelId());
+      channelPresenceService.disconnect(info.getUserId(), session.getId());
+      log.info("{}, workspace 在线状态删除成功", message.getDisplayName());
       broadcastDispatcher.submit(message);
     } else {
       log.warn("{} 未绑定用户信息但正在断开连接", session.getId());

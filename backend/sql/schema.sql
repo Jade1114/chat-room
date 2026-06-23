@@ -35,3 +35,19 @@ CREATE TABLE campus_channel (
     description     VARCHAR(256)    NULL,
     is_readonly     TINYINT(1)      NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
+
+-- chat_message is the durable source of truth for channel history.
+CREATE TABLE chat_message (
+    message_id      VARCHAR(64)     PRIMARY KEY,
+    channel_id      VARCHAR(32)     NOT NULL,
+    user_id         VARCHAR(32)     NOT NULL,
+    display_name    VARCHAR(64)     NOT NULL,
+    content         VARCHAR(512)    NOT NULL,
+    type            VARCHAR(32)     NOT NULL DEFAULT 'USER_CHAT',
+    sent_at         DATETIME(3)     NOT NULL,
+    INDEX idx_chat_message_channel_sent_at (channel_id, sent_at, message_id),
+    CONSTRAINT fk_chat_message_channel
+        FOREIGN KEY (channel_id) REFERENCES campus_channel(id),
+    CONSTRAINT fk_chat_message_user
+        FOREIGN KEY (user_id) REFERENCES campus_user(id)
+) ENGINE=InnoDB;

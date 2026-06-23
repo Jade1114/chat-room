@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 import { wsUrl } from "../config";
-import { fetchChannelDetail, fetchChannels } from "../lib/chatApi";
+import { fetchChannelDetail, fetchChannelMessages, fetchChannels } from "../lib/chatApi";
 import {
   activeChannelDetailAtom,
   canSendAtom,
@@ -33,6 +33,41 @@ function createTimelineItem(
   };
 }
 
+function chatMessageToTimelineItem(
+  message: ChatMessagePayload,
+  currentUserId: string,
+  currentDisplayName: string
+): TimelineItem {
+  const sentAt = message.sentAt ? new Date(message.sentAt) : undefined;
+  const role = message.userId === currentUserId || message.displayName === currentDisplayName ? "me" : "user";
+
+  return createTimelineItem({
+    role,
+    displayName: message.displayName || "未知用户",
+    text: message.content || "",
+    messageId: message.messageId,
+    time: sentAt ? nowLabel(sentAt) : undefined,
+    deliveryStatus: role === "me" ? "delivered" : undefined,
+  });
+}
+
+function mergeTimelines(historyItems: TimelineItem[], currentItems: TimelineItem[]) {
+  const seenMessageIds = new Set<string>();
+  const merged: TimelineItem[] = [];
+
+  for (const item of [...historyItems, ...currentItems]) {
+    if (item.messageId) {
+      if (seenMessageIds.has(item.messageId)) {
+        continue;
+      }
+      seenMessageIds.add(item.messageId);
+    }
+    merged.push(item);
+  }
+
+  return merged;
+}
+
 export function useChatRoom() {
   const [draft, setDraft] = useAtom(draftAtom);
   const selectedChannelId = useAtomValue(selectedChannelIdAtom);
@@ -51,6 +86,7 @@ export function useChatRoom() {
   const socketChannelRef = useRef("");
   const channelTimelinesRef = useRef<Map<string, TimelineItem[]>>(new Map());
   const detailRequestRef = useRef(0);
+  const historyRequestRef = useRef(0);
 
   const pushSystem = useCallback(
     (text: string) => {
@@ -142,6 +178,35 @@ export function useChatRoom() {
     ]
   );
 
+  const loadRecentMessages = useCallback(
+    async (targetChannelId = selectedChannelId, targetUserId = currentUser?.id || "") => {
+      const requestId = ++historyRequestRef.current;
+
+      if (!targetChannelId || !targetUserId || !currentUser) {
+        setTimeline([]);
+        return;
+      }
+
+      try {
+        const messages = await fetchChannelMessages(targetChannelId, targetUserId, { limit: 50 });
+        if (requestId !== historyRequestRef.current) {
+          return;
+        }
+
+        const historyItems = messages.map((message) =>
+          chatMessageToTimelineItem(message, currentUser.id, displayName)
+        );
+        channelTimelinesRef.current.set(targetChannelId, historyItems);
+        setTimeline((current) => mergeTimelines(historyItems, current));
+      } catch {
+        if (requestId === historyRequestRef.current) {
+          pushSystem("历史消息加载失败。");
+        }
+      }
+    },
+    [currentUser, displayName, pushSystem, selectedChannelId, setTimeline]
+  );
+
   const refreshChannels = useCallback(
     async (targetUserId = currentUser?.id || "") => {
       if (!targetUserId) {
@@ -184,8 +249,11 @@ export function useChatRoom() {
     }
 
     const nextChannelId = await refreshChannels(currentUser.id);
-    await refreshChannelDetail(nextChannelId, currentUser.id);
-  }, [currentUser, refreshChannelDetail, refreshChannels]);
+    await Promise.all([
+      refreshChannelDetail(nextChannelId, currentUser.id),
+      loadRecentMessages(nextChannelId, currentUser.id),
+    ]);
+  }, [currentUser, loadRecentMessages, refreshChannelDetail, refreshChannels]);
 
   const handleServerMessage = useCallback(
     (raw: string) => {
@@ -381,8 +449,10 @@ export function useChatRoom() {
       setActiveChannelDetail(null);
       setChannelId(targetChannelId);
       refreshChannelDetail(targetChannelId);
+      loadRecentMessages(targetChannelId);
     },
     [
+      loadRecentMessages,
       refreshChannelDetail,
       selectedChannelId,
       setActiveChannelDetail,
@@ -397,9 +467,9 @@ export function useChatRoom() {
     }
 
     refreshLobby();
-    const pollingTimer = window.setInterval(refreshLobby, 5000);
+    const pollingTimer = window.setInterval(() => refreshChannelDetail(), 5000);
     return () => window.clearInterval(pollingTimer);
-  }, [currentUser, refreshLobby]);
+  }, [currentUser, refreshChannelDetail, refreshLobby]);
 
   useEffect(() => {
     if (currentUser && selectedChannelId) {

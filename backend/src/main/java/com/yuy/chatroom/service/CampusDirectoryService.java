@@ -71,7 +71,23 @@ public class CampusDirectoryService {
     return channel != null && canAccess(user, channel);
   }
 
+  public Set<String> getAccessibleUserIds(String channelId) {
+    Channel channel = channelMapper.findById(channelId);
+    if (channel == null) {
+      return Set.of();
+    }
+
+    return getUsers().stream()
+        .filter(user -> canAccess(user, channel))
+        .map(CurrentUser::getId)
+        .collect(Collectors.toSet());
+  }
+
   private boolean canAccess(CurrentUser user, Channel channel) {
+    if (user == null || channel == null) {
+      return false;
+    }
+
     if (user.getRole() == UserRole.ADMIN) {
       return true;
     }
@@ -85,17 +101,20 @@ public class CampusDirectoryService {
   }
 
   private ChannelDetail toChannelDetail(Channel channel) {
-    Set<String> onlineUserIds = presenceService.getOnlineUserIds(channel.getId());
-    if (onlineUserIds == null) {
-      onlineUserIds = Set.of();
-    }
+    Set<String> accessibleUserIds = getAccessibleUserIds(channel.getId());
+    Set<String> onlineUserIds = presenceService.getWorkspaceOnlineUserIds().stream()
+        .filter(accessibleUserIds::contains)
+        .collect(Collectors.toSet());
+
     // Resolve userIds to display names.
     // TODO: N+1 — batch-load user display names instead of querying one by one.
     Map<String, String> idToName = onlineUserIds.stream()
         .map(this::getCurrentUser)
+        .filter(user -> user != null)
         .collect(Collectors.toMap(CurrentUser::getId, CurrentUser::getDisplayName));
     List<String> displayNames = onlineUserIds.stream()
         .map(idToName::get)
+        .filter(name -> name != null)
         .toList();
 
     return new ChannelDetail(
