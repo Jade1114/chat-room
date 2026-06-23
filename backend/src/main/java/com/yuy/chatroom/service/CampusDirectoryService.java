@@ -17,7 +17,6 @@ import com.yuy.chatroom.model.UserRole;
 
 @Service
 public class CampusDirectoryService {
-  private static final String DEFAULT_USER_ID = "u-stu-1";
 
   private final UserMapper userMapper;
   private final ChannelMapper channelMapper;
@@ -31,7 +30,10 @@ public class CampusDirectoryService {
   }
 
   public CurrentUser getCurrentUser(String userId) {
-    CurrentUser user = userMapper.findById(normalizeUserId(userId));
+    if (userId == null || userId.isBlank()) {
+      return null;
+    }
+    CurrentUser user = userMapper.findById(userId);
     if (user != null) {
       user.setCourseIds(userMapper.findCourseIdsByUserId(user.getId()));
     }
@@ -130,7 +132,7 @@ public class CampusDirectoryService {
 
   private String normalizeUserId(String userId) {
     if (userId == null || userId.isBlank()) {
-      return DEFAULT_USER_ID;
+      return null;
     }
     return userId;
   }

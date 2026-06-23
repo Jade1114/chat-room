@@ -15,7 +15,9 @@ USE chat_room;
 
 CREATE TABLE campus_user (
     id              VARCHAR(32)     PRIMARY KEY,
+    username        VARCHAR(32)     NULL UNIQUE     COMMENT '登录用户名（学号/工号）',
     display_name    VARCHAR(64)     NOT NULL,
+    password_hash   VARCHAR(255)    NULL            COMMENT 'BCrypt 哈希密码，NULL 表示不可登录的 Mock 用户',
     role            VARCHAR(16)     NOT NULL COMMENT 'STUDENT | TEACHER | ADMIN',
     school_id       VARCHAR(32)     NULL,
     department_id   VARCHAR(32)     NULL,

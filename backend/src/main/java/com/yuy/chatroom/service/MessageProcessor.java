@@ -111,21 +111,13 @@ public class MessageProcessor {
   }
 
   private void handleWorkspaceJoin(WebSocketSession session, Message message) {
-    if (!isValidWorkspaceJoinMessage(message)) {
-      return;
-    }
-
-    CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
-    if (user == null) {
-      log.warn("错误：用户不存在, userId={}", message.getUserId());
-      return;
-    }
-
-    if (sessionManager.tryRegisterWorkspaceSession(session, user.getId(), user.getDisplayName())) {
-      channelPresenceService.connect(user.getId(), session.getId(), null);
-      log.info("{}, workspace session 已连接", user.getDisplayName());
-    } else {
-      log.warn("错误：Workspace session 注册失败");
+    // Workspace registration already happened in WebSocketHandler.afterConnectionEstablished
+    // via JWT attributes from HandshakeAuthInterceptor.
+    // This message is a no-op for backward compatibility with existing frontends
+    // that still send WORKSPACE_JOIN after connecting.
+    UserSessionInfo info = sessionManager.getSessionInfo(session);
+    if (info == null) {
+      log.warn("WORKSPACE_JOIN 收到但 session 尚未注册 workspace");
     }
   }
 
