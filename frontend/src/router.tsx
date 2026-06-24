@@ -1,10 +1,11 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router';
 import { ChatWorkspace } from './features/chat/ChatWorkspace';
-import { ClubsPrototype } from './features/clubs/ClubsPrototype';
 import { RegisterPage } from './features/auth/RegisterPage';
 import { LoginPage } from './features/workspace/LoginPage';
 import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
 import { AdminPage } from './features/admin/AdminPage';
+import { OrganizationChannelPlaceholderPage } from './features/organizations/OrganizationChannelPlaceholderPage';
+import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -46,21 +47,43 @@ const dashboardRoute = createRoute({
 const clubsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/clubs',
-  component: ClubsPrototype
+  beforeLoad: () => {
+    throw redirect({ to: '/organizations' });
+  }
 });
 
-const adminRoute = createRoute({
+const organizationsRootRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin',
-  component: AdminPage
+  path: '/organizations',
+  beforeLoad: () => {
+    throw redirect({ to: '/organizations/$organizationId', params: { organizationId: 'org-public-square' } });
+  }
+});
+
+const organizationDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/organizations/$organizationId',
+  component: OrganizationDetailPage
+});
+
+const organizationChannelRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/organizations/$organizationId/channels/$channelId',
+  component: OrganizationChannelPlaceholderPage
 });
 
 const legacyMembersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/members',
   beforeLoad: () => {
-    throw redirect({ to: '/clubs' });
+    throw redirect({ to: '/organizations' });
   }
+});
+
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin',
+  component: AdminPage
 });
 
 const routeTree = rootRoute.addChildren([
@@ -71,6 +94,9 @@ const routeTree = rootRoute.addChildren([
   messagesRoute,
   clubsRoute,
   adminRoute,
+  organizationsRootRoute,
+  organizationDetailRoute,
+  organizationChannelRoute,
   legacyMembersRoute
 ]);
 
