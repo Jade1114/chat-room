@@ -20,6 +20,14 @@ public interface OrganizationMemberMapper {
   int countMembership(@Param("userId") String userId, @Param("organizationId") String organizationId);
 
   @Select("""
+      SELECT role
+      FROM organization_member
+      WHERE user_id = #{userId}
+        AND organization_id = #{organizationId}
+      """)
+  String findRole(@Param("userId") String userId, @Param("organizationId") String organizationId);
+
+  @Select("""
       SELECT COUNT(1)
       FROM organization_member
       WHERE organization_id = #{organizationId}

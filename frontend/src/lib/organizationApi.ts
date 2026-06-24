@@ -40,6 +40,14 @@ export interface ActivityResponse {
   createdAt: string;
 }
 
+export interface CreateActivityPayload {
+  title: string;
+  description: string;
+  location: string;
+  startTime: string;
+  endTime?: string;
+}
+
 function buildApiUrl(path: string) {
   return new URL(`${apiBaseUrl}${path}`, window.location.origin);
 }
@@ -95,6 +103,19 @@ export async function fetchActivities(): Promise<ActivityResponse[]> {
   const response = await fetch(buildApiUrl('/api/activities'), { headers: buildHeaders() });
   if (!response.ok) {
     throw new Error(`activities status ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function createActivity(organizationId: string, payload: CreateActivityPayload): Promise<ActivityResponse> {
+  const response = await fetch(buildApiUrl(`/api/organizations/${encodeURIComponent(organizationId)}/activities`), {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `create activity status ${response.status}`);
   }
   return response.json();
 }

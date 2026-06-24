@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAtomValue } from 'jotai';
 import { Link, useParams } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
-import { fetchOrganization } from '../../lib/organizationApi';
+import { fetchOrganization, createActivity, type ActivityResponse } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
-import { unreadCountsAtom } from '../../state/chatAtoms';
-import { toOrganizationViewModel, type OrganizationChannel, type OrganizationTab, type OrganizationViewModel } from './organizationViewModel';
+import { currentUserAtom, unreadCountsAtom } from '../../state/chatAtoms';
+import { toOrganizationActivities, toOrganizationViewModel, type OrganizationChannel, type OrganizationTab, type OrganizationViewModel } from './organizationViewModel';
 
 const tabLabels: Record<OrganizationTab, string> = {
   overview: 'Overview',
@@ -103,7 +103,126 @@ function ChannelsSection({ organization }: { organization: OrganizationViewModel
   );
 }
 
-function ActivitiesSection({ organization }: { organization: OrganizationViewModel }) {
+function toIsoFromLocalInput(value: string) {
+  return new Date(value).toISOString();
+}
+
+function ActivityComposer({ organizationId, onCreated }: { organizationId: string; onCreated: (activity: ActivityResponse) => void }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('线上');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const reset = () => {
+    setTitle('');
+    setDescription('');
+    setLocation('线上');
+    setStartTime('');
+    setEndTime('');
+    setError('');
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    if (!title.trim()) {
+      setError('活动标题不能为空');
+      return;
+    }
+    if (!startTime) {
+      setError('请选择活动开始时间');
+      return;
+    }
+    if (endTime && new Date(endTime) <= new Date(startTime)) {
+      setError('结束时间必须晚于开始时间');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const activity = await createActivity(organizationId, {
+        title: title.trim(),
+        description: description.trim(),
+        location: location.trim(),
+        startTime: toIsoFromLocalInput(startTime),
+        endTime: endTime ? toIsoFromLocalInput(endTime) : undefined
+      });
+      onCreated(activity);
+      reset();
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发布活动失败');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-on-accent transition hover:opacity-90">
+        发布活动
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 rounded-2xl border border-accent-soft bg-active p-4">
+      <div className="grid gap-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={128}
+          placeholder="活动标题"
+          className="rounded-xl border border-divider bg-card px-3 py-2 text-sm text-primary placeholder:text-faint focus:border-accent focus:outline-none"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={512}
+          rows={3}
+          placeholder="活动描述"
+          className="resize-none rounded-xl border border-divider bg-card px-3 py-2 text-sm text-primary placeholder:text-faint focus:border-accent focus:outline-none"
+        />
+        <div className="grid grid-cols-3 gap-2 max-lg:grid-cols-1">
+          <input
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            maxLength={128}
+            placeholder="地点，如 线上 / 活动室"
+            className="rounded-xl border border-divider bg-card px-3 py-2 text-sm text-primary placeholder:text-faint focus:border-accent focus:outline-none"
+          />
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="rounded-xl border border-divider bg-card px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+          />
+          <input
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="rounded-xl border border-divider bg-card px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+          />
+        </div>
+        {error && <div className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+        <div className="flex gap-2">
+          <button type="submit" disabled={submitting} className="rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-on-accent disabled:opacity-60">
+            {submitting ? '发布中...' : '确认发布'}
+          </button>
+          <button type="button" onClick={() => { reset(); setOpen(false); }} className="rounded-xl border border-divider px-4 py-2 text-xs font-semibold text-primary hover:bg-hover">
+            取消
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function ActivitiesSection({ organization, canCreateActivity, onActivityCreated }: { organization: OrganizationViewModel; canCreateActivity: boolean; onActivityCreated: (activity: ActivityResponse) => void }) {
   const upcomingActivities = organization.activities.filter((a) => a.status !== 'past');
   return (
     <article className="rounded-3xl border border-divider bg-card p-5">
@@ -112,6 +231,7 @@ function ActivitiesSection({ organization }: { organization: OrganizationViewMod
           <h2 className="text-base font-semibold text-strong">Activities</h2>
           <p className="mt-1 text-xs text-muted">组织近期公开活动。</p>
         </div>
+        {canCreateActivity && <ActivityComposer organizationId={organization.id} onCreated={onActivityCreated} />}
       </div>
       <div className="mt-4 grid gap-2">
         {upcomingActivities.length === 0 && (
@@ -162,22 +282,22 @@ function MembersSection({ organization }: { organization: OrganizationViewModel 
   );
 }
 
-function OverviewTab({ organization, joining, onJoin }: { organization: OrganizationViewModel; joining: boolean; onJoin: () => void }) {
+function OverviewTab({ organization, joining, onJoin, canCreateActivity, onActivityCreated }: { organization: OrganizationViewModel; joining: boolean; onJoin: () => void; canCreateActivity: boolean; onActivityCreated: (activity: ActivityResponse) => void }) {
   return (
     <div className="space-y-5">
       <Hero organization={organization} joining={joining} onJoin={onJoin} />
       <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-5 max-xl:grid-cols-1">
         <ChannelsSection organization={organization} />
-        <ActivitiesSection organization={organization} />
+        <ActivitiesSection organization={organization} canCreateActivity={canCreateActivity} onActivityCreated={onActivityCreated} />
       </div>
       <MembersSection organization={organization} />
     </div>
   );
 }
 
-function PlaceholderTab({ organization, tab }: { organization: OrganizationViewModel; tab: OrganizationTab }) {
+function PlaceholderTab({ organization, tab, canCreateActivity, onActivityCreated }: { organization: OrganizationViewModel; tab: OrganizationTab; canCreateActivity: boolean; onActivityCreated: (activity: ActivityResponse) => void }) {
   if (tab === 'channels') return <ChannelsSection organization={organization} />;
-  if (tab === 'activities') return <ActivitiesSection organization={organization} />;
+  if (tab === 'activities') return <ActivitiesSection organization={organization} canCreateActivity={canCreateActivity} onActivityCreated={onActivityCreated} />;
   if (tab === 'members') return <MembersSection organization={organization} />;
   return (
     <article className="rounded-3xl border border-divider bg-card p-7">
@@ -190,6 +310,7 @@ function PlaceholderTab({ organization, tab }: { organization: OrganizationViewM
 
 export function OrganizationDetailPage() {
   const { organizationId } = useParams({ from: '/organizations/$organizationId' });
+  const currentUser = useAtomValue(currentUserAtom);
   const unreadCounts = useAtomValue(unreadCountsAtom);
   const { joinAndRefreshOrganization } = useOrganizations();
   const [organization, setOrganization] = useState<OrganizationViewModel | null>(null);
@@ -226,6 +347,18 @@ export function OrganizationDetailPage() {
     };
   }, [organization, unreadCounts]);
 
+  const canCreateActivity = useMemo(() => {
+    if (!displayOrganization || !currentUser) return false;
+    return displayOrganization.members.some((member) => member.id === currentUser.id && member.role === 'ORGANIZER');
+  }, [currentUser, displayOrganization]);
+
+  const handleActivityCreated = (activity: ActivityResponse) => {
+    const [nextActivity] = toOrganizationActivities([activity]);
+    setOrganization((current) => current
+      ? { ...current, activities: [nextActivity, ...current.activities] }
+      : current);
+  };
+
   const handleJoin = async () => {
     setJoining(true);
     setError('');
@@ -257,8 +390,8 @@ export function OrganizationDetailPage() {
         {!loading && error && <div className="rounded-3xl border border-danger/30 bg-danger/10 p-7 text-sm text-danger">{error}</div>}
         {!loading && !error && displayOrganization && (
           activeTab === 'overview'
-            ? <OverviewTab organization={displayOrganization} joining={joining} onJoin={handleJoin} />
-            : <PlaceholderTab organization={displayOrganization} tab={activeTab} />
+            ? <OverviewTab organization={displayOrganization} joining={joining} onJoin={handleJoin} canCreateActivity={canCreateActivity} onActivityCreated={handleActivityCreated} />
+            : <PlaceholderTab organization={displayOrganization} tab={activeTab} canCreateActivity={canCreateActivity} onActivityCreated={handleActivityCreated} />
         )}
       </section>
     </main>
