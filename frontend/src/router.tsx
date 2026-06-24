@@ -7,6 +7,7 @@ import { AdminPage } from './features/admin/AdminPage';
 import { OrganizationChannelPage } from './features/organizations/OrganizationChannelPage';
 import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
 import { OrganizationDiscoverPage } from './features/organizations/OrganizationDiscoverPage';
+import { ActivitySchedulePage } from './features/organizations/ActivitySchedulePage';
 import { CreateOrganizationPage } from './features/organizations/CreateOrganizationPage';
 import { AppShell } from './layouts/AppShell';
 
@@ -86,6 +87,12 @@ const legacyMembersRoute = createRoute({
   }
 });
 
+const activityScheduleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/activities',
+  component: ActivitySchedulePage
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
@@ -100,6 +107,7 @@ const routeTree = rootRoute.addChildren([
   messagesRoute,
   clubsRoute,
   adminRoute,
+  activityScheduleRoute,
   organizationsRootRoute,
   createOrganizationRoute,
   organizationDetailRoute,

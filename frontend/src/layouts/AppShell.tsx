@@ -19,7 +19,7 @@ const roleLabel: Record<UserRole, string> = {
 interface NavigationItem {
   label: string;
   description: string;
-  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/messages' | '/admin';
+  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/messages' | '/admin' | '/activities';
   activeWhen?: (pathname: string) => boolean;
   icon: ReactNode;
 }
@@ -49,8 +49,10 @@ const navigationItems: NavigationItem[] = [
   {
     label: '活动中心',
     description: '跨组织活动日程',
+    to: '/activities',
+    activeWhen: (pathname) => pathname === '/activities',
     icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>
-  }
+  },
 ];
 
 function OrganizationMark({ organization }: { organization: OrganizationViewModel }) {
