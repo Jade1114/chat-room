@@ -26,12 +26,24 @@ const indexRoute = createRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
+  beforeLoad: () => {
+    const token = localStorage.getItem('chat_room_token');
+    if (token) {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
   component: LoginPage
 });
 
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/register',
+  beforeLoad: () => {
+    const token = localStorage.getItem('chat_room_token');
+    if (token) {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
   component: RegisterPage
 });
 

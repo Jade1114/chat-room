@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useParams } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
 import { fetchOrganization } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
@@ -12,13 +12,6 @@ const tabLabels: Record<OrganizationTab, string> = {
   members: 'Members',
   settings: 'Settings'
 };
-
-function useOrganizationIdFromPath() {
-  return useMemo(() => {
-    const match = window.location.pathname.match(/\/organizations\/([^/]+)/);
-    return match?.[1] || 'org-public-square';
-  }, []);
-}
 
 function SmallIcon({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <Icon className={`size-4 ${className}`}>{children}</Icon>;
@@ -194,7 +187,7 @@ function PlaceholderTab({ organization, tab }: { organization: OrganizationViewM
 }
 
 export function OrganizationDetailPage() {
-  const organizationId = useOrganizationIdFromPath();
+  const { organizationId } = useParams({ from: '/organizations/$organizationId' });
   const { joinAndRefreshOrganization } = useOrganizations();
   const [organization, setOrganization] = useState<OrganizationViewModel | null>(null);
   const [activeTab, setActiveTab] = useState<OrganizationTab>('overview');

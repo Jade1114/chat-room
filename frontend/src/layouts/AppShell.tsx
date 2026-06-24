@@ -147,6 +147,13 @@ export function AppShell() {
         navigate({ to: '/login', replace: true });
       }
     }
+    // Safety net: logged-in user on public pages -> redirect to dashboard
+    if (!checking && currentUser) {
+      const publicPaths = ['/login', '/register'];
+      if (publicPaths.includes(window.location.pathname)) {
+        navigate({ to: '/dashboard', replace: true });
+      }
+    }
   }, [checking, currentUser, navigate]);
 
   useEffect(() => {
@@ -182,7 +189,7 @@ export function AppShell() {
   return (
     <main className="min-h-screen bg-app text-primary">
       <div className="grid min-h-screen grid-cols-[320px_minmax(0,1fr)] max-lg:grid-cols-[minmax(0,1fr)]">
-        <aside className="flex min-h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
+        <aside className="flex h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
           <section className="shrink-0">
             <div className="flex items-center gap-3 px-1">
               <div className="grid size-11 place-items-center rounded-[16px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="Organization Platform">

@@ -1,18 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from '@tanstack/react-router';
 import { fetchOrganization } from '../../lib/organizationApi';
 import { ChatWorkspace } from '../chat/ChatWorkspace';
 import { toOrganizationViewModel, type OrganizationViewModel, type OrganizationChannel } from './organizationViewModel';
 
-function useRouteIdsFromPath() {
-  return useMemo(() => {
-    const match = window.location.pathname.match(/\/organizations\/([^/]+)\/channels\/([^/]+)/);
-    return { organizationId: match?.[1] || 'org-public-square', channelId: match?.[2] || '' };
-  }, []);
-}
-
 export function OrganizationChannelPage() {
-  const { organizationId, channelId } = useRouteIdsFromPath();
+  const { organizationId, channelId } = useParams({ from: '/organizations/$organizationId/channels/$channelId' });
   const [organization, setOrganization] = useState<OrganizationViewModel | null>(null);
   const [channel, setChannel] = useState<OrganizationChannel | null>(null);
   const [loading, setLoading] = useState(true);
