@@ -14,4 +14,23 @@ public interface ChannelMapper {
 
     @Select("SELECT id, name, type, organization_id, description, is_readonly FROM organization_channel WHERE id = #{id} AND type = 'ORGANIZATION'")
     Channel findById(String id);
+
+    @Select("""
+        SELECT id, name, type, organization_id, description, is_readonly
+        FROM organization_channel
+        WHERE organization_id = #{organizationId}
+          AND type = 'ORGANIZATION'
+        ORDER BY id ASC
+        """)
+    List<Channel> findByOrganizationId(String organizationId);
+
+    @Select("""
+        SELECT id
+        FROM organization_channel
+        WHERE organization_id = #{organizationId}
+          AND type = 'ORGANIZATION'
+        ORDER BY id ASC
+        LIMIT 1
+        """)
+    String findDefaultChannelId(String organizationId);
 }

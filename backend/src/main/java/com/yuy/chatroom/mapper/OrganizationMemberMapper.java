@@ -15,6 +15,13 @@ public interface OrganizationMemberMapper {
       """)
   int countMembership(@Param("userId") String userId, @Param("organizationId") String organizationId);
 
+  @Select("""
+      SELECT COUNT(1)
+      FROM organization_member
+      WHERE organization_id = #{organizationId}
+      """)
+  long countMembers(String organizationId);
+
   @Insert("""
       INSERT IGNORE INTO organization_member (organization_id, user_id, role, joined_at)
       VALUES (#{organizationId}, #{userId}, #{role}, NOW(3))
