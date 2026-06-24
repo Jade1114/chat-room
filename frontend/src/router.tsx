@@ -1,5 +1,4 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router';
-import { ChatWorkspace } from './features/chat/ChatWorkspace';
 import { RegisterPage } from './features/auth/RegisterPage';
 import { LoginPage } from './features/workspace/LoginPage';
 import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
@@ -45,12 +44,6 @@ const registerRoute = createRoute({
     }
   },
   component: RegisterPage
-});
-
-const messagesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/messages',
-  component: ChatWorkspace
 });
 
 const dashboardRoute = createRoute({
@@ -116,7 +109,6 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   dashboardRoute,
-  messagesRoute,
   clubsRoute,
   adminRoute,
   activityScheduleRoute,

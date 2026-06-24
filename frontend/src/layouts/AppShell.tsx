@@ -19,7 +19,7 @@ const roleLabel: Record<UserRole, string> = {
 interface NavigationItem {
   label: string;
   description: string;
-  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/messages' | '/admin' | '/activities';
+  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/admin' | '/activities';
   activeWhen?: (pathname: string) => boolean;
   icon: ReactNode;
 }
@@ -251,6 +251,7 @@ export function AppShell() {
                   key={organization.id}
                   organization={organization}
                   active={activeOrganizationId === organization.id}
+                  unreadCount={organization.defaultChannelId ? unreadCounts[organization.defaultChannelId] || 0 : 0}
                 />
               ))}
             </div>

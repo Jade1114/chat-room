@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useAtomValue } from 'jotai';
 import { useChatRoom } from '../../hooks/useChatRoom';
 import { channelsAtom, currentUserAtom, isConnectedAtom, loadingChannelsAtom } from '../../state/chatAtoms';
-import type { ChannelType } from '../../types/chat';
+import type { Channel, ChannelType } from '../../types/chat';
 
 const channelTypeLabel: Record<ChannelType, string> = {
   ORGANIZATION: '组织'
@@ -21,9 +21,12 @@ export function WorkspaceDashboard() {
   const visibleChannels = channels.slice(0, 6);
   const totalUnread = unreadChannels.reduce((sum, channel) => sum + channel.unreadCount, 0);
 
-  function enterChannel(channelId: string) {
-    pickChannel(channelId);
-    navigate({ to: '/messages' });
+  function enterChannel(channel: Channel) {
+    pickChannel(channel.id);
+    navigate({
+      to: '/organizations/$organizationId/channels/$channelId',
+      params: { organizationId: channel.organizationId, channelId: channel.id }
+    });
   }
 
   return (
@@ -73,7 +76,7 @@ export function WorkspaceDashboard() {
                 <button
                   key={channel.id}
                   type="button"
-                  onClick={() => enterChannel(channel.id)}
+                  onClick={() => enterChannel(channel)}
                   className="flex items-center gap-3 rounded-xl bg-card px-4 py-3 text-left transition hover:bg-hover"
                 >
                   <span className="rounded-full bg-danger px-2 py-1 text-[10px] font-bold leading-none text-white">{channel.unreadCount}</span>
@@ -89,14 +92,14 @@ export function WorkspaceDashboard() {
           <div className="rounded-[1.5rem] border border-divider bg-elevated p-5 shadow-composer">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-strong">最近可进入频道</h2>
-              <button type="button" onClick={() => navigate({ to: '/messages' })} className="text-xs font-semibold text-accent">查看全部</button>
+              <button type="button" onClick={() => navigate({ to: '/organizations' })} className="text-xs font-semibold text-accent">查看组织</button>
             </div>
             <div className="mt-4 grid gap-2">
               {visibleChannels.map((channel) => (
                 <button
                   key={channel.id}
                   type="button"
-                  onClick={() => enterChannel(channel.id)}
+                  onClick={() => enterChannel(channel)}
                   className="flex items-center gap-3 rounded-xl bg-card px-4 py-3 text-left transition hover:bg-hover"
                 >
                   <span className="text-lg font-light text-accent">#</span>
@@ -120,7 +123,7 @@ export function WorkspaceDashboard() {
                 <button
                   key={channel.id}
                   type="button"
-                  onClick={() => enterChannel(channel.id)}
+                  onClick={() => enterChannel(channel)}
                   className="rounded-xl bg-card px-4 py-3 text-left transition hover:bg-hover"
                 >
                   <span className="block truncate text-sm font-medium text-primary">{channel.name}</span>
