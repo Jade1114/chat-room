@@ -4,7 +4,7 @@ import { RegisterPage } from './features/auth/RegisterPage';
 import { LoginPage } from './features/workspace/LoginPage';
 import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
 import { AdminPage } from './features/admin/AdminPage';
-import { OrganizationChannelPlaceholderPage } from './features/organizations/OrganizationChannelPlaceholderPage';
+import { OrganizationChannelPage } from './features/organizations/OrganizationChannelPage';
 import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
 import { OrganizationDiscoverPage } from './features/organizations/OrganizationDiscoverPage';
 import { AppShell } from './layouts/AppShell';
@@ -68,7 +68,7 @@ const organizationDetailRoute = createRoute({
 const organizationChannelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/organizations/$organizationId/channels/$channelId',
-  component: OrganizationChannelPlaceholderPage
+  component: OrganizationChannelPage
 });
 
 const legacyMembersRoute = createRoute({

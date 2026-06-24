@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChatRoom } from '../../hooks/useChatRoom';
 import {
   activeChannelDetailAtom,
@@ -19,10 +19,24 @@ import { MessageComposer } from './components/MessageComposer';
 import { MessageHeader } from './components/MessageHeader';
 import { MessageTimeline } from './components/MessageTimeline';
 import { OnlineMemberList } from './components/OnlineMemberList';
+import { OrganizationChannelContextPanel } from './components/OrganizationChannelContextPanel';
+import type { OrganizationActivity, OrganizationMemberPreview } from '../organizations/organizationViewModel';
 
 const channelTypeOrder: ChannelType[] = ['ORGANIZATION'];
 
-export function ChatWorkspace() {
+interface ChatWorkspaceProps {
+  initialChannelId?: string;
+  organizationContext?: {
+    activities: OrganizationActivity[];
+    id: string;
+    memberCount: number;
+    members: OrganizationMemberPreview[];
+    name: string;
+  };
+  organizationId?: string;
+}
+
+export function ChatWorkspace({ initialChannelId = '', organizationContext, organizationId }: ChatWorkspaceProps = {}) {
   const [draft, setDraft] = useAtom(draftAtom);
   const channelId = useAtomValue(channelIdAtom);
   const channels = useAtomValue(channelsAtom);
@@ -33,13 +47,26 @@ export function ChatWorkspace() {
   const timeline = useAtomValue(timelineAtom);
   const isConnected = useAtomValue(isConnectedAtom);
   const canSend = useAtomValue(canSendAtom);
-  const { pickChannel, refreshLobby, sendChat } = useChatRoom();
+  const { pickChannel, refreshLobby, sendChat } = useChatRoom({ initialChannelId });
 
   const [showMembers, setShowMembers] = useState(false);
 
-  const activeChannel = activeChannelDetail || channels.find((channel) => channel.id === channelId) || null;
+  const visibleChannels = useMemo(
+    () => organizationId
+      ? channels.filter((channel) => channel.organizationId === organizationId)
+      : channels,
+    [channels, organizationId]
+  );
+
+  useEffect(() => {
+    if (initialChannelId && initialChannelId !== channelId) {
+      pickChannel(initialChannelId);
+    }
+  }, [channelId, initialChannelId, pickChannel]);
+
+  const activeChannel = activeChannelDetail || visibleChannels.find((channel) => channel.id === channelId) || null;
   const groups: ChannelGroup[] = channelTypeOrder
-    .map((type) => ({ type, channels: channels.filter((channel) => channel.type === type) }))
+    .map((type) => ({ type, channels: visibleChannels.filter((channel) => channel.type === type) }))
     .filter((group) => group.channels.length > 0);
 
   const onlineCount = activeChannelDetail?.onlineCount ?? 0;
@@ -52,6 +79,7 @@ export function ChatWorkspace() {
         error={lobbyError}
         groups={groups}
         loading={loadingChannels}
+        organizationName={organizationContext?.name}
         onPickChannel={pickChannel}
         onRefresh={refreshLobby}
       />
@@ -60,6 +88,7 @@ export function ChatWorkspace() {
         <MessageHeader
           channel={activeChannel}
           onlineCount={onlineCount}
+          organizationName={organizationContext?.name}
           onToggleMembers={() => setShowMembers((prev) => !prev)}
         />
         <MessageTimeline channel={activeChannel} connected={isConnected} items={timeline} />
@@ -74,11 +103,22 @@ export function ChatWorkspace() {
       </section>
 
       {/* Always-visible panel on 2xl+ */}
-      <OnlineMemberList
-        count={onlineCount}
-        loading={loadingChannelDetail}
-        users={onlineUsers}
-      />
+      {organizationContext ? (
+        <OrganizationChannelContextPanel
+          activities={organizationContext.activities}
+          memberCount={organizationContext.memberCount}
+          members={organizationContext.members}
+          onlineCount={onlineCount}
+          onlineUsers={onlineUsers}
+          loadingOnlineMembers={loadingChannelDetail}
+        />
+      ) : (
+        <OnlineMemberList
+          count={onlineCount}
+          loading={loadingChannelDetail}
+          users={onlineUsers}
+        />
+      )}
 
       {/* Slide-out overlay on non-2xl */}
       {showMembers && (
@@ -87,9 +127,9 @@ export function ChatWorkspace() {
             className="fixed inset-0 z-40 bg-black/30 transition-opacity 2xl:hidden"
             onClick={() => setShowMembers(false)}
           />
-          <div className="fixed right-0 top-0 z-50 h-full w-72 border-l border-divider bg-sidebar shadow-2xl 2xl:hidden" style={{ animation: 'slideInRight 0.2s ease-out' }}>
+          <div className="fixed right-0 top-0 z-50 h-full w-80 overflow-y-auto border-l border-divider bg-sidebar shadow-2xl 2xl:hidden" style={{ animation: 'slideInRight 0.2s ease-out' }}>
             <div className="flex items-center justify-between border-b border-divider px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-faint">在线成员</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-faint">活动与成员</p>
               <button
                 type="button"
                 onClick={() => setShowMembers(false)}
@@ -98,7 +138,19 @@ export function ChatWorkspace() {
                 <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             </div>
-            <OnlineMemberList count={onlineCount} loading={loadingChannelDetail} users={onlineUsers} sidebar={false} />
+            {organizationContext ? (
+              <OrganizationChannelContextPanel
+                activities={organizationContext.activities}
+                memberCount={organizationContext.memberCount}
+                members={organizationContext.members}
+                onlineCount={onlineCount}
+                onlineUsers={onlineUsers}
+                loadingOnlineMembers={loadingChannelDetail}
+                sidebar={false}
+              />
+            ) : (
+              <OnlineMemberList count={onlineCount} loading={loadingChannelDetail} users={onlineUsers} sidebar={false} />
+            )}
           </div>
         </>
       )}

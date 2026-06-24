@@ -15,16 +15,17 @@ interface ChannelSidebarProps {
   error: string;
   groups: ChannelGroup[];
   loading: boolean;
+  organizationName?: string;
   onPickChannel: (channelId: string) => void;
   onRefresh: () => void;
 }
 
-export function ChannelSidebar({ activeChannelId, error, groups, loading, onPickChannel, onRefresh }: ChannelSidebarProps) {
+export function ChannelSidebar({ activeChannelId, error, groups, loading, organizationName, onPickChannel, onRefresh }: ChannelSidebarProps) {
   return (
     <aside className="flex min-h-screen flex-col border-r border-divider bg-sidebar max-md:hidden">
       <section className="border-b border-divider p-3">
         <div className="flex items-center gap-2">
-          <h1 className="mr-auto shrink-0 text-sm font-semibold tracking-tight text-strong">组织平台</h1>
+          <h1 className="mr-auto min-w-0 truncate text-sm font-semibold tracking-tight text-strong">{organizationName || '组织平台'}</h1>
           <button type="button" onClick={onRefresh} className="grid size-8 shrink-0 place-items-center rounded-lg text-subtle transition hover:bg-hover hover:text-primary" title="刷新频道">
             <Icon className="size-4"><path d="M20 6v5h-5" /><path d="M4 18v-5h5" /><path d="M18.5 9a7 7 0 0 0-11.7-2.6L4 9m16 6-2.8 2.6A7 7 0 0 1 5.5 15" /></Icon>
           </button>
@@ -33,7 +34,7 @@ export function ChannelSidebar({ activeChannelId, error, groups, loading, onPick
 
       <section className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         <div className="mb-4 flex items-center justify-between px-2">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">我的频道</h2>
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">{organizationName ? '组织频道' : '我的频道'}</h2>
           {loading && <span className="text-[11px] text-faint">同步中</span>}
         </div>
         {error && <p className="mb-3 rounded-xl border border-danger-border bg-danger-soft p-3 text-xs leading-5 text-danger">{error}</p>}

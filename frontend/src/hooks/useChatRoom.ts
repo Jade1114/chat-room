@@ -69,7 +69,12 @@ function mergeTimelines(historyItems: TimelineItem[], currentItems: TimelineItem
   return merged;
 }
 
-export function useChatRoom() {
+export interface UseChatRoomOptions {
+  initialChannelId?: string;
+}
+
+export function useChatRoom(options: UseChatRoomOptions = {}) {
+  const initialChannelId = options.initialChannelId?.trim() || '';
   const [draft, setDraft] = useAtom(draftAtom);
   const selectedChannelId = useAtomValue(selectedChannelIdAtom);
   const displayName = useAtomValue(displayNameAtom);
@@ -528,6 +533,15 @@ export function useChatRoom() {
       setTimeline,
     ]
   );
+
+  useEffect(() => {
+    if (!initialChannelId) {
+      return;
+    }
+
+    selectedChannelRef.current = initialChannelId;
+    setChannelId(initialChannelId);
+  }, [initialChannelId, setChannelId]);
 
   useEffect(() => {
     if (!currentUser) {
