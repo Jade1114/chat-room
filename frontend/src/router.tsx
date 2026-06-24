@@ -6,6 +6,7 @@ import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
 import { AdminPage } from './features/admin/AdminPage';
 import { OrganizationChannelPlaceholderPage } from './features/organizations/OrganizationChannelPlaceholderPage';
 import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
+import { OrganizationDiscoverPage } from './features/organizations/OrganizationDiscoverPage';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -55,9 +56,7 @@ const clubsRoute = createRoute({
 const organizationsRootRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/organizations',
-  beforeLoad: () => {
-    throw redirect({ to: '/organizations/$organizationId', params: { organizationId: 'org-public-square' } });
-  }
+  component: OrganizationDiscoverPage
 });
 
 const organizationDetailRoute = createRoute({
