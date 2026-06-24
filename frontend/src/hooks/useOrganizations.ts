@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useMemo } from 'react';
-import { fetchOrganizations, joinOrganization, type OrganizationDetailResponse } from '../lib/organizationApi';
+import { fetchOrganizations, joinOrganization, type OrganizationDetailResponse, type OrganizationSummaryResponse } from '../lib/organizationApi';
 import { organizationsAtom, organizationsErrorAtom, organizationsLoadingAtom } from '../state/organizationAtoms';
 
 export function useOrganizations() {
@@ -36,25 +36,39 @@ export function useOrganizations() {
     }
   }, [setError, setLoading, setOrganizations]);
 
-  const applyJoinedOrganization = useCallback((detail: OrganizationDetailResponse) => {
-    setOrganizations((current) => current.map((organization) => (
-      organization.id === detail.id
-        ? {
-            ...organization,
-            joined: detail.joined,
-            memberCount: detail.memberCount,
-            defaultChannelId: detail.defaultChannelId
-          }
-        : organization
-    )));
+  const applyOrganization = useCallback((detail: OrganizationDetailResponse | OrganizationSummaryResponse) => {
+    setOrganizations((current) => {
+      const summary: OrganizationSummaryResponse = {
+        id: detail.id,
+        name: detail.name,
+        description: detail.description,
+        visibility: detail.visibility,
+        joinPolicy: detail.joinPolicy,
+        memberCount: detail.memberCount,
+        joined: detail.joined,
+        defaultChannelId: detail.defaultChannelId
+      };
+      const exists = current.some((organization) => organization.id === detail.id);
+      if (!exists) {
+        return [summary, ...current];
+      }
+      return current.map((organization) => (
+        organization.id === detail.id
+          ? {
+              ...organization,
+              ...summary
+            }
+          : organization
+      ));
+    });
   }, [setOrganizations]);
 
   const joinAndRefreshOrganization = useCallback(async (organizationId: string) => {
     const detail = await joinOrganization(organizationId);
-    applyJoinedOrganization(detail);
+    applyOrganization(detail);
     await refreshOrganizations().catch(() => undefined);
     return detail;
-  }, [applyJoinedOrganization, refreshOrganizations]);
+  }, [applyOrganization, refreshOrganizations]);
 
   const clearOrganizations = useCallback(() => {
     setOrganizations([]);
@@ -70,7 +84,7 @@ export function useOrganizations() {
     error,
     refreshOrganizations,
     joinAndRefreshOrganization,
-    applyJoinedOrganization,
+    applyOrganization,
     clearOrganizations
   };
 }

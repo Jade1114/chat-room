@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { createOrganization } from '../../lib/organizationApi';
+import { useOrganizations } from '../../hooks/useOrganizations';
 import { Icon } from '../../components/Icon';
 
 export function CreateOrganizationPage() {
   const navigate = useNavigate();
+  const { applyOrganization, refreshOrganizations } = useOrganizations();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -23,6 +25,8 @@ export function CreateOrganizationPage() {
     setSubmitting(true);
     try {
       const org = await createOrganization(trimmedName, description.trim());
+      applyOrganization(org);
+      void refreshOrganizations().catch(() => undefined);
       navigate({
         to: '/organizations/$organizationId',
         params: { organizationId: org.id }
