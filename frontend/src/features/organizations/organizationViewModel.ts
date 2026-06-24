@@ -1,5 +1,5 @@
 import type { Channel } from '../../types/chat';
-import type { OrganizationDetailResponse, OrganizationSummaryResponse } from '../../lib/organizationApi';
+import type { ActivityResponse, OrganizationDetailResponse, OrganizationSummaryResponse } from '../../lib/organizationApi';
 
 export type OrganizationRole = 'MEMBER' | 'ORGANIZER';
 export type OrganizationTab = 'overview' | 'channels' | 'activities' | 'members' | 'settings';
@@ -15,8 +15,10 @@ export interface OrganizationChannel {
 export interface OrganizationActivity {
   id: string;
   title: string;
+  description: string;
   time: string;
-  status: string;
+  location: string;
+  status: 'upcoming' | 'ongoing' | 'past';
 }
 
 export interface MemberPreviewVM {
@@ -94,6 +96,9 @@ export function toOrganizationViewModel(
   const members = 'members' in organization
     ? organization.members.map((m) => ({ id: m.id, displayName: m.displayName, role: m.role as OrganizationRole }))
     : [];
+  const activities = 'activities' in organization
+    ? toOrganizationActivities(organization.activities)
+    : [];
   return {
     id: organization.id,
     name: organization.name,
@@ -109,7 +114,35 @@ export function toOrganizationViewModel(
     tags,
     creatorName,
     channels,
-    activities: [],
+    activities,
     members
   };
+}
+
+function formatActivityTime(startTime: string, endTime: string | null): string {
+  const start = new Date(startTime);
+  const startStr = start.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) +
+    ' ' + start.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  if (!endTime) return startStr;
+  const end = new Date(endTime);
+  return startStr + ' - ' + end.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function resolveActivityStatus(startTime: string, endTime: string | null): 'upcoming' | 'ongoing' | 'past' {
+  const now = new Date();
+  const start = new Date(startTime);
+  if (start > now) return 'upcoming';
+  if (!endTime) return 'ongoing';
+  return new Date(endTime) < now ? 'past' : 'ongoing';
+}
+
+export function toOrganizationActivities(activities: ActivityResponse[]): OrganizationActivity[] {
+  return activities.map((act) => ({
+    id: act.id,
+    title: act.title,
+    description: act.description || '',
+    time: formatActivityTime(act.startTime, act.endTime),
+    location: act.location || '线上',
+    status: resolveActivityStatus(act.startTime, act.endTime)
+  }));
 }

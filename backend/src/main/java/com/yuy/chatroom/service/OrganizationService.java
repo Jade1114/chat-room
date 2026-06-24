@@ -11,10 +11,12 @@ import org.springframework.stereotype.Service;
 import com.yuy.chatroom.dto.CreateOrganizationRequest;
 import com.yuy.chatroom.dto.OrganizationDetailResponse;
 import com.yuy.chatroom.dto.OrganizationSummaryResponse;
+import com.yuy.chatroom.mapper.ActivityMapper;
 import com.yuy.chatroom.mapper.ChannelMapper;
 import com.yuy.chatroom.mapper.OrganizationMapper;
 import com.yuy.chatroom.mapper.OrganizationMemberMapper;
 import com.yuy.chatroom.mapper.UserMapper;
+import com.yuy.chatroom.model.Activity;
 import com.yuy.chatroom.model.Channel;
 import com.yuy.chatroom.model.ChannelType;
 import com.yuy.chatroom.model.CurrentUser;
@@ -27,15 +29,18 @@ public class OrganizationService {
   private final OrganizationMemberMapper organizationMemberMapper;
   private final ChannelMapper channelMapper;
   private final UserMapper userMapper;
+  private final ActivityMapper activityMapper;
 
   public OrganizationService(OrganizationMapper organizationMapper,
       OrganizationMemberMapper organizationMemberMapper,
       ChannelMapper channelMapper,
-      UserMapper userMapper) {
+      UserMapper userMapper,
+      ActivityMapper activityMapper) {
     this.organizationMapper = organizationMapper;
     this.organizationMemberMapper = organizationMemberMapper;
     this.channelMapper = channelMapper;
     this.userMapper = userMapper;
+    this.activityMapper = activityMapper;
   }
 
   public OrganizationDetailResponse createOrganization(CreateOrganizationRequest request, String userId) {
@@ -78,6 +83,9 @@ public class OrganizationService {
     List<MemberPreview> members = organizationMemberMapper.findMembersByOrganizationId(organizationId);
     if (members == null) members = Collections.emptyList();
 
+    List<Activity> activities = activityMapper.findPublicByOrganizationId(organizationId);
+    if (activities == null) activities = Collections.emptyList();
+
     return Optional.of(new OrganizationDetailResponse(
         summary.getId(),
         summary.getName(),
@@ -90,7 +98,8 @@ public class OrganizationService {
         channels,
         tags,
         creatorName,
-        members));
+        members,
+        activities));
   }
 
   public Optional<OrganizationDetailResponse> joinOrganization(String organizationId, String userId) {

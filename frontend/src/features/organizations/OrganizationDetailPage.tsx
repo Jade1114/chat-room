@@ -109,15 +109,40 @@ function ChannelsSection({ organization }: { organization: OrganizationViewModel
 }
 
 function ActivitiesSection({ organization }: { organization: OrganizationViewModel }) {
+  const upcomingActivities = organization.activities.filter((a) => a.status !== 'past');
   return (
     <article className="rounded-3xl border border-divider bg-card p-5">
-      <h2 className="text-base font-semibold text-strong">Activities</h2>
-      <p className="mt-1 text-xs text-muted">活动是组织存在的业务理由，后续会从这里进入报名和日程。</p>
-      <div className="mt-4 grid gap-3">
-        {organization.activities.map((activity) => (
-          <div key={activity.id} className="rounded-2xl border border-divider p-3">
-            <p className="text-sm font-semibold text-strong">{activity.title}</p>
-            <p className="mt-1 text-xs text-muted">{activity.time} · {activity.status}</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-strong">Activities</h2>
+          <p className="mt-1 text-xs text-muted">组织近期公开活动。</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2">
+        {upcomingActivities.length === 0 && (
+          <div className="rounded-2xl bg-active px-4 py-3 text-xs text-muted">该组织暂无公开活动。</div>
+        )}
+        {upcomingActivities.map((activity) => (
+          <div key={activity.id} className="rounded-2xl border border-divider bg-card p-4 transition hover:bg-hover">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-strong">{activity.title}</p>
+                <p className="mt-1 text-xs text-muted">{activity.description}</p>
+              </div>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${activity.status === 'ongoing' ? 'bg-accent-soft text-accent-strong' : 'bg-active text-muted'}`}>
+                {activity.status === 'upcoming' ? '即将开始' : '进行中'}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-faint">
+              <span className="flex items-center gap-1">
+                <Icon className="size-3"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></Icon>
+                {activity.time}
+              </span>
+              <span className="flex items-center gap-1">
+                <Icon className="size-3"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></Icon>
+                {activity.location}
+              </span>
+            </div>
           </div>
         ))}
       </div>

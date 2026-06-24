@@ -24,6 +24,20 @@ export interface OrganizationDetailResponse extends OrganizationSummaryResponse 
   tags: string[];
   creatorName: string | null;
   members: MemberPreview[];
+  activities: ActivityResponse[];
+}
+
+export interface ActivityResponse {
+  id: string;
+  organizationId: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  startTime: string;
+  endTime: string | null;
+  visibility: 'PUBLIC' | 'ORGANIZATION';
+  createdBy: string;
+  createdAt: string;
 }
 
 function buildApiUrl(path: string) {
@@ -73,6 +87,14 @@ export async function createOrganization(name: string, description: string): Pro
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || `create organization status ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchActivities(): Promise<ActivityResponse[]> {
+  const response = await fetch(buildApiUrl('/api/activities'), { headers: buildHeaders() });
+  if (!response.ok) {
+    throw new Error(`activities status ${response.status}`);
   }
   return response.json();
 }
