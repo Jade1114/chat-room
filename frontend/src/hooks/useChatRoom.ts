@@ -17,6 +17,7 @@ import {
   selectedChannelIdAtom,
   statusAtom,
   timelineAtom,
+  unreadCountsAtom,
 } from "../state/chatAtoms";
 import type { ChatMessagePayload, TimelineItem } from "../types/chat";
 
@@ -83,6 +84,7 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
   const setStatus = useSetAtom(statusAtom);
   const setTimeline = useSetAtom(timelineAtom);
   const setChannels = useSetAtom(channelsAtom);
+  const setUnreadCounts = useSetAtom(unreadCountsAtom);
   const setChannelId = useSetAtom(channelIdAtom);
   const setActiveChannelDetail = useSetAtom(activeChannelDetailAtom);
   const setLoadingChannels = useSetAtom(loadingChannelsAtom);
@@ -234,6 +236,13 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
           ? preferredChannelId
           : "";
         setChannels(nextChannels);
+        setUnreadCounts((current) => {
+          const next = { ...current };
+          for (const channel of nextChannels) {
+            next[channel.id] = channel.unreadCount;
+          }
+          return next;
+        });
         setChannelId(nextChannelId);
         return nextChannelId;
       } catch {
@@ -250,6 +259,7 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
       setChannels,
       setLoadingChannels,
       setLobbyError,
+      setUnreadCounts,
     ]
   );
 
@@ -311,6 +321,10 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
                   : channel
               )
             );
+            setUnreadCounts((current) => ({
+              ...current,
+              [message.channelId as string]: (current[message.channelId as string] || 0) + increment,
+            }));
           }
           break;
         case "USER_JOIN":
@@ -323,7 +337,7 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
 
       refreshChannelDetail();
     },
-    [pushChat, pushSystem, refreshChannelDetail, setTimeline]
+    [pushChat, pushSystem, refreshChannelDetail, setTimeline, setUnreadCounts]
   );
 
   const sendChannelViewChanged = useCallback(
@@ -357,8 +371,9 @@ export function useChatRoom(options: UseChatRoomOptions = {}) {
           channel.id === targetChannelId ? { ...channel, unreadCount: 0 } : channel
         )
       );
+      setUnreadCounts((current) => ({ ...current, [targetChannelId]: 0 }));
     },
-    [currentUser, displayName, refreshChannelDetail, setChannels]
+    [currentUser, displayName, refreshChannelDetail, setChannels, setUnreadCounts]
   );
 
   const connectWorkspace = useCallback(() => {

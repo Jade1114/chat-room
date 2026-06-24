@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { toOrganizationViewModel, type OrganizationViewModel } from '../features/organizations/organizationViewModel';
 import { useTheme } from '../features/theme/useTheme';
-import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
+import { currentUserAtom, isConnectedAtom, unreadCountsAtom } from '../state/chatAtoms';
 import { useAuth } from '../hooks/useAuth';
 import { useOrganizations } from '../hooks/useOrganizations';
 import type { UserRole } from '../types/chat';
@@ -93,7 +93,7 @@ function SidebarNavigationItem({ item, pathname }: { item: NavigationItem; pathn
   );
 }
 
-function JoinedOrganizationCard({ organization, active }: { organization: OrganizationViewModel; active: boolean }) {
+function JoinedOrganizationCard({ organization, active, unreadCount }: { organization: OrganizationViewModel; active: boolean; unreadCount: number }) {
   return (
     <Link
       to="/organizations/$organizationId"
@@ -107,6 +107,11 @@ function JoinedOrganizationCard({ organization, active }: { organization: Organi
           {organization.membershipLabel} · {organization.memberCount} members
         </span>
       </span>
+      {unreadCount > 0 && (
+        <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold leading-none text-white">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
       <Icon className="size-4 text-faint transition group-hover:translate-x-0.5 group-hover:text-muted">
         <path d="m9 18 6-6-6-6" />
       </Icon>
@@ -121,6 +126,7 @@ export function AppShell() {
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
+  const unreadCounts = useAtomValue(unreadCountsAtom);
   const { restoreSession, logout } = useAuth();
   const {
     joinedOrganizations,

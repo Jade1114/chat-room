@@ -17,3 +17,4 @@ export const selectedChannelIdAtom = atom((get) => get(channelIdAtom).trim());
 export const isConnectedAtom = atom((get) => get(statusAtom) === 'connected');
 export const canSendAtom = atom((get) => get(isConnectedAtom) && get(selectedChannelIdAtom).length > 0 && get(draftAtom).trim().length > 0);
 export const unreadChannelsAtom = atom<string[]>([]);
+export const unreadCountsAtom = atom<Record<string, number>>({});

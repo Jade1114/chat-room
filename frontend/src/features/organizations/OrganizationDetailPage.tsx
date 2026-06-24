@@ -1,8 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useAtomValue } from 'jotai';
 import { Link, useParams } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
 import { fetchOrganization } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
+import { unreadCountsAtom } from '../../state/chatAtoms';
 import { toOrganizationViewModel, type OrganizationChannel, type OrganizationTab, type OrganizationViewModel } from './organizationViewModel';
 
 const tabLabels: Record<OrganizationTab, string> = {
@@ -188,6 +190,7 @@ function PlaceholderTab({ organization, tab }: { organization: OrganizationViewM
 
 export function OrganizationDetailPage() {
   const { organizationId } = useParams({ from: '/organizations/$organizationId' });
+  const unreadCounts = useAtomValue(unreadCountsAtom);
   const { joinAndRefreshOrganization } = useOrganizations();
   const [organization, setOrganization] = useState<OrganizationViewModel | null>(null);
   const [activeTab, setActiveTab] = useState<OrganizationTab>('overview');
@@ -212,6 +215,17 @@ export function OrganizationDetailPage() {
     return () => { cancelled = true; };
   }, [organizationId]);
 
+  const displayOrganization = useMemo(() => {
+    if (!organization) return null;
+    return {
+      ...organization,
+      channels: organization.channels.map((channel) => ({
+        ...channel,
+        unreadCount: unreadCounts[channel.id] ?? channel.unreadCount
+      }))
+    };
+  }, [organization, unreadCounts]);
+
   const handleJoin = async () => {
     setJoining(true);
     setError('');
@@ -230,7 +244,7 @@ export function OrganizationDetailPage() {
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-divider bg-content px-7 py-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">Organization Homepage First</p>
-          <h1 className="mt-1 text-xl font-semibold text-strong">{organization?.name || '组织主页'}</h1>
+          <h1 className="mt-1 text-xl font-semibold text-strong">{displayOrganization?.name || '组织主页'}</h1>
         </div>
         <nav className="flex flex-wrap gap-2 text-xs">
           {(Object.keys(tabLabels) as OrganizationTab[]).map((tab) => (
@@ -241,10 +255,10 @@ export function OrganizationDetailPage() {
       <section className="min-h-0 overflow-y-auto p-7 max-sm:p-4">
         {loading && <div className="rounded-3xl border border-divider bg-card p-7 text-sm text-muted">正在加载组织详情...</div>}
         {!loading && error && <div className="rounded-3xl border border-danger/30 bg-danger/10 p-7 text-sm text-danger">{error}</div>}
-        {!loading && !error && organization && (
+        {!loading && !error && displayOrganization && (
           activeTab === 'overview'
-            ? <OverviewTab organization={organization} joining={joining} onJoin={handleJoin} />
-            : <PlaceholderTab organization={organization} tab={activeTab} />
+            ? <OverviewTab organization={displayOrganization} joining={joining} onJoin={handleJoin} />
+            : <PlaceholderTab organization={displayOrganization} tab={activeTab} />
         )}
       </section>
     </main>
