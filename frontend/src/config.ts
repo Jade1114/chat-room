@@ -10,5 +10,7 @@ function defaultWsUrl() {
   return `${protocol}//${window.location.host}/ws/chat`;
 }
 
-export const apiBaseUrl = configuredApiBaseUrl ?? (import.meta.env.DEV ? 'http://localhost:8080' : '');
+// DEV: use relative URL so all requests go through Vite proxy (same-origin, no CORS)
+// Production: same-origin (frontend served from backend domain)
+export const apiBaseUrl = configuredApiBaseUrl ?? (import.meta.env.DEV ? '' : '');
 export const wsUrl = configuredWsUrl || defaultWsUrl();
