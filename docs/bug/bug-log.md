@@ -44,6 +44,8 @@
 
 ## B-003: `/messages` 路由保留但行为不稳定
 
+**状态**: ✅ 已修复（d8c988d refactor: remove standalone messages route）
+
 **发现日期**: 2026-06-24（从现有已知缺口迁移）
 
 **现象**: 访问 `/messages` 时进入旧版 ChatWorkspace（无组织上下文），但旧组件现在接收了 `initialChannelId` / `organizationContext` 参数。`/messages` 路由没有传这些参数，所以 fallback 到默认值。如果默认 channelId 为空，chat 体验不完整。
@@ -55,6 +57,8 @@
 ---
 
 ## B-004: 登录页 JWT 重定向逻辑不对 + 布局 bug
+
+**状态**: ✅ 已修复（c5a5008 fix: navigation bugs B-004, B-005, B-012）
 
 **发现日期**: 2026-06-24
 
@@ -75,6 +79,8 @@
 
 ## B-005: 点击组织导航后 URL 变化但页面不渲染
 
+**状态**: ✅ 已修复（c5a5008 fix: navigation bugs B-004, B-005, B-012）
+
 **发现日期**: 2026-06-24
 
 **现象**: 在侧边栏或组织发现中心点击组织后，浏览器 URL 正确变化，但页面内容没有更新。必须手动刷新浏览器才能看到正确的组织详情。
@@ -92,6 +98,8 @@
 
 ## B-006: Redis session 状态无心跳检测
 
+**状态**: 🔜 下一轮处理（Redis session / 在线状态一致性深入排查）
+
 **发现日期**: 2026-06-24
 
 **现象**: 用户断开 WebSocket 连接后（关闭浏览器或网络中断），Redis 中的 session 状态（`workspace:online`、`channel:viewing`）没有及时清除，导致在线人数显示偏高，或 session 状态残留。
@@ -100,9 +108,15 @@
 
 **关联**: `known-engineering-concerns.md` — 属于 Redis 状态一致性问题
 
+**补充观察**: 有时候在线成员里会看到浏览器中没有登录的用户；需要确认这是缺少心跳/TTL 兜底，还是 logout、异常断线、多 tab/session 去重、频道 view 切换清理等其他状态一致性问题。
+
+**下一步**: 明天从 B-006 开始，先诊断 `ChannelPresenceService`、WebSocket connect/disconnect 生命周期、Redis key 设计和在线成员查询语义，再决定是否加入 TTL/heartbeat 或调整清理逻辑。
+
 ---
 
 ## B-007: 创建组织后未立即同步到侧边栏"我的组织"
+
+**状态**: ✅ 已修复（0a8cb4e fix: sync created organization into joined org sidebar）
 
 **发现日期**: 2026-06-24
 
@@ -121,6 +135,8 @@
 
 ## B-008: 删除 `/messages` 路由
 
+**状态**: ✅ 已修复（d8c988d refactor: remove standalone messages route）
+
 **发现日期**: 2026-06-24
 
 **现象**: `/messages` 作为旧版兼容路由保留，当前行为不稳定且没有独立的产品意义。组织频道路由 `/organizations/:id/channels/:id` 已是正式入口。
@@ -133,6 +149,8 @@
 
 ## B-009: 未读通知应层层传递到侧边栏组织卡片
 
+**状态**: ✅ 已修复（1382889 fix: surface unread counts in organization navigation）
+
 **发现日期**: 2026-06-24
 
 **现象**: 当前未读 badge 只显示在聊天窗口的频道列表中。侧边栏"我的组织"卡片没有显示未读通知，用户需要进入组织才能知道是否有新消息。
@@ -142,6 +160,8 @@
 ---
 
 ## B-010: 组织名称允许重复
+
+**状态**: ✅ 已修复（61d6e71 fix: prevent duplicate organization names）
 
 **发现日期**: 2026-06-24
 
@@ -153,6 +173,8 @@
 
 ## B-011: 无活动发布入口
 
+**状态**: ✅ 已修复（7924ee4 feat: add organization activity publishing）
+
 **发现日期**: 2026-06-24
 
 **现象**: Activity 数据已有种子数据，但没有提供给 Organizer 的"发布活动"入口。Organizer 无法在前端创建新活动。
@@ -162,6 +184,8 @@
 ---
 
 ## B-012: 侧边栏"我的组织"区域无滚动条
+
+**状态**: ✅ 已修复（c5a5008 fix: navigation bugs B-004, B-005, B-012）
 
 **发现日期**: 2026-06-24
 
@@ -173,3 +197,16 @@
 2. 观察左侧 sidebar："我的组织"区域溢出视口，但整个页面没有滚动条
 
 **预期**: "我的组织"区域应有独立滚动条（`overflow-y-auto`），不影响顶部导航和底部用户菜单。
+
+---
+
+## B-013: 活动发布后未实时同步到其他页面
+
+**状态**: 🟡 待评估（是否进入 MVP fix 取决于实时性要求）
+
+**发现日期**: 2026-06-25
+
+**现象**: Organizer 发布活动后，当前组织详情页会立即显示新活动，但其他已打开的页面（如活动中心、其他用户的组织详情页）不会实时同步，需要刷新或重新加载。
+
+**预期**: 待定。如果活动发布需要具备通知/实时协同属性，可以通过 WebSocket 广播活动变更或前端定时/重新聚焦刷新；如果 MVP 只要求发布后可查询，则当前行为可接受。
+
