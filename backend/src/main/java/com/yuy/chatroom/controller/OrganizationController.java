@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.yuy.chatroom.dto.CreateOrganizationRequest;
 import com.yuy.chatroom.dto.OrganizationDetailResponse;
 import com.yuy.chatroom.dto.OrganizationSummaryResponse;
+import com.yuy.chatroom.service.DuplicateOrganizationNameException;
 import com.yuy.chatroom.service.OrganizationService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,8 +60,12 @@ public class OrganizationController {
       return ResponseEntity.badRequest().body(Map.of("error", "组织名称不能超过 64 个字符"));
     }
 
-    OrganizationDetailResponse org = organizationService.createOrganization(createRequest, userId);
-    return ResponseEntity.ok(org);
+    try {
+      OrganizationDetailResponse org = organizationService.createOrganization(createRequest, userId);
+      return ResponseEntity.ok(org);
+    } catch (DuplicateOrganizationNameException error) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "组织名称已存在"));
+    }
   }
 
   @PostMapping("/{organizationId}/join")

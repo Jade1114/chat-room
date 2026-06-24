@@ -73,7 +73,8 @@ CREATE TABLE IF NOT EXISTS organization (
     visibility      VARCHAR(16)     NOT NULL DEFAULT 'PUBLIC' COMMENT 'PUBLIC | PRIVATE | DRAFT',
     join_policy     VARCHAR(16)     NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN | APPROVAL | INVITE_ONLY',
     created_by      VARCHAR(32)     NULL,
-    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    UNIQUE KEY uk_organization_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS organization_member (

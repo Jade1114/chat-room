@@ -29,6 +29,7 @@ CREATE TABLE organization (
     join_policy     VARCHAR(16)     NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN | APPROVAL | INVITE_ONLY',
     created_by      VARCHAR(32)     NULL,
     created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    UNIQUE KEY uk_organization_name (name),
     CONSTRAINT fk_organization_created_by
         FOREIGN KEY (created_by) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -16,6 +16,9 @@ public interface OrganizationMapper {
   @Select("SELECT id, name, description, visibility, join_policy, created_by, created_at FROM organization ORDER BY created_at ASC, id ASC")
   List<Organization> findAll();
 
+  @Select("SELECT COUNT(*) FROM organization WHERE name = #{name}")
+  int countByName(String name);
+
   @Insert("""
       INSERT INTO organization (id, name, description, visibility, join_policy, created_by, created_at)
       VALUES (#{id}, #{name}, #{description}, #{visibility}, #{joinPolicy}, #{createdBy}, #{createdAt})

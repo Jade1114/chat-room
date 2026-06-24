@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import com.yuy.chatroom.dto.CreateOrganizationRequest;
@@ -49,8 +50,16 @@ public class OrganizationService {
     String orgName = request.getName().trim();
     String description = request.getDescription() != null ? request.getDescription().trim() : "";
 
+    if (organizationMapper.countByName(orgName) > 0) {
+      throw new DuplicateOrganizationNameException(orgName);
+    }
+
     Organization org = new Organization(orgId, orgName, description, "PUBLIC", "OPEN", userId, Instant.now());
-    organizationMapper.insert(org);
+    try {
+      organizationMapper.insert(org);
+    } catch (DuplicateKeyException error) {
+      throw new DuplicateOrganizationNameException(orgName);
+    }
 
     Channel channel = new Channel(channelId, orgName + " 聊天", ChannelType.ORGANIZATION, orgId, orgName + " 的默认聊天频道", false, 0);
     channelMapper.insert(channel);
