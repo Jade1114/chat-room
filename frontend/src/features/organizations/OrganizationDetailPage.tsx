@@ -46,7 +46,10 @@ function Hero({ organization, joining, onJoin }: { organization: OrganizationVie
         <div className="flex items-end gap-4">
           <OrganizationMark organization={organization} large />
           <div>
-            <p className="text-xs font-semibold text-white/70">{organization.visibility} · {organization.joinPolicy} · {organization.memberCount} members</p>
+            <p className="text-xs font-semibold text-white/70">
+              {organization.visibility} · {organization.joinPolicy} · {organization.memberCount} members
+              {organization.creatorName && <> · 创建者: {organization.creatorName}</>}
+            </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">{organization.name}</h1>
           </div>
         </div>
@@ -64,6 +67,13 @@ function Hero({ organization, joining, onJoin }: { organization: OrganizationVie
         </div>
       </div>
       <p className="relative z-10 mt-5 max-w-2xl text-sm leading-7 text-white/75">{organization.description}</p>
+      {organization.tags.length > 0 && (
+        <div className="relative z-10 mt-4 flex flex-wrap gap-2">
+          {organization.tags.map((tag) => (
+            <span key={tag} className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold text-white/80">{tag}</span>
+          ))}
+        </div>
+      )}
       <div className="absolute -right-10 -top-16 size-56 rounded-full border-[42px] border-white/10" />
     </section>
   );

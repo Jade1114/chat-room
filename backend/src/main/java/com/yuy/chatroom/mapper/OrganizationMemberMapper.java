@@ -1,9 +1,13 @@
 package com.yuy.chatroom.mapper;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import com.yuy.chatroom.model.MemberPreview;
 
 @Mapper
 public interface OrganizationMemberMapper {
@@ -29,4 +33,13 @@ public interface OrganizationMemberMapper {
   void insertMembership(@Param("organizationId") String organizationId,
                         @Param("userId") String userId,
                         @Param("role") String role);
+
+  @Select("""
+      SELECT om.user_id AS id, u.display_name AS displayName, om.role
+      FROM organization_member om
+      JOIN app_user u ON u.id = om.user_id
+      WHERE om.organization_id = #{organizationId}
+      ORDER BY om.joined_at ASC
+      """)
+  List<MemberPreview> findMembersByOrganizationId(String organizationId);
 }

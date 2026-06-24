@@ -1,6 +1,7 @@
 package com.yuy.chatroom.service;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,8 +14,11 @@ import com.yuy.chatroom.dto.OrganizationSummaryResponse;
 import com.yuy.chatroom.mapper.ChannelMapper;
 import com.yuy.chatroom.mapper.OrganizationMapper;
 import com.yuy.chatroom.mapper.OrganizationMemberMapper;
+import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.Channel;
 import com.yuy.chatroom.model.ChannelType;
+import com.yuy.chatroom.model.CurrentUser;
+import com.yuy.chatroom.model.MemberPreview;
 import com.yuy.chatroom.model.Organization;
 
 @Service
@@ -22,13 +26,16 @@ public class OrganizationService {
   private final OrganizationMapper organizationMapper;
   private final OrganizationMemberMapper organizationMemberMapper;
   private final ChannelMapper channelMapper;
+  private final UserMapper userMapper;
 
   public OrganizationService(OrganizationMapper organizationMapper,
       OrganizationMemberMapper organizationMemberMapper,
-      ChannelMapper channelMapper) {
+      ChannelMapper channelMapper,
+      UserMapper userMapper) {
     this.organizationMapper = organizationMapper;
     this.organizationMemberMapper = organizationMemberMapper;
     this.channelMapper = channelMapper;
+    this.userMapper = userMapper;
   }
 
   public OrganizationDetailResponse createOrganization(CreateOrganizationRequest request, String userId) {
@@ -62,6 +69,15 @@ public class OrganizationService {
 
     List<Channel> channels = channelMapper.findByOrganizationId(organizationId);
     OrganizationSummaryResponse summary = toSummary(organization, userId);
+
+    List<String> tags = organizationMapper.findTagsByOrganizationId(organizationId);
+    if (tags == null) tags = Collections.emptyList();
+
+    String creatorName = resolveCreatorName(organization.getCreatedBy());
+
+    List<MemberPreview> members = organizationMemberMapper.findMembersByOrganizationId(organizationId);
+    if (members == null) members = Collections.emptyList();
+
     return Optional.of(new OrganizationDetailResponse(
         summary.getId(),
         summary.getName(),
@@ -71,7 +87,10 @@ public class OrganizationService {
         summary.getMemberCount(),
         summary.isJoined(),
         summary.getDefaultChannelId(),
-        channels));
+        channels,
+        tags,
+        creatorName,
+        members));
   }
 
   public Optional<OrganizationDetailResponse> joinOrganization(String organizationId, String userId) {
@@ -106,5 +125,13 @@ public class OrganizationService {
       return false;
     }
     return organizationMemberMapper.countMembership(userId, organizationId) > 0;
+  }
+
+  private String resolveCreatorName(String createdBy) {
+    if (createdBy == null || createdBy.isBlank()) {
+      return null;
+    }
+    CurrentUser creator = userMapper.findById(createdBy);
+    return creator != null ? creator.getDisplayName() : null;
   }
 }

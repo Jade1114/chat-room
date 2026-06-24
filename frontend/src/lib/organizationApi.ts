@@ -13,8 +13,17 @@ export interface OrganizationSummaryResponse {
   defaultChannelId: string | null;
 }
 
+export interface MemberPreview {
+  id: string;
+  displayName: string;
+  role: 'MEMBER' | 'ORGANIZER';
+}
+
 export interface OrganizationDetailResponse extends OrganizationSummaryResponse {
   channels: Channel[];
+  tags: string[];
+  creatorName: string | null;
+  members: MemberPreview[];
 }
 
 function buildApiUrl(path: string) {

@@ -19,11 +19,14 @@ export interface OrganizationActivity {
   status: string;
 }
 
-export interface OrganizationMemberPreview {
+export interface MemberPreviewVM {
   id: string;
   displayName: string;
   role: OrganizationRole;
 }
+
+/** @deprecated Use MemberPreviewVM */
+export type OrganizationMemberPreview = MemberPreviewVM;
 
 export interface OrganizationViewModel {
   id: string;
@@ -37,9 +40,11 @@ export interface OrganizationViewModel {
   membershipLabel: string;
   defaultChannelId: string | null;
   colors: string;
+  tags: string[];
+  creatorName: string | null;
   channels: OrganizationChannel[];
   activities: OrganizationActivity[];
-  members: OrganizationMemberPreview[];
+  members: MemberPreviewVM[];
 }
 
 const colorPalette = [
@@ -48,16 +53,6 @@ const colorPalette = [
   'from-[#4338ca] to-[#a78bfa]',
   'from-[#be123c] to-[#fb7185]',
   'from-[#0369a1] to-[#38bdf8]'
-];
-
-const fallbackActivities: OrganizationActivity[] = [
-  { id: 'activity-placeholder-1', title: '近期活动占位', time: 'Phase 2-C 接入', status: '规划中' },
-  { id: 'activity-placeholder-2', title: '组织日程占位', time: '后续 API', status: '待实现' }
-];
-
-const fallbackMembers: OrganizationMemberPreview[] = [
-  { id: 'member-placeholder-1', displayName: '组织者', role: 'ORGANIZER' },
-  { id: 'member-placeholder-2', displayName: '成员预览', role: 'MEMBER' }
 ];
 
 export function organizationMark(name: string) {
@@ -94,6 +89,11 @@ export function toOrganizationViewModel(
   organization: OrganizationSummaryResponse | OrganizationDetailResponse
 ): OrganizationViewModel {
   const channels = 'channels' in organization ? organization.channels.map(toOrganizationChannel) : [];
+  const tags = 'tags' in organization ? organization.tags : [];
+  const creatorName = 'creatorName' in organization ? organization.creatorName : null;
+  const members = 'members' in organization
+    ? organization.members.map((m) => ({ id: m.id, displayName: m.displayName, role: m.role as OrganizationRole }))
+    : [];
   return {
     id: organization.id,
     name: organization.name,
@@ -106,8 +106,10 @@ export function toOrganizationViewModel(
     membershipLabel: organization.joined ? '已加入' : '未加入',
     defaultChannelId: organization.defaultChannelId,
     colors: organizationColor(organization.id),
+    tags,
+    creatorName,
     channels,
-    activities: fallbackActivities,
-    members: fallbackMembers
+    activities: [],
+    members
   };
 }

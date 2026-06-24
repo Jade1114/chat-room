@@ -21,4 +21,7 @@ public interface OrganizationMapper {
       VALUES (#{id}, #{name}, #{description}, #{visibility}, #{joinPolicy}, #{createdBy}, #{createdAt})
       """)
   void insert(Organization organization);
+
+  @Select("SELECT tag FROM organization_tag WHERE organization_id = #{organizationId} ORDER BY tag ASC")
+  List<String> findTagsByOrganizationId(String organizationId);
 }
