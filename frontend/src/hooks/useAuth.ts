@@ -30,10 +30,6 @@ export function useAuth() {
       id: auth.userId,
       displayName: auth.displayName,
       role: auth.role as CurrentUser['role'],
-      schoolId: '',
-      departmentId: null,
-      classId: null,
-      courseIds: [],
     });
   }, [setTokenAtom, setCurrentUser]);
 
@@ -100,7 +96,6 @@ export function useAuth() {
       if (!res.ok) return null;
       const user = await res.json();
       if (!user || !user.id) return null;
-      user.courseIds = user.courseIds || [];
       setCurrentUser(user);
       return user as CurrentUser;
     } catch {

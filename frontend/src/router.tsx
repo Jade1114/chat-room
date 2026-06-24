@@ -1,8 +1,6 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router';
-import { AssignmentsPrototype } from './features/assignments/AssignmentsPrototype';
 import { ChatWorkspace } from './features/chat/ChatWorkspace';
 import { ClubsPrototype } from './features/clubs/ClubsPrototype';
-import { TeacherCommunicationPrototype } from './features/communication/TeacherCommunicationPrototype';
 import { RegisterPage } from './features/auth/RegisterPage';
 import { LoginPage } from './features/workspace/LoginPage';
 import { WorkspaceDashboard } from './features/workspace/WorkspaceDashboard';
@@ -45,18 +43,6 @@ const dashboardRoute = createRoute({
   component: WorkspaceDashboard
 });
 
-const assignmentsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/assignments',
-  component: AssignmentsPrototype
-});
-
-const teacherCommunicationRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/teacher-communication',
-  component: TeacherCommunicationPrototype
-});
-
 const clubsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/clubs',
@@ -67,14 +53,6 @@ const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
   component: AdminPage
-});
-
-const legacyDirectMessagesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/direct-messages',
-  beforeLoad: () => {
-    throw redirect({ to: '/teacher-communication' });
-  }
 });
 
 const legacyMembersRoute = createRoute({
@@ -91,11 +69,8 @@ const routeTree = rootRoute.addChildren([
   registerRoute,
   dashboardRoute,
   messagesRoute,
-  assignmentsRoute,
-  teacherCommunicationRoute,
   clubsRoute,
   adminRoute,
-  legacyDirectMessagesRoute,
   legacyMembersRoute
 ]);
 

@@ -5,10 +5,7 @@ import { channelsAtom, currentUserAtom, isConnectedAtom, loadingChannelsAtom } f
 import type { ChannelType } from '../../types/chat';
 
 const channelTypeLabel: Record<ChannelType, string> = {
-  SCHOOL: '校园',
-  DEPARTMENT: '院系',
-  CLASS: '班级',
-  COURSE: '课程'
+  ORGANIZATION: '组织'
 };
 
 export function WorkspaceDashboard() {
@@ -20,7 +17,7 @@ export function WorkspaceDashboard() {
   const { pickChannel, refreshLobby } = useChatRoom();
 
   const unreadChannels = channels.filter((channel) => channel.unreadCount > 0);
-  const courseChannels = channels.filter((channel) => channel.type === 'COURSE');
+  const organizationChannels = channels.filter((channel) => channel.type === 'ORGANIZATION');
   const visibleChannels = channels.slice(0, 6);
   const totalUnread = unreadChannels.reduce((sum, channel) => sum + channel.unreadCount, 0);
 
@@ -37,10 +34,10 @@ export function WorkspaceDashboard() {
             <div className="mr-auto">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-strong">Workspace Dashboard</p>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-strong">
-                {currentUser?.displayName || '同学'}，欢迎回到星河大学
+                {currentUser?.displayName || '同学'}，欢迎回到组织平台
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                这里先汇总你的频道、未读和课程入口。选择一个频道后再进入聊天区，避免登录后直接落入默认频道。
+                这里先汇总你的组织频道和未读状态。选择一个频道后再进入聊天区，避免登录后直接落入默认频道。
               </p>
             </div>
             <button
@@ -117,9 +114,9 @@ export function WorkspaceDashboard() {
           </div>
 
           <div className="rounded-[1.5rem] border border-divider bg-elevated p-5 shadow-composer">
-            <h2 className="text-sm font-semibold text-strong">我的课程频道</h2>
+            <h2 className="text-sm font-semibold text-strong">我的组织频道</h2>
             <div className="mt-4 grid gap-2">
-              {courseChannels.map((channel) => (
+              {organizationChannels.map((channel) => (
                 <button
                   key={channel.id}
                   type="button"
@@ -130,8 +127,8 @@ export function WorkspaceDashboard() {
                   <span className="mt-1 block truncate text-xs text-faint">{channel.description}</span>
                 </button>
               ))}
-              {!loadingChannels && courseChannels.length === 0 && (
-                <p className="rounded-xl bg-card p-4 text-sm text-muted">当前没有课程频道。</p>
+              {!loadingChannels && organizationChannels.length === 0 && (
+                <p className="rounded-xl bg-card p-4 text-sm text-muted">当前没有组织频道。</p>
               )}
             </div>
           </div>

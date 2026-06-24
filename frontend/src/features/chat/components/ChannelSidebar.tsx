@@ -2,10 +2,7 @@ import { Icon } from '../../../components/Icon';
 import type { Channel, ChannelType } from '../../../types/chat';
 
 const typeLabel: Record<ChannelType, string> = {
-  SCHOOL: '校园',
-  DEPARTMENT: '院系',
-  CLASS: '班级',
-  COURSE: '课程'
+  ORGANIZATION: '组织'
 };
 
 export interface ChannelGroup {
@@ -27,7 +24,7 @@ export function ChannelSidebar({ activeChannelId, error, groups, loading, onPick
     <aside className="flex min-h-screen flex-col border-r border-divider bg-sidebar max-md:hidden">
       <section className="border-b border-divider p-3">
         <div className="flex items-center gap-2">
-          <h1 className="mr-auto shrink-0 text-sm font-semibold tracking-tight text-strong">星河大学</h1>
+          <h1 className="mr-auto shrink-0 text-sm font-semibold tracking-tight text-strong">组织平台</h1>
           <button type="button" onClick={onRefresh} className="grid size-8 shrink-0 place-items-center rounded-lg text-subtle transition hover:bg-hover hover:text-primary" title="刷新频道">
             <Icon className="size-4"><path d="M20 6v5h-5" /><path d="M4 18v-5h5" /><path d="M18.5 9a7 7 0 0 0-11.7-2.6L4 9m16 6-2.8 2.6A7 7 0 0 1 5.5 15" /></Icon>
           </button>

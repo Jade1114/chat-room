@@ -20,7 +20,7 @@ import { MessageHeader } from './components/MessageHeader';
 import { MessageTimeline } from './components/MessageTimeline';
 import { OnlineMemberList } from './components/OnlineMemberList';
 
-const channelTypeOrder: ChannelType[] = ['SCHOOL', 'DEPARTMENT', 'CLASS', 'COURSE'];
+const channelTypeOrder: ChannelType[] = ['ORGANIZATION'];
 
 export function ChatWorkspace() {
   const [draft, setDraft] = useAtom(draftAtom);

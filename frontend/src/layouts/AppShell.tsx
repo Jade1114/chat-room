@@ -10,14 +10,14 @@ import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/chat';
 
 const roleLabel: Record<UserRole, string> = {
-  STUDENT: '学生',
-  TEACHER: '教师',
+  MEMBER: '成员',
+  ORGANIZER: '组织者',
   ADMIN: '管理员'
 };
 
 interface NavigationItem {
   label: string;
-  to: '/dashboard' | '/messages' | '/assignments' | '/teacher-communication' | '/clubs' | '/admin';
+  to: '/dashboard' | '/messages' | '/clubs' | '/admin';
   icon: ReactNode;
 }
 
@@ -33,17 +33,7 @@ const navigationItems: NavigationItem[] = [
     icon: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" /><path d="M8 9h8M8 13h5" /></>
   },
   {
-    label: '作业',
-    to: '/assignments',
-    icon: <><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3" /><rect width="6" height="4" x="9" y="3" rx="1" /><path d="m9 14 2 2 4-4" /></>
-  },
-  {
-    label: '师生交流',
-    to: '/teacher-communication',
-    icon: <><path d="m2 7 10-4 10 4-10 4Z" /><path d="M6 9.5V14c3 2 9 2 12 0V9.5" /><path d="M16 19h5l2 2v-7a2 2 0 0 0-2-2h-1" /></>
-  },
-  {
-    label: '社团广场',
+    label: '组织广场',
     to: '/clubs',
     icon: <><path d="m3 11 17-5v12L3 14Z" /><path d="M11.6 16.5 13 21H7l-1.8-6" /><path d="M20 10a2 2 0 0 1 0 4" /></>
   }
@@ -99,7 +89,7 @@ export function AppShell() {
     <main className="min-h-screen bg-app text-primary">
       <div className="grid min-h-screen grid-cols-[64px_minmax(0,1fr)] max-md:grid-cols-[56px_minmax(0,1fr)]">
         <aside className="flex min-h-screen flex-col items-center border-r border-divider bg-rail px-2 py-4">
-          <div className="grid size-10 place-items-center rounded-[14px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="星河大学">
+          <div className="grid size-10 place-items-center rounded-[14px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="Organization Platform">
             <Icon className="size-5"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
 

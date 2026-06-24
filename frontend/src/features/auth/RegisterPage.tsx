@@ -39,9 +39,9 @@ export function RegisterPage() {
             <Icon className="size-7"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
           <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">Get Started</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">注册星河大学账号</h1>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">注册组织平台账号</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-muted">
-            注册后默认以学生身份进入系统。系统会根据你后续绑定的院系和班级返回可访问频道。
+            注册后默认加入 Public Square。后续加入更多组织后，对应组织的默认频道会出现在你的频道列表中。
           </p>
         </section>
 
@@ -61,7 +61,7 @@ export function RegisterPage() {
 
           <form onSubmit={handleRegister} className="mt-5 grid gap-4">
             <label className="grid gap-1.5">
-              <span className="text-xs font-semibold text-muted">学号 / 工号</span>
+              <span className="text-xs font-semibold text-muted">账号</span>
               <input
                 type="text"
                 value={username}

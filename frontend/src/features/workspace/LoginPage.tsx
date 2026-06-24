@@ -34,18 +34,18 @@ export function LoginPage() {
             <Icon className="size-7"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
           <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">Campus Workspace</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">登录星河大学频道空间</h1>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">登录组织频道空间</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-muted">
-            使用学号/工号和密码登录。系统会根据你的身份、院系和课程关系返回可访问频道。
+            使用账号和密码登录。系统会根据你加入的组织返回可访问频道。
           </p>
           <div className="mt-8 grid gap-3 text-sm text-muted">
             <div className="flex items-center gap-3 rounded-2xl bg-accent-wash p-4">
               <span className="grid size-9 place-items-center rounded-xl bg-accent-soft text-accent-strong">1</span>
-              <span>使用学号或工号登录。</span>
+              <span>使用账号登录。</span>
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-info-soft p-4">
               <span className="grid size-9 place-items-center rounded-xl bg-card text-info">2</span>
-              <span>后端根据身份计算频道权限，只展示可访问频道。</span>
+              <span>后端根据组织成员关系计算频道权限，只展示可访问频道。</span>
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-violet-soft p-4">
               <span className="grid size-9 place-items-center rounded-xl bg-card text-violet">3</span>
@@ -70,7 +70,7 @@ export function LoginPage() {
 
           <form onSubmit={handleLogin} className="mt-5 grid gap-4">
             <label className="grid gap-1.5">
-              <span className="text-xs font-semibold text-muted">学号 / 工号</span>
+              <span className="text-xs font-semibold text-muted">账号</span>
               <input
                 type="text"
                 value={username}
@@ -145,7 +145,7 @@ function DevLoginButton({ onLogin }: { onLogin: (auth: { token: string; userId: 
             {user.displayName.slice(0, 1).toUpperCase()}
           </span>
           <span className="text-sm font-medium text-primary">{user.displayName}</span>
-          <span className="text-xs text-faint">{user.role === 'ADMIN' ? '管理员' : user.role === 'TEACHER' ? '教师' : '学生'}</span>
+          <span className="text-xs text-faint">{user.role === 'ADMIN' ? '管理员' : user.role === 'ORGANIZER' ? '组织者' : '成员'}</span>
         </button>
       ))}
       {users.length === 0 && <p className="text-xs text-faint">加载 Mock 用户...</p>}

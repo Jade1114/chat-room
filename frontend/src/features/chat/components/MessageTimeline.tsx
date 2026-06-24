@@ -21,7 +21,7 @@ export function MessageTimeline({ channel, connected, items }: MessageTimelinePr
           <div className="max-w-sm text-center">
             <div className="mx-auto grid size-12 place-items-center rounded-2xl border border-accent-soft bg-accent-wash text-xl font-light text-accent">#</div>
             <p className="mt-4 text-base font-semibold text-strong">{channel ? `欢迎来到 ${channel.name}` : '选择一个频道'}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{channel?.description || '从左侧频道列表进入你的校园空间。'}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">{channel?.description || '从左侧频道列表进入你的组织空间。'}</p>
             {channel && !connected && <p className="mt-4 text-xs text-faint">正在接入实时消息...</p>}
           </div>
         </div>
