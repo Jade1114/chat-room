@@ -1,30 +1,148 @@
-# 这个项目是什么？
+# chat-room
 
-这是一个高校类 Discord 教学协作平台，包含了高校中类似于消息通知，作业管理，群聊交流，社团活动等场景。针对目前通过 QQ，微信等社交软件维护教学群，工作群，通知群等群聊，难以保证消息的可达性，可溯源性，复杂性。
-（比如：1. Teacher 发布一些教学通知，例如四六级考试信息，或者学校内部变更信息。需要通过层层递进，从对应的部门分发到对应的班主任，然后再分发到各班班委再分发给同学。因为层级太多，可能导致消息的实时性无法保障，也无法保障每一个消息让全体学生都了解或听说。 2. Teacher 和 Student 之间的作业管理，之前通过学习通或者QQ，微信进行作业管理。一般，教师会通过让学委进行收集后统一进行提交或者在学习通上发布后进行作业的收集，我希望能直接让教师和每一个学生都能交流起来，直接发布作业，每个学生提交对应的作业，老师集中进行下载，也能快速的查看到具体的收集情况，同样是减少中间人，提升效率。3.社交平台和教学群/工作群的天然隔阂。）
+chat-room 是一个**组织中心交流平台**。它不是普通聊天室，也不再以学校、课程、班级、作业作为主产品模型。
 
-# 它解决了什么任务场景？
+当前产品主线：用户发现组织、加入组织，并进入自己已加入组织的默认频道进行实时交流。Public Square 是平台维护的默认组织，新用户注册后自动加入。
 
-1. 消息通知
-2. 作业统一管理
-3. 社团信息的闭塞，除却固定时间的社团招新，很少有时间能够查看到全校的社团有哪些，我们提供一个统一的平台进行社团的展示，让大家能够随时加入自己感兴趣的社团甚至于可活跃的社团活动。
+## 项目定位
 
-# 核心链路怎么走？
+很多兴趣组织、校园社团、线上社区和临时活动小组，日常协作仍然散落在 QQ、微信群、朋友圈、表格和口头通知里。问题不是“缺一个聊天框”，而是：
 
-学生：在登陆自己的账号后，你可以绑定自己的学校，通过一个频道码，直接进入对应的大群，你可以方便的查看到学校发布的一些通知，比如考试通知，变动，调停课等等，以及放假，运动会等多种消息的通知。同时，你每学期会被拉入对应的教学频道，每一个频道对应了你当前的课程，在频道中，你可以自由讨论，聊天，或者与教师私聊，并提交教师发布的任务。一学期你会有非常多的作业，我们会有一个统一的位置帮你快速查看所有需要提交的作业。在社团活动part，你可以查看到各种各样的社团，同时，你能看到它们的公开活动或者社团内部活动，你也可以查看对应的详细内容，并决定是否参与活动或者申请加入社团。
+- 组织信息不集中，用户很难判断有哪些组织值得加入；
+- 活动信息分散，组织存在感弱；
+- 成员关系和频道访问权混在一起，权限不可信；
+- 聊天、在线状态、未读消息和历史消息需要真实后端支撑，而不是前端 mock。
 
-教师：在登陆自己的账号后，你可以通过频道码绑定学校，以及对应的内容，每学期，在学校的管理人员操作之后，你就拥有了对应的课程频道等内容。你可以与学生们积极讨论课程内容，也可以直接发布任务，并在一个专门的地方统一查看任务收集情况以及快速下载全部任务。
+chat-room 的目标是做一个小而完整的组织交流平台：
 
-社团：如果你想在校园内开创一个社团，你可以发起申请，无论你是学生或教师。你都可以发起申请，具体的申请结果需要由自身学校的社团相关管理人员进行审核，在审核通过后，你就可以开展社团活动。你可以发布自己的社团活动，宣传自己的社团，并参与公开频道进行讨论。
+```text
+注册 / 登录
+→ 自动加入 Public Square
+→ 浏览公开组织
+→ 加入组织
+→ 获得该组织默认频道访问权
+→ 在组织频道中实时交流
+```
 
-管理人员：在登陆自己的账号后，你可以管理自己学校的相关事宜，比如课程频道的创建，频道码的分享，你只需要分享频道码，就能让对应的教师或者学生进行一系列处理，比如进入大群，班级群等。你也可以审批社团活动，等等内容。
+## 当前核心领域模型
 
-# Redis 和 RabbitMQ 解决了什么问题？
+详见 `CONTEXT.md`。
 
-我们的这种聊天室因为各种各样的情况，需要处理高频的消息发布，在线状态维护，消息分发等，提升整体系统的稳定性，解耦。
+第一版核心对象：
 
-# 当前 MVP 验收标准
+```text
+User
+Organization
+OrganizationMember / Membership
+Channel
+Activity
+InvitationCode
+Organizer
+Admin
+```
 
-完成完整的频道聊天室功能。
-即频道创建，频道进入，在线聊天。
-核心内容是系统的设计（通过redis，rabbitmq提升的整体质量，而不是单一内存的简单系统）
+关键规则：
+
+- Organization 是核心容器；
+- Channel 属于 Organization，不是孤立聊天室；
+- MVP 中每个 Organization 只有一个默认 Channel；
+- Membership 决定用户是否能访问该 Organization 的默认 Channel；
+- Public Square 是默认 Organization，而不是特殊的全局频道；
+- 新用户注册后默认成为 Public Square 成员；
+- 未授权 Channel 不应出现在“我的频道”列表里，直接访问详情或历史消息应返回 404。
+
+## 当前已实现能力
+
+### 身份与认证
+
+- 注册；
+- 登录；
+- JWT token；
+- WebSocket 通过 `?token=` 鉴权；
+- dev-login 仅用于本地开发 mock 用户。
+
+### 组织与成员关系
+
+- 公开组织列表；
+- 组织详情；
+- 加入公开组织；
+- 新注册用户自动加入 Public Square；
+- 左侧栏展示已加入组织；
+- 频道访问权从 OrganizationMember 推导。
+
+### 聊天主链路
+
+- WebSocket 实时聊天；
+- 后端使用 session 绑定身份，不信任前端聊天消息中的 userId；
+- MySQL 持久化聊天消息；
+- Redis 缓存最近消息；
+- RabbitMQ 发布/消费聊天消息；
+- Redis 维护 workspace 在线状态、当前查看频道和未读计数；
+- 频道详情返回在线用户与在线人数；
+- 历史消息接口带权限校验。
+
+## 当前还未完成的 MVP 缺口
+
+这些是下一次大型重构前最重要的事实边界：
+
+1. `/organizations/:organizationId/channels/:channelId` 仍是 placeholder，真实聊天暂时还在 `/messages`；
+2. 创建组织链路尚未完整落地；
+3. Organization Detail 中 Activity、Member、Organizer 操作仍未接入真实后端数据；
+4. Activity Schedule 仍未形成真实闭环；
+5. `/api/channels` 仍是兼容型全局接口，语义上表示“当前用户可访问的组织频道列表”；
+6. 旧教学平台设计已归档，不再作为当前实现依据。
+
+## 本地运行
+
+当前本地开发依赖：
+
+- MySQL
+- Redis
+- RabbitMQ
+- Spring Boot backend
+- Vite React frontend
+
+常用命令：
+
+```bash
+# backend
+cd backend
+mvn test
+mvn spring-boot:run
+
+# frontend
+cd frontend
+pnpm build
+pnpm dev
+```
+
+后端环境变量参考：
+
+```text
+backend/.env.example
+backend/src/main/resources/application.yaml
+```
+
+前端环境变量：
+
+```text
+VITE_API_BASE_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8080/ws/chat
+```
+
+## 文档入口
+
+- `CONTEXT.md`：领域词汇表，记录当前产品语言；
+- `docs/product-engineering-map.md`：产品工程地图，说明当前 MVP、缺口和推进顺序；
+- `docs/current-mvp-gap-and-roadmap.md`：下一次大型重构前的 MVP 缺口和路线图；
+- `docs/api-contract.md`：当前可信前后端契约；
+- `docs/manual-acceptance.md`：轻量手动验收清单；
+- `docs/organization-channel-model.md`：组织与频道模型；
+- `docs/features/organization-platform-scope.md`：组织平台范围；
+- `docs/design/organization-shell.md`：组织优先 UI 信息架构；
+- `docs/adr/`：已接受的关键产品/架构决策；
+- `docs/archive/`：历史教学平台设计，仅供追溯。
+
+## 当前项目表达
+
+> Organization-centered communication platform with authenticated membership-based channel access, real-time WebSocket chat, Redis presence/unread state, RabbitMQ fanout, and message persistence.

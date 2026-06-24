@@ -71,10 +71,11 @@ dist/
 
 
 #
-# teach 教学资料
+# teach 教学资料 / local-only agent notes
 #
+# Product docs are intentionally tracked for this project.
+# Keep only personal learning scratch material ignored here.
 
-CONTEXT.md
 MISSION.md
 NOTES.md
 RESOURCES.md
@@ -83,5 +84,3 @@ learning-records/
 lessons/
 reference/
 .hermes/
-
-docs/
