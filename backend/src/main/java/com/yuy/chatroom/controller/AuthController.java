@@ -19,6 +19,7 @@ import com.yuy.chatroom.dto.AuthResponse;
 import com.yuy.chatroom.dto.DevLoginRequest;
 import com.yuy.chatroom.dto.LoginRequest;
 import com.yuy.chatroom.dto.RegisterRequest;
+import com.yuy.chatroom.mapper.OrganizationMemberMapper;
 import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.CurrentUser;
 import com.yuy.chatroom.security.JwtTokenProvider;
@@ -31,13 +32,16 @@ import org.springframework.http.HttpHeaders;
 public class AuthController {
 
   private final UserMapper userMapper;
+  private final OrganizationMemberMapper organizationMemberMapper;
   private final JwtTokenProvider jwtTokenProvider;
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
   private final Logger log = LoggerFactory.getLogger(AuthController.class);
-  private static final String DEFAULT_SCHOOL_ID = "school-1";
+  private static final String PUBLIC_SQUARE_ORG_ID = "org-public-square";
 
-  public AuthController(UserMapper userMapper, JwtTokenProvider jwtTokenProvider) {
+  public AuthController(UserMapper userMapper, OrganizationMemberMapper organizationMemberMapper,
+      JwtTokenProvider jwtTokenProvider) {
     this.userMapper = userMapper;
+    this.organizationMemberMapper = organizationMemberMapper;
     this.jwtTokenProvider = jwtTokenProvider;
   }
 
@@ -54,14 +58,13 @@ public class AuthController {
     String userId = "u-" + UUID.randomUUID().toString().substring(0, 8);
     String hash = passwordEncoder.encode(request.getPassword());
 
-    // 当前阶段不启用多组织/多高校选择。新注册用户默认进入同一个公开组织。
-    // 后续多组织邀请 / 自我管理模式上线后，再把这里改为邀请或组织选择链路。
-    userMapper.insertUser(userId, request.getUsername(), request.getDisplayName(), hash, "STUDENT",
-        DEFAULT_SCHOOL_ID, null, null);
+    // 新注册用户默认加入平台维护的公共广场组织。
+    userMapper.insertUser(userId, request.getUsername(), request.getDisplayName(), hash, "MEMBER");
+    organizationMemberMapper.insertMembership(PUBLIC_SQUARE_ORG_ID, userId, "MEMBER");
 
-    String token = jwtTokenProvider.createToken(userId, "STUDENT", request.getDisplayName());
+    String token = jwtTokenProvider.createToken(userId, "MEMBER", request.getDisplayName());
 
-    AuthResponse response = new AuthResponse(token, userId, request.getDisplayName(), "STUDENT");
+    AuthResponse response = new AuthResponse(token, userId, request.getDisplayName(), "MEMBER");
     return ResponseEntity.ok(response);
   }
 
@@ -105,7 +108,6 @@ public class AuthController {
     if (user == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "用户不存在"));
     }
-    user.setCourseIds(userMapper.findCourseIdsByUserId(user.getId()));
     return ResponseEntity.ok(user);
   }
 

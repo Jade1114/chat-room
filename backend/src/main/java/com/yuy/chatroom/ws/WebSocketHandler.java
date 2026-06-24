@@ -10,7 +10,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.yuy.chatroom.model.CurrentUser;
 import com.yuy.chatroom.model.Message;
-import com.yuy.chatroom.service.CampusDirectoryService;
+import com.yuy.chatroom.service.OrganizationDirectoryService;
 import com.yuy.chatroom.service.ChannelPresenceService;
 import com.yuy.chatroom.service.MessageProcessor;
 import com.yuy.chatroom.service.SessionManager;
@@ -25,17 +25,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final MessageProcessor messageProcessor;
     private final SessionManager sessionManager;
     private final ChannelPresenceService channelPresenceService;
-    private final CampusDirectoryService campusDirectoryService;
+    private final OrganizationDirectoryService organizationDirectoryService;
     private final static Logger log = LoggerFactory.getLogger(WebSocketHandler.class);
 
     public WebSocketHandler(ObjectMapper objectMapper, MessageProcessor messageProcessor,
             SessionManager sessionManager, ChannelPresenceService channelPresenceService,
-            CampusDirectoryService campusDirectoryService) {
+            OrganizationDirectoryService organizationDirectoryService) {
         this.objectMapper = objectMapper;
         this.messageProcessor = messageProcessor;
         this.sessionManager = sessionManager;
         this.channelPresenceService = channelPresenceService;
-        this.campusDirectoryService = campusDirectoryService;
+        this.organizationDirectoryService = organizationDirectoryService;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         // Verify user exists
-        CurrentUser user = campusDirectoryService.getCurrentUser(userId);
+        CurrentUser user = organizationDirectoryService.getCurrentUser(userId);
         if (user == null) {
             log.warn("WebSocket userId 在数据库中不存在：{}", userId);
             try {

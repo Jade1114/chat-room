@@ -21,19 +21,19 @@ public class UnreadMessageService {
   private final RedisTemplate<String, String> redisTemplate;
   private final ReadStateMapper readStateMapper;
   private final MessageMapper messageMapper;
-  private final CampusDirectoryService campusDirectoryService;
+  private final OrganizationDirectoryService organizationDirectoryService;
   private final SessionManager sessionManager;
 
   public UnreadMessageService(
       RedisTemplate<String, String> redisTemplate,
       ReadStateMapper readStateMapper,
       MessageMapper messageMapper,
-      CampusDirectoryService campusDirectoryService,
+      OrganizationDirectoryService organizationDirectoryService,
       SessionManager sessionManager) {
     this.redisTemplate = redisTemplate;
     this.readStateMapper = readStateMapper;
     this.messageMapper = messageMapper;
-    this.campusDirectoryService = campusDirectoryService;
+    this.organizationDirectoryService = organizationDirectoryService;
     this.sessionManager = sessionManager;
   }
 
@@ -44,7 +44,7 @@ public class UnreadMessageService {
     }
 
     String channelId = message.getChannelId();
-    Set<String> visibleUserIds = campusDirectoryService.getAccessibleUserIds(channelId);
+    Set<String> visibleUserIds = organizationDirectoryService.getAccessibleUserIds(channelId);
     Set<String> viewingUserIds = sessionManager.getViewingUserIdsByChannelId(channelId);
 
     for (String userId : visibleUserIds) {

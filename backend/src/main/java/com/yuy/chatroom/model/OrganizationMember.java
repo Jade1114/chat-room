@@ -1,5 +1,7 @@
 package com.yuy.chatroom.model;
 
+import java.time.Instant;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,8 +11,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurrentUser {
-    private String id;
-    private String displayName;
-    private UserRole role;
+public class OrganizationMember {
+    private String organizationId;
+    private String userId;
+    private String role;
+    private Instant joinedAt;
 }

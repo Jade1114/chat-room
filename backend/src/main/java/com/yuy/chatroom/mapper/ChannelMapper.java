@@ -9,9 +9,9 @@ import com.yuy.chatroom.model.Channel;
 
 @Mapper
 public interface ChannelMapper {
-    @Select("SELECT id, name, type, scope_id, description, is_readonly FROM campus_channel")
+    @Select("SELECT id, name, type, organization_id, description, is_readonly FROM organization_channel WHERE type = 'ORGANIZATION'")
     List<Channel> findAll();
 
-    @Select("SELECT id, name, type, scope_id, description, is_readonly FROM campus_channel WHERE id = #{id}")
+    @Select("SELECT id, name, type, organization_id, description, is_readonly FROM organization_channel WHERE id = #{id} AND type = 'ORGANIZATION'")
     Channel findById(String id);
 }

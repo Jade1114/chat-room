@@ -1,6 +1,6 @@
 package com.yuy.chatroom.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,15 +11,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Channel {
+public class Organization {
     private String id;
     private String name;
-    private ChannelType type;
-    private String organizationId;
     private String description;
-
-    @JsonProperty("readonly")
-    private boolean isReadonly;
-
-    private long unreadCount;
+    private String visibility;
+    private String joinPolicy;
+    private String createdBy;
+    private Instant createdAt;
 }

@@ -1,29 +1,33 @@
--- Docker Compose init: seed data
+-- Docker Compose init: organization platform seed data
 -- Keep this file in sync with backend/sql/seed.sql.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE chat_room;
 
-INSERT INTO campus_user (id, display_name, role, school_id, department_id, class_id) VALUES
-('u-stu-1',      'Yuy',   'STUDENT',  'school-1', 'dept-cs',  'class-cs-2401'),
-('u-stu-2',      'Mina',  'STUDENT',  'school-1', 'dept-cs',  'class-cs-2402'),
-('u-teacher-1',  'Chen',  'TEACHER',  'school-1', 'dept-cs',  NULL),
-('u-admin-1',    'Admin', 'ADMIN',    'school-1', NULL,       NULL);
+INSERT INTO app_user (id, display_name, role) VALUES
+('u-yuy',      'Yuy',        'MEMBER'),
+('u-mina',     'Mina',       'MEMBER'),
+('u-luna',     'Luna',       'MEMBER'),
+('u-admin',    'Platform Admin', 'ADMIN');
 
-INSERT INTO user_course (user_id, course_id) VALUES
-('u-stu-1',      'course-java'),
-('u-stu-2',      'course-java'),
-('u-teacher-1',  'course-java'),
-('u-teacher-1',  'course-websocket');
+INSERT INTO organization (id, name, description, visibility, join_policy, created_by, created_at) VALUES
+('org-public-square', 'Public Square', '平台维护的公共广场，用于开放交流、组织发现和活动推广。', 'PUBLIC', 'OPEN', NULL, NOW(3)),
+('org-go-club', '围棋社', '围棋爱好者组织，定期组织对局、复盘和新手教学。', 'PUBLIC', 'OPEN', 'u-yuy', NOW(3)),
+('org-anime-club', '二次元同好会', '围绕番剧、同人创作和线下观影活动形成的兴趣组织。', 'PUBLIC', 'OPEN', 'u-luna', NOW(3)),
+('org-indie-game-lab', '独立游戏实验室', '一起做小型游戏原型、试玩反馈和线上 Game Jam 的创作组织。', 'PUBLIC', 'OPEN', 'u-mina', NOW(3));
 
-INSERT INTO campus_channel (id, name, type, scope_id, description, is_readonly) VALUES
-('ch-school',        '全校大厅',          'SCHOOL',      'school-1',        '星河大学公共频道',                      0),
-('ch-cs',            '计算机学院',        'DEPARTMENT',  'dept-cs',         '计算机学院公共频道',                    0),
-('ch-math',          '数学学院',          'DEPARTMENT',  'dept-math',       '数学学院公共频道',                      0),
-('ch-cs-2401',       '计科 2401 班',      'CLASS',       'class-cs-2401',   '计科 2401 班级频道',                    0),
-('ch-cs-2402',       '计科 2402 班',      'CLASS',       'class-cs-2402',   '计科 2402 班级频道',                    0),
-('ch-math-2401',     '数学 2401 班',      'CLASS',       'class-math-2401', '数学 2401 班级频道',                    0),
-('ch-java',          'Java 后端开发',     'COURSE',      'course-java',     '课程讨论与通知',                        0),
-('ch-websocket',     '分布式实时通信',    'COURSE',      'course-websocket', 'WebSocket、Redis、RabbitMQ 实战频道',   0),
-('ch-linear-algebra','线性代数',          'COURSE',      'course-linear-algebra', '线性代数课程频道',                  0);
+INSERT INTO organization_member (organization_id, user_id, role, joined_at) VALUES
+('org-public-square', 'u-yuy', 'MEMBER', NOW(3)),
+('org-public-square', 'u-mina', 'MEMBER', NOW(3)),
+('org-public-square', 'u-luna', 'MEMBER', NOW(3)),
+('org-public-square', 'u-admin', 'ORGANIZER', NOW(3)),
+('org-go-club', 'u-yuy', 'ORGANIZER', NOW(3)),
+('org-anime-club', 'u-luna', 'ORGANIZER', NOW(3)),
+('org-indie-game-lab', 'u-mina', 'ORGANIZER', NOW(3));
+
+INSERT INTO organization_channel (id, name, type, organization_id, description, is_readonly) VALUES
+('ch-public-square', 'Public Square', 'ORGANIZATION', 'org-public-square', '公共广场默认频道：闲聊、组织宣传和活动预告。', 0),
+('ch-go-club', '围棋社默认频道', 'ORGANIZATION', 'org-go-club', '围棋社成员交流、约棋和复盘讨论。', 0),
+('ch-anime-club', '二次元同好会默认频道', 'ORGANIZATION', 'org-anime-club', '番剧讨论、观影活动和创作分享。', 0),
+('ch-indie-game-lab', '独立游戏实验室默认频道', 'ORGANIZATION', 'org-indie-game-lab', '游戏原型开发、试玩反馈和 Game Jam 组队。', 0);

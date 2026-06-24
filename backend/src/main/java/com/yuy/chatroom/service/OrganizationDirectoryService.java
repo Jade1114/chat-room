@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.yuy.chatroom.mapper.ChannelMapper;
+import com.yuy.chatroom.mapper.OrganizationMemberMapper;
 import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.Channel;
 import com.yuy.chatroom.model.ChannelDetail;
@@ -16,16 +17,19 @@ import com.yuy.chatroom.model.CurrentUser;
 import com.yuy.chatroom.model.UserRole;
 
 @Service
-public class CampusDirectoryService {
+public class OrganizationDirectoryService {
 
   private final UserMapper userMapper;
   private final ChannelMapper channelMapper;
+  private final OrganizationMemberMapper organizationMemberMapper;
   private final ChannelPresenceService presenceService;
 
-  public CampusDirectoryService(UserMapper userMapper, ChannelMapper channelMapper,
+  public OrganizationDirectoryService(UserMapper userMapper, ChannelMapper channelMapper,
+      OrganizationMemberMapper organizationMemberMapper,
       ChannelPresenceService presenceService) {
     this.userMapper = userMapper;
     this.channelMapper = channelMapper;
+    this.organizationMemberMapper = organizationMemberMapper;
     this.presenceService = presenceService;
   }
 
@@ -34,21 +38,11 @@ public class CampusDirectoryService {
       return null;
     }
     CurrentUser user = userMapper.findById(userId);
-    if (user != null) {
-      user.setCourseIds(userMapper.findCourseIdsByUserId(user.getId()));
-    }
     return user;
   }
 
   public List<CurrentUser> getUsers() {
-    List<CurrentUser> users = userMapper.findAll();
-    // Batch-load courseIds for all users.
-    // TODO: N+1 — replace with a single JOIN query or MyBatis collection mapping
-    // when user count grows.
-    for (CurrentUser user : users) {
-      user.setCourseIds(userMapper.findCourseIdsByUserId(user.getId()));
-    }
-    return users;
+    return userMapper.findAll();
   }
 
   public List<Channel> getAccessibleChannels(String userId) {
@@ -94,12 +88,9 @@ public class CampusDirectoryService {
       return true;
     }
 
-    return switch (channel.getType()) {
-      case SCHOOL -> channel.getScopeId().equals(user.getSchoolId());
-      case DEPARTMENT -> channel.getScopeId().equals(user.getDepartmentId());
-      case CLASS -> channel.getScopeId().equals(user.getClassId());
-      case COURSE -> user.getCourseIds().contains(channel.getScopeId());
-    };
+    // MVP rule: channel access is derived from organization membership.
+    // organization_channel.organization_id is the owning organization id.
+    return organizationMemberMapper.countMembership(user.getId(), channel.getOrganizationId()) > 0;
   }
 
   private ChannelDetail toChannelDetail(Channel channel) {
@@ -123,7 +114,7 @@ public class CampusDirectoryService {
         channel.getId(),
         channel.getName(),
         channel.getType(),
-        channel.getScopeId(),
+        channel.getOrganizationId(),
         channel.getDescription(),
         channel.isReadonly(),
         onlineUserIds.size(),

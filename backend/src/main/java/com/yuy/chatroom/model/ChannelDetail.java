@@ -17,7 +17,7 @@ public class ChannelDetail {
     private String id;
     private String name;
     private ChannelType type;
-    private String scopeId;
+    private String organizationId;
     private String description;
 
     @JsonProperty("readonly")

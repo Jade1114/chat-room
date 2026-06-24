@@ -26,20 +26,20 @@ public class MessageProcessor {
   private final ChannelPresenceService channelPresenceService;
   private final ChatMessagePublisher chatMessagePublisher;
   private final MessageHistoryService messageHistoryService;
-  private final CampusDirectoryService campusDirectoryService;
+  private final OrganizationDirectoryService organizationDirectoryService;
   private final UnreadMessageService unreadMessageService;
 
   public MessageProcessor(SessionManager sessionManager, BroadcastDispatcher broadcastDispatcher,
       BroadcastService broadcastService, ChannelPresenceService channelPresenceService,
       ChatMessagePublisher chatMessagePublisher, MessageHistoryService messageHistoryService,
-      CampusDirectoryService campusDirectoryService, UnreadMessageService unreadMessageService) {
+      OrganizationDirectoryService organizationDirectoryService, UnreadMessageService unreadMessageService) {
     this.sessionManager = sessionManager;
     this.broadcastDispatcher = broadcastDispatcher;
     this.broadcastService = broadcastService;
     this.channelPresenceService = channelPresenceService;
     this.chatMessagePublisher = chatMessagePublisher;
     this.messageHistoryService = messageHistoryService;
-    this.campusDirectoryService = campusDirectoryService;
+    this.organizationDirectoryService = organizationDirectoryService;
     this.unreadMessageService = unreadMessageService;
   }
 
@@ -133,7 +133,7 @@ public class MessageProcessor {
     }
 
     String channelId = message.getChannelId();
-    if (!campusDirectoryService.canAccess(info.getUserId(), channelId)) {
+    if (!organizationDirectoryService.canAccess(info.getUserId(), channelId)) {
       log.warn("错误：用户无权访问频道, userId={}, channelId={}", info.getUserId(), channelId);
       return;
     }
@@ -147,10 +147,10 @@ public class MessageProcessor {
 
   private void handleLegacyUserJoin(WebSocketSession session, Message message) {
     if (isValidJoinMessage(message)) {
-      CurrentUser user = campusDirectoryService.getCurrentUser(message.getUserId());
+      CurrentUser user = organizationDirectoryService.getCurrentUser(message.getUserId());
 
       String channelId = message.getChannelId();
-      if (user == null || !campusDirectoryService.canAccess(user.getId(), channelId)) {
+      if (user == null || !organizationDirectoryService.canAccess(user.getId(), channelId)) {
         log.warn("错误：用户无权访问频道, userId={}, channelId={}", message.getUserId(), channelId);
         return;
       }
