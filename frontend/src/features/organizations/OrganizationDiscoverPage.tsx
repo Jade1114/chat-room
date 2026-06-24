@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
-import { fetchOrganizations, joinOrganization, type OrganizationSummaryResponse } from '../../lib/organizationApi';
+import type { OrganizationSummaryResponse } from '../../lib/organizationApi';
+import { useOrganizations } from '../../hooks/useOrganizations';
 import { organizationColor, organizationMark } from './organizationViewModel';
 
 function OrganizationCard({
@@ -76,45 +77,24 @@ function OrganizationCard({
 }
 
 export function OrganizationDiscoverPage() {
-  const [organizations, setOrganizations] = useState<OrganizationSummaryResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    publicOrganizations: organizations,
+    loading,
+    error: loadError,
+    joinAndRefreshOrganization
+  } = useOrganizations();
+  const [actionError, setActionError] = useState('');
   const [joiningId, setJoiningId] = useState('');
 
-  const loadOrganizations = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const items = await fetchOrganizations();
-      setOrganizations(items.filter((item) => item.visibility === 'PUBLIC'));
-    } catch {
-      setError('组织发现中心加载失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadOrganizations();
-  }, []);
+  const error = actionError || loadError;
 
   const handleJoin = async (organizationId: string) => {
     setJoiningId(organizationId);
-    setError('');
+    setActionError('');
     try {
-      const detail = await joinOrganization(organizationId);
-      setOrganizations((current) => current.map((item) => (
-        item.id === detail.id
-          ? {
-              ...item,
-              joined: detail.joined,
-              memberCount: detail.memberCount,
-              defaultChannelId: detail.defaultChannelId
-            }
-          : item
-      )));
+      await joinAndRefreshOrganization(organizationId);
     } catch {
-      setError('加入组织失败');
+      setActionError('加入组织失败');
     } finally {
       setJoiningId('');
     }

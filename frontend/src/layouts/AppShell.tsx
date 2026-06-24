@@ -4,10 +4,10 @@ import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-route
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { toOrganizationViewModel, type OrganizationViewModel } from '../features/organizations/organizationViewModel';
-import { fetchOrganizations } from '../lib/organizationApi';
 import { useTheme } from '../features/theme/useTheme';
 import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
 import { useAuth } from '../hooks/useAuth';
+import { useOrganizations } from '../hooks/useOrganizations';
 import type { UserRole } from '../types/chat';
 
 const roleLabel: Record<UserRole, string> = {
@@ -113,11 +113,15 @@ export function AppShell() {
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
   const { restoreSession, logout } = useAuth();
+  const {
+    joinedOrganizations,
+    loading: organizationsLoading,
+    error: organizationsError,
+    refreshOrganizations,
+    clearOrganizations
+  } = useOrganizations();
   const [checking, setChecking] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [organizations, setOrganizations] = useState<OrganizationViewModel[]>([]);
-  const [organizationsLoading, setOrganizationsLoading] = useState(false);
-  const [organizationsError, setOrganizationsError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -138,29 +142,12 @@ export function AppShell() {
 
   useEffect(() => {
     if (checking || !currentUser) {
-      setOrganizations([]);
+      clearOrganizations();
       return;
     }
 
-    let cancelled = false;
-    setOrganizationsLoading(true);
-    setOrganizationsError('');
-    fetchOrganizations()
-      .then((items) => {
-        if (cancelled) return;
-        setOrganizations(items.filter((item) => item.joined).map(toOrganizationViewModel));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setOrganizations([]);
-        setOrganizationsError('组织加载失败');
-      })
-      .finally(() => {
-        if (!cancelled) setOrganizationsLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [checking, currentUser]);
+    void refreshOrganizations().catch(() => undefined);
+  }, [checking, currentUser, clearOrganizations, refreshOrganizations]);
 
   if (checking) {
     return (
@@ -176,6 +163,7 @@ export function AppShell() {
 
   const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
   const activeOrganizationId = pathname.match(/\/organizations\/([^/]+)/)?.[1];
+  const joinedOrganizationViewModels = joinedOrganizations.map(toOrganizationViewModel);
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
@@ -223,7 +211,7 @@ export function AppShell() {
                 <h2 className="mt-0.5 text-sm font-semibold text-strong">我的组织</h2>
               </div>
               <span className="rounded-full bg-active px-2 py-1 text-[10px] font-semibold text-muted">
-                {organizations.length}
+                {joinedOrganizationViewModels.length}
               </span>
             </div>
             <div className="grid gap-2">
@@ -233,10 +221,10 @@ export function AppShell() {
               {!organizationsLoading && organizationsError && (
                 <div className="rounded-2xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">{organizationsError}</div>
               )}
-              {!organizationsLoading && !organizationsError && organizations.length === 0 && (
+              {!organizationsLoading && !organizationsError && joinedOrganizationViewModels.length === 0 && (
                 <div className="rounded-2xl border border-divider bg-card p-3 text-xs leading-5 text-muted">还没有加入组织。去组织发现中心加入一个公开组织。</div>
               )}
-              {organizations.map((organization) => (
+              {joinedOrganizationViewModels.map((organization) => (
                 <JoinedOrganizationCard
                   key={organization.id}
                   organization={organization}

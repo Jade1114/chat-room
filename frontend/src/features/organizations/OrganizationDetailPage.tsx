@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
-import { fetchOrganization, joinOrganization } from '../../lib/organizationApi';
+import { fetchOrganization } from '../../lib/organizationApi';
+import { useOrganizations } from '../../hooks/useOrganizations';
 import { toOrganizationViewModel, type OrganizationChannel, type OrganizationTab, type OrganizationViewModel } from './organizationViewModel';
 
 const tabLabels: Record<OrganizationTab, string> = {
@@ -159,6 +160,7 @@ function PlaceholderTab({ organization, tab }: { organization: OrganizationViewM
 
 export function OrganizationDetailPage() {
   const organizationId = useOrganizationIdFromPath();
+  const { joinAndRefreshOrganization } = useOrganizations();
   const [organization, setOrganization] = useState<OrganizationViewModel | null>(null);
   const [activeTab, setActiveTab] = useState<OrganizationTab>('overview');
   const [loading, setLoading] = useState(true);
@@ -186,7 +188,7 @@ export function OrganizationDetailPage() {
     setJoining(true);
     setError('');
     try {
-      const detail = await joinOrganization(organizationId);
+      const detail = await joinAndRefreshOrganization(organizationId);
       setOrganization(toOrganizationViewModel(detail));
     } catch {
       setError('加入组织失败');
