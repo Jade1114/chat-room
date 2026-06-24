@@ -74,6 +74,7 @@ dist/
 # teach 教学资料
 #
 
+CONTEXT.md
 MISSION.md
 NOTES.md
 RESOURCES.md
@@ -81,5 +82,6 @@ assets/
 learning-records/
 lessons/
 reference/
+.hermes/
 
 docs/
