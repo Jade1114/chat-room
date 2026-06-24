@@ -15,6 +15,7 @@
 **现象**: 切换频道后，新频道的历史消息和之前频道切换时缓存的旧消息混在一起。因为 `useChatRoom.ts` 的 `channelTimelinesRef` 虽然存了按 channelId 分组的 `TimelineItem[]`，但 `setTimeline` 在 `mergeTimelines` 时会把当前 timeline 和缓存的历史 timeline 合并，旧频道缓存没先清掉就塞了新频道的历史。
 
 **复现步骤**:
+
 1. 进入频道 A → 发几条消息
 2. 切换到频道 B
 3. 观察 timeline：频道 A 的旧消息可能还在
@@ -34,6 +35,7 @@
 **原因追踪**: `useChatRoom` 的 `connectWorkspace` 在 `onopen` 里发送了 `WORKSPACE_JOIN` 和 `CHANNEL_VIEW_CHANGED`，但没有调用 `loadRecentMessages`。`loadRecentMessages` 只在 `refreshLobby` 里被调用。刷新页面时 `refreshLobby` 依赖的 `selectedChannelId` 可能是空字符串，导致跳过加载。
 
 **复现步骤**:
+
 1. 进入组织频道聊天
 2. 刷新页面（F5）
 3. 观察：WS 连接成功，但 timeline 空白，没有历史消息
@@ -55,3 +57,9 @@
 **关联**: `current-mvp-gap-and-roadmap.md` Gap 1；`known-engineering-concerns.md` 不直接关联
 
 ---
+
+1. login 页面的重定向逻辑不对，当识别到有jwt令牌时应该根据对应的信息直接跳转到对应的dashborad，并且手动输入loginURL之后出现布局bug，左侧侧边栏能显示，但是右侧又显示了login界面。
+2. 点击组织后url发生变化，但是页面没有变化。
+   必须刷新页面才能重新渲染。
+3. redis 状态维护有些问题，有些session状态好像一直在线，不知道是没做心跳check还是其他原因。
+4. 创建组织之后没有直接同步到我的组织中
