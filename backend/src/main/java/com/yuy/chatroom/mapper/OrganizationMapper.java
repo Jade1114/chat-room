@@ -2,6 +2,7 @@ package com.yuy.chatroom.mapper;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -14,4 +15,10 @@ public interface OrganizationMapper {
 
   @Select("SELECT id, name, description, visibility, join_policy, created_by, created_at FROM organization ORDER BY created_at ASC, id ASC")
   List<Organization> findAll();
+
+  @Insert("""
+      INSERT INTO organization (id, name, description, visibility, join_policy, created_by, created_at)
+      VALUES (#{id}, #{name}, #{description}, #{visibility}, #{joinPolicy}, #{createdBy}, #{createdAt})
+      """)
+  void insert(Organization organization);
 }

@@ -19,7 +19,7 @@ const roleLabel: Record<UserRole, string> = {
 interface NavigationItem {
   label: string;
   description: string;
-  to?: '/dashboard' | '/organizations' | '/messages' | '/admin';
+  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/messages' | '/admin';
   activeWhen?: (pathname: string) => boolean;
   icon: ReactNode;
 }
@@ -34,10 +34,17 @@ const navigationItems: NavigationItem[] = [
   },
   {
     label: '组织发现中心',
-    description: '发现、加入和创建组织',
+    description: '发现和加入公开组织',
     to: '/organizations',
-    activeWhen: (pathname) => pathname.startsWith('/organizations'),
+    activeWhen: (pathname) => pathname === '/organizations',
     icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>
+  },
+  {
+    label: '创建组织',
+    description: '创立一个新的组织',
+    to: '/organizations/create',
+    activeWhen: (pathname) => pathname === '/organizations/create',
+    icon: <><path d="M12 5v14M5 12h14" /></>
   },
   {
     label: '活动中心',

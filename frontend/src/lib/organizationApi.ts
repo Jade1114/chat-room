@@ -54,3 +54,16 @@ export async function joinOrganization(organizationId: string): Promise<Organiza
   }
   return response.json();
 }
+
+export async function createOrganization(name: string, description: string): Promise<OrganizationDetailResponse> {
+  const response = await fetch(buildApiUrl('/api/organizations'), {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ name, description })
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `create organization status ${response.status}`);
+  }
+  return response.json();
+}

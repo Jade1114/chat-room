@@ -2,6 +2,7 @@ package com.yuy.chatroom.mapper;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -33,4 +34,10 @@ public interface ChannelMapper {
         LIMIT 1
         """)
     String findDefaultChannelId(String organizationId);
+
+    @Insert("""
+        INSERT INTO organization_channel (id, name, type, organization_id, description, is_readonly)
+        VALUES (#{id}, #{name}, #{type}, #{organizationId}, #{description}, #{isReadonly})
+        """)
+    void insert(Channel channel);
 }

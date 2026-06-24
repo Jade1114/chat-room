@@ -7,6 +7,7 @@ import { AdminPage } from './features/admin/AdminPage';
 import { OrganizationChannelPage } from './features/organizations/OrganizationChannelPage';
 import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
 import { OrganizationDiscoverPage } from './features/organizations/OrganizationDiscoverPage';
+import { CreateOrganizationPage } from './features/organizations/CreateOrganizationPage';
 import { AppShell } from './layouts/AppShell';
 
 const rootRoute = createRootRoute({
@@ -59,6 +60,12 @@ const organizationsRootRoute = createRoute({
   component: OrganizationDiscoverPage
 });
 
+const createOrganizationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/organizations/create',
+  component: CreateOrganizationPage
+});
+
 const organizationDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/organizations/$organizationId',
@@ -94,6 +101,7 @@ const routeTree = rootRoute.addChildren([
   clubsRoute,
   adminRoute,
   organizationsRootRoute,
+  createOrganizationRoute,
   organizationDetailRoute,
   organizationChannelRoute,
   legacyMembersRoute
