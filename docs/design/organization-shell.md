@@ -263,7 +263,7 @@ Implement the B-style shell in production UI:
 
 - Add `OrganizationDetailPage`.
 - Add route `/organizations/:organizationId`.
-- Add route placeholder for `/organizations/:organizationId/channels/:channelId`.
+- Route `/organizations/:organizationId/channels/:channelId` now renders real ChatWorkspace under organization context.
 - Display `Overview / Channels / Activities / Members / Settings`.
 - Show channels as children of the selected organization.
 - Keep current one-default-channel data compatible, but structure UI for multiple channels.

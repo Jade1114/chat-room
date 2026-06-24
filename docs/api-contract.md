@@ -557,7 +557,7 @@ INVITE_ONLY
 
 ## 8. Known contract gaps before next major refactor
 
-- Organization-scoped channel route exists in frontend but still renders placeholder;
+- `/messages` remains a compatibility chat entry; decide redirect vs shortcut behavior before final MVP cleanup;
 - `POST /api/organizations` is planned but not completed;
 - Activity, member preview, organizer actions, tags, and invitation code are not yet in Organization detail response;
 - `/api/channels` is semantically correct but path shape is compatibility-first;

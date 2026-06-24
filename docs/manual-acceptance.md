@@ -2,7 +2,7 @@
 
 > 目的：用轻量手动验收证明当前组织中心交流平台 MVP 可运行、可观察、可解释。
 >
-> 本文档只验收当前真实能力；尚未实现的创建组织、真实 Activity、Organization Channel route 聊天等能力必须标记为缺口，不写成已完成。
+> 本文档只验收当前真实能力；尚未实现的创建组织、真实 Activity 等能力必须标记为缺口，不写成已完成。
 
 ## 1. 当前验收范围
 
@@ -36,12 +36,12 @@ Auth
 - 消息持久化和历史消息加载；
 - Redis workspace online / current channel / unread；
 - RabbitMQ 消息发布、消费和广播；
+- Organization Channel route renders real ChatWorkspace；
 - 前端构建和后端编译。
 
 ### 1.2 当前不验收内容
 
 - 创建组织完整链路；
-- `/organizations/:organizationId/channels/:channelId` 真实聊天页；
 - Activity 后端模型和日程页；
 - Organization Detail 中真实 member preview / activity list / organizer actions；
 - 多频道组织；
@@ -335,11 +335,17 @@ curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab/messages' \
 7. 加入一个未加入组织；
 8. 确认该组织出现在左侧已加入组织中；
 9. 进入 Organization Detail；
-10. 确认频道入口存在。
+10. 点击该组织的 Channel 入口；
+11. 确认进入 `/organizations/:organizationId/channels/:channelId`；
+12. 确认页面渲染真实 ChatWorkspace；
+13. 确认左侧展示当前组织内部频道；
+14. 确认中间展示当前频道聊天记录和输入框；
+15. 确认右侧展示活动记录与 members / 在线成员；
+16. 确认聊天 header 展示 `Organization / # Channel`。
 
 当前已知缺口：
 
-- 点击组织频道 route 仍进入 placeholder，不是最终聊天页；
+- `/messages` 仍是兼容聊天入口，尚未决定是否重定向到 Public Square/default Channel；
 - Organization Detail 的 Activity / Member 数据仍不应当作真实后端能力验收。
 
 ## 10. WebSocket 聊天验收

@@ -85,7 +85,7 @@ Admin
 
 这些是下一次大型重构前最重要的事实边界：
 
-1. `/organizations/:organizationId/channels/:channelId` 仍是 placeholder，真实聊天暂时还在 `/messages`；
+1. 组织频道 route 已接入真实 ChatWorkspace，但 `/messages` 仍作为兼容入口存在；
 2. 创建组织链路尚未完整落地；
 3. Organization Detail 中 Activity、Member、Organizer 操作仍未接入真实后端数据；
 4. Activity Schedule 仍未形成真实闭环；

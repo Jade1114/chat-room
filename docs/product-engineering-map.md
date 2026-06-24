@@ -151,34 +151,37 @@ Admin
 - Organization Detail；
 - 已加入组织 sidebar；
 - ChatWorkspace；
-- `/organizations/:organizationId/channels/:channelId` placeholder。
+- `/organizations/:organizationId/channels/:channelId` renders real ChatWorkspace under Organization context。
 
 ## 7. 当前 MVP 缺口
 
 这些不是“未来幻想”，而是当前组织平台 MVP 尚未闭合的明确缺口。
 
-### 7.1 组织频道 route 未承载真实聊天
+### 7.1 `/messages` 仍是兼容聊天入口
 
-当前真实聊天仍在：
-
-```text
-/messages
-```
-
-组织频道 route 仍是 placeholder：
+组织频道 route 已经承载真实 ChatWorkspace：
 
 ```text
 /organizations/:organizationId/channels/:channelId
 ```
 
-预期 MVP 应改为：
+当前它负责：
+
+- 从 Organization API 加载组织/频道上下文；
+- 在 Organization context 下渲染 ChatWorkspace；
+- 使用 route channelId 作为初始当前频道；
+- 左侧展示当前组织内部 Channels；
+- 中间展示对应 Channel 的聊天记录和输入框；
+- 右侧展示 Activity records 和 Members / online members；
+- 聊天 header 展示 Organization / # Channel。
+
+剩余问题：
 
 ```text
-用户从 Organization Detail 进入 Channel
-→ URL 带 organizationId/channelId
-→ 页面渲染真实 ChatWorkspace
-→ 后端继续用 Membership 校验 Channel access
+/messages
 ```
+
+仍是兼容聊天入口。后续需要决定它是保留为 workspace shortcut，还是重定向到 Public Square/default Channel。
 
 ### 7.2 创建组织链路未完整落地
 

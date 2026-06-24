@@ -54,28 +54,28 @@ chat-room 已经完成：
 
 ## 3. MVP 缺口
 
-### Gap 1: Organization Channel route still placeholder
+### Gap 1: `/messages` is still the legacy chat adapter
 
 Current:
 
 ```text
-/messages → real ChatWorkspace
-/organizations/:organizationId/channels/:channelId → placeholder
-```
-
-Target:
-
-```text
 /organizations/:organizationId/channels/:channelId → real ChatWorkspace under Organization context
+/messages → compatibility chat entry
 ```
 
-Acceptance:
+Completed in current frontend slice:
 
-- User enters Channel from Organization Detail；
+- User enters a real ChatWorkspace from Organization Detail；
 - URL preserves Organization/Channel context；
-- Chat header can show Organization / # Channel；
-- Backend still authorizes via Membership；
-- `/messages` becomes legacy adapter or redirects to Public Square/default Channel。
+- Chat header shows Organization / # Channel；
+- Left sidebar shows Channels inside the current Organization；
+- Middle panel shows the selected Channel timeline and composer；
+- Right panel shows Activity records and Members/online members；
+- Backend still authorizes via Membership。
+
+Remaining:
+
+- Decide whether `/messages` should redirect to Public Square/default Channel or remain a legacy workspace shortcut.
 
 ### Gap 2: Create Organization flow missing
 
