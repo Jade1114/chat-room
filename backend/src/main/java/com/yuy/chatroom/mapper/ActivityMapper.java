@@ -108,8 +108,8 @@ public interface ActivityMapper {
       UPDATE activity
       SET status = 'EXPIRED', updated_at = #{now}
       WHERE status = 'PUBLISHED'
-        AND ((time_mode = 'SCHEDULED' AND end_time IS NOT NULL AND end_time &lt; #{now})
-          OR (time_mode = 'ONGOING' AND expires_at &lt; #{now}))
+        AND ((time_mode = 'SCHEDULED' AND end_time IS NOT NULL AND end_time < #{now})
+          OR (time_mode = 'ONGOING' AND expires_at < #{now}))
       """)
   void expireOutdated(@Param("now") Instant now);
 

@@ -4,6 +4,21 @@ import { Icon } from '../../components/Icon';
 import { fetchActivityFeed, type ActivityResponse } from '../../lib/activityApi';
 import { activityTimeLabel, categoryLabels, categoryOptions, splitTags } from '../activities/activityView';
 
+type FeedTab = 'upcoming' | 'ongoing';
+
+const tabMeta: Record<FeedTab, { label: string; description: string; empty: string }> = {
+  upcoming: {
+    label: '即将发生',
+    description: '有明确开始时间，按开始时间升序。',
+    empty: '当前筛选下没有即将发生的 Activity。'
+  },
+  ongoing: {
+    label: '持续招募',
+    description: '长期开放，按发布时间倒序。',
+    empty: '当前筛选下没有持续招募的 Activity。'
+  }
+};
+
 function ActivityCard({ activity }: { activity: ActivityResponse }) {
   return (
     <Link
@@ -35,17 +50,16 @@ function ActivityCard({ activity }: { activity: ActivityResponse }) {
   );
 }
 
-function ActivitySection({ title, description, activities }: { title: string; description: string; activities: ActivityResponse[] }) {
+function FeedTabButton({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
   return (
-    <section className="grid gap-3">
-      <div>
-        <h2 className="text-lg font-bold text-strong">{title}</h2>
-        <p className="mt-1 text-xs text-muted">{description}</p>
-      </div>
-      {activities.length === 0 ? (
-        <div className="rounded-2xl border border-divider bg-card p-6 text-sm text-muted">当前没有符合条件的 Activity。</div>
-      ) : activities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)}
-    </section>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? 'bg-card text-strong shadow-sm' : 'text-muted hover:text-primary'}`}
+    >
+      <span>{label}</span>
+      <span className={`rounded-full px-2 py-0.5 text-[10px] ${active ? 'bg-accent-soft text-accent-strong' : 'bg-surface text-faint'}`}>{count}</span>
+    </button>
   );
 }
 
@@ -53,12 +67,15 @@ export function ActivitySchedulePage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [tag, setTag] = useState('');
+  const [activeTab, setActiveTab] = useState<FeedTab>('upcoming');
   const [upcoming, setUpcoming] = useState<ActivityResponse[]>([]);
   const [ongoing, setOngoing] = useState<ActivityResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const filters = useMemo(() => ({ query, category, tag }), [query, category, tag]);
+  const activeActivities = activeTab === 'upcoming' ? upcoming : ongoing;
+  const currentTab = tabMeta[activeTab];
 
   useEffect(() => {
     let cancelled = false;
@@ -103,10 +120,23 @@ export function ActivitySchedulePage() {
       {loading && <div className="rounded-2xl border border-divider bg-card p-6 text-center text-sm text-muted">正在加载 Activity...</div>}
       {!loading && error && <div className="rounded-2xl border border-danger/30 bg-danger/10 p-6 text-center text-sm text-danger">{error}</div>}
       {!loading && !error && (
-        <div className="grid gap-8">
-          <ActivitySection title="Upcoming / 即将发生" description="有明确开始时间，按开始时间升序。" activities={upcoming} />
-          <ActivitySection title="Ongoing / 持续招募" description="长期开放，按发布时间倒序。" activities={ongoing} />
-        </div>
+        <section className="grid gap-4">
+          <div className="rounded-2xl bg-active p-1 sm:flex">
+            <FeedTabButton active={activeTab === 'upcoming'} label="即将发生 Upcoming" count={upcoming.length} onClick={() => setActiveTab('upcoming')} />
+            <FeedTabButton active={activeTab === 'ongoing'} label="持续招募 Ongoing" count={ongoing.length} onClick={() => setActiveTab('ongoing')} />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-bold text-strong">{currentTab.label}</h2>
+            <p className="mt-1 text-xs text-muted">{currentTab.description}</p>
+          </div>
+
+          <div className="grid gap-3">
+            {activeActivities.length === 0 ? (
+              <div className="rounded-2xl border border-divider bg-card p-6 text-sm text-muted">{currentTab.empty}</div>
+            ) : activeActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)}
+          </div>
+        </section>
       )}
     </div>
   );

@@ -251,3 +251,23 @@
 **现象**: 旧组织模型中用户加入组织后缺少“退社 / 离开组织”入口。
 
 **预期**: 如果未来重新启用 Organization / Membership 能力，需要补充离开组织流程。当前 Activity-first MVP 不验收该能力。
+
+---
+
+## B-017: Activity Feed 触发过期状态更新时 SQL 语法错误
+
+**状态**: ✅ 已修复（待提交）
+
+**发现日期**: 2026-06-25
+
+**现象**: 验收 `/activities` 时，后端抛出 `BadSqlGrammarException`。错误 SQL 中出现了字面量 `&lt;`，导致 MySQL 报语法错误。
+
+**复现步骤**:
+
+1. 登录后进入 `/activities`
+2. 后端执行 `activityMapper.expireOutdated(now)`
+3. 观察后端日志：`near '; ... OR (time_mode = 'ONGOING' AND expires_at &lt;'`
+
+**预期**: `expireOutdated` 应生成合法 SQL，用 `<` 比较过期时间，Activity Feed 正常返回 Upcoming / Ongoing。
+
+**原因追踪**: `ActivityMapper.expireOutdated` 是普通 `@Update` 注解，不是 MyBatis `<script>` XML 片段；这里不应该写 XML entity `&lt;`。`&lt;` 被原样发送给 MySQL，造成 SQL 语法错误。
