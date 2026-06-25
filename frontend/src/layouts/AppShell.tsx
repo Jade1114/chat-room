@@ -19,39 +19,32 @@ const roleLabel: Record<UserRole, string> = {
 interface NavigationItem {
   label: string;
   description: string;
-  to?: '/dashboard' | '/organizations' | '/organizations/create' | '/admin' | '/activities';
+  to?: '/activities' | '/activities/new' | '/me/activities' | '/organizations' | '/organizations/create' | '/admin';
   activeWhen?: (pathname: string) => boolean;
   icon: ReactNode;
 }
 
 const navigationItems: NavigationItem[] = [
   {
-    label: '个人 Dashboard',
-    description: '个人动态与待处理事项',
-    to: '/dashboard',
-    activeWhen: (pathname) => pathname.startsWith('/dashboard'),
-    icon: <><path d="M3 11 12 3l9 8" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" /></>
+    label: '发现事情',
+    description: '浏览即将发生和持续招募的 Activity',
+    to: '/activities',
+    activeWhen: (pathname) => pathname === '/activities' || (pathname.startsWith('/activities/') && pathname !== '/activities/new'),
+    icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>
   },
   {
-    label: '组织发现中心',
-    description: '发现和加入公开组织',
-    to: '/organizations',
-    activeWhen: (pathname) => pathname === '/organizations',
-    icon: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>
-  },
-  {
-    label: '创建组织',
-    description: '创立一个新的组织',
-    to: '/organizations/create',
-    activeWhen: (pathname) => pathname === '/organizations/create',
+    label: '发起事情',
+    description: '发布一个值得一起完成的事情',
+    to: '/activities/new',
+    activeWhen: (pathname) => pathname === '/activities/new',
     icon: <><path d="M12 5v14M5 12h14" /></>
   },
   {
-    label: '活动中心',
-    description: '跨组织活动日程',
-    to: '/activities',
-    activeWhen: (pathname) => pathname === '/activities',
-    icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>
+    label: '我的发布',
+    description: '管理我发起的 Activity',
+    to: '/me/activities',
+    activeWhen: (pathname) => pathname === '/me/activities',
+    icon: <><path d="M16 21v-2a4 4 0 0 0-8 0v2" /><circle cx="12" cy="7" r="4" /><path d="M4 11h16" /></>
   },
 ];
 
@@ -157,7 +150,7 @@ export function AppShell() {
     if (!checking && currentUser) {
       const publicPaths = ['/login', '/register'];
       if (publicPaths.includes(window.location.pathname)) {
-        navigate({ to: '/dashboard', replace: true });
+        navigate({ to: '/activities', replace: true });
       }
     }
   }, [checking, currentUser, navigate]);
@@ -198,12 +191,12 @@ export function AppShell() {
         <aside className="flex h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
           <section className="shrink-0">
             <div className="flex items-center gap-3 px-1">
-              <div className="grid size-11 place-items-center rounded-[16px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="Organization Platform">
+              <div className="grid size-11 place-items-center rounded-[16px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="Activity-first Platform">
                 <Icon className="size-5"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
               </div>
               <div>
                 <p className="text-sm font-semibold text-strong">Chat Room</p>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-faint">Org Platform</p>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-faint">Activity-first MVP</p>
               </div>
             </div>
 
@@ -229,8 +222,8 @@ export function AppShell() {
           <section className="mt-7 min-h-0 flex-1 overflow-y-auto pr-1">
             <div className="mb-3 flex items-center justify-between px-1">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">Joined</p>
-                <h2 className="mt-0.5 text-sm font-semibold text-strong">我的组织</h2>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">Legacy</p>
+                <h2 className="mt-0.5 text-sm font-semibold text-strong">旧组织能力</h2>
               </div>
               <span className="rounded-full bg-active px-2 py-1 text-[10px] font-semibold text-muted">
                 {joinedOrganizationViewModels.length}

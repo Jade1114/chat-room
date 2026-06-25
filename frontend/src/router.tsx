@@ -7,6 +7,9 @@ import { OrganizationChannelPage } from './features/organizations/OrganizationCh
 import { OrganizationDetailPage } from './features/organizations/OrganizationDetailPage';
 import { OrganizationDiscoverPage } from './features/organizations/OrganizationDiscoverPage';
 import { ActivitySchedulePage } from './features/organizations/ActivitySchedulePage';
+import { ActivityDetailPage } from './features/activities/ActivityDetailPage';
+import { ActivityFormPage } from './features/activities/ActivityFormPage';
+import { MyActivitiesPage } from './features/activities/MyActivitiesPage';
 import { CreateOrganizationPage } from './features/organizations/CreateOrganizationPage';
 import { AppShell } from './layouts/AppShell';
 
@@ -28,7 +31,7 @@ const loginRoute = createRoute({
   beforeLoad: () => {
     const token = localStorage.getItem('chat_room_token');
     if (token) {
-      throw redirect({ to: '/dashboard' });
+      throw redirect({ to: '/activities' });
     }
   },
   component: LoginPage
@@ -40,7 +43,7 @@ const registerRoute = createRoute({
   beforeLoad: () => {
     const token = localStorage.getItem('chat_room_token');
     if (token) {
-      throw redirect({ to: '/dashboard' });
+      throw redirect({ to: '/activities' });
     }
   },
   component: RegisterPage
@@ -49,6 +52,9 @@ const registerRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard',
+  beforeLoad: () => {
+    throw redirect({ to: '/activities' });
+  },
   component: WorkspaceDashboard
 });
 
@@ -98,6 +104,24 @@ const activityScheduleRoute = createRoute({
   component: ActivitySchedulePage
 });
 
+const activityNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/activities/new',
+  component: ActivityFormPage
+});
+
+const activityDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/activities/$activityId',
+  component: ActivityDetailPage
+});
+
+const myActivitiesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/me/activities',
+  component: MyActivitiesPage
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin',
@@ -112,6 +136,9 @@ const routeTree = rootRoute.addChildren([
   clubsRoute,
   adminRoute,
   activityScheduleRoute,
+  activityNewRoute,
+  activityDetailRoute,
+  myActivitiesRoute,
   organizationsRootRoute,
   createOrganizationRoute,
   organizationDetailRoute,

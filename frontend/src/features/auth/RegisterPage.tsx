@@ -23,7 +23,7 @@ export function RegisterPage() {
     try {
       const auth = await register(username, displayName, password);
       applyAuth(auth);
-      navigate({ to: '/dashboard' });
+      navigate({ to: '/activities' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '注册失败');
     } finally {

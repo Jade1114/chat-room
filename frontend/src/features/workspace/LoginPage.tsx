@@ -18,7 +18,7 @@ export function LoginPage() {
     try {
       const auth = await login(username, password);
       applyAuth(auth);
-      navigate({ to: '/dashboard' });
+      navigate({ to: '/activities' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
     } finally {
@@ -102,7 +102,7 @@ export function LoginPage() {
 
           <div className="mt-8 border-t border-divider pt-5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-faint">Dev Quick Login</p>
-            <DevLoginButton onLogin={(auth) => { applyAuth(auth); navigate({ to: '/dashboard' }); }} />
+            <DevLoginButton onLogin={(auth) => { applyAuth(auth); navigate({ to: '/activities' }); }} />
           </div>
         </section>
       </div>
