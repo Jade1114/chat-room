@@ -126,14 +126,14 @@ Use this when explaining the project as product-engineering evidence.
 
 ### `docs/current-mvp-gap-and-roadmap.md`
 
-Current gap and roadmap.
+Current MVP status and roadmap.
 
 Answers:
 
 - what exists now;
-- what is missing for the Activity-first MVP;
-- what should be built next;
-- which legacy Organization/Chat abilities are no longer MVP acceptance criteria.
+- which Activity-first MVP slices have been completed and accepted;
+- which legacy Organization/Chat abilities are no longer MVP acceptance criteria;
+- what the two long-term directions are: style/design adjustment and new feature development.
 
 Use this before implementation planning.
 
@@ -174,7 +174,7 @@ Use it to verify the MVP manually:
 - Activity Detail;
 - participation method reveal;
 - event logging;
-- publish/edit/close Activity;
+- publish/close Activity;
 - my initiated Activities.
 
 It explicitly does not verify Organization, Membership, Channel, realtime chat, comments, notifications, or platform-internal registration.
@@ -191,7 +191,8 @@ It explains:
 - what they should test;
 - what is intentionally out of scope;
 - how to run it;
-- how to provide feedback.
+- how to provide feedback;
+- how to think about the two future directions: style/design and new features.
 
 ### `docs/deployment.md`
 

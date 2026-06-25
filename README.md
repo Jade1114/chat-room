@@ -16,9 +16,9 @@ What is missing is a place where those things remain discoverable after they lea
 
 The product exists so that every "I want to do something" moment can more easily find people willing to do it together.
 
-## Current MVP
+## Current MVP status
 
-The current MVP is defined by:
+The Activity-first MVP main path has been implemented and manually accepted locally. The current MVP is defined by:
 
 - `VISION.md` — why the product exists;
 - `docs/MVP.md` — what the first version validates;
@@ -63,7 +63,7 @@ An Activity does not have to come from a club or organization. In the MVP every 
 
 ## MVP features
 
-The first version should support:
+The accepted MVP supports:
 
 - user login;
 - Activity Feed;
@@ -103,7 +103,7 @@ The current MVP intentionally does not build:
 - image / poster / file upload;
 - activity capacity / waitlist / approval workflow.
 
-Existing organization, membership, channel, and chat code is historical implementation asset and possible future capability. It is not the current MVP acceptance standard.
+Existing organization, membership, channel, and chat code is historical implementation asset and possible future capability. It is not the current MVP acceptance standard. In the current frontend, Organization / Channel / Chat routes are downgraded as legacy capability: they are not shown as primary navigation and direct visits display a legacy notice.
 
 ## Activity rules
 
@@ -136,7 +136,7 @@ OTHER        其他
 
 ## Activity Feed
 
-The Feed has two sections:
+The Feed has two sections, currently represented as tabs:
 
 ```text
 Upcoming / 即将发生
@@ -169,6 +169,13 @@ It cares about:
 - qualitative confirmation that users actually contacted initiators or participated offline;
 - whether users return to find new Activities.
 
+## Next directions
+
+After the accepted Activity-first MVP, future work is split into two tracks:
+
+1. **Style / design adjustment** — improve the first-screen experience, Activity card hierarchy, Feed tabs, Detail page motivation, Publish form flow, mobile layout, and empty/error/legacy states.
+2. **New features** — add only after real user feedback shows the need, such as Activity editing UI, drafts, interested/bookmark state, initiator profile/history, better ranking, participation intent, or a redesigned post-MVP Organization model.
+
 ## Local running
 
 ### Docker Compose
@@ -197,13 +204,29 @@ http://localhost:3000
 ```bash
 # backend
 cd backend
-mvn test
+mvn -q -DskipTests compile
 mvn spring-boot:run
 
 # frontend
 cd frontend
 npm run build
 npm run dev
+```
+
+### Local SQL layout
+
+```text
+backend/sql/init/       fresh schema + seed
+backend/sql/delete/     destructive local reset
+backend/sql/changes/    migration-style changes for older local DBs
+```
+
+Fresh local reset:
+
+```bash
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/002_seed.sql
 ```
 
 ## Document map

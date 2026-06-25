@@ -1,6 +1,6 @@
 # Classmate Review Guide
 
-> 给同学快速理解和试用 chat-room 的入口。重点不是读源码，而是判断：这个平台是否能让人发现值得一起做的事情，并愿意联系发起者真实参与。
+> 给同学、朋友或外部 reviewer 快速理解和试用 chat-room 的入口。重点不是读源码，而是判断：这个平台是否能让人发现值得一起做的事情，并愿意联系发起者真实参与。
 
 ## 1. 一句话理解
 
@@ -12,7 +12,32 @@ chat-room 当前是一个 **Activity-first 校园参与平台**。
 
 平台希望让每一个“我想做点什么”的念头，更容易找到愿意一起完成的人。
 
-## 2. 你要帮忙验证什么
+## 2. 当前版本已经能做什么
+
+当前 Activity-first MVP 主链路已经本地手动验收通过：
+
+```text
+登录
+→ 发现 Activity
+→ 搜索 / 分类 / 标签筛选
+→ 打开 Activity 详情
+→ 查看参与方式
+→ 私下联系发起者
+→ 发布 Activity
+→ 查看我的发布
+→ 关闭我发起的 Activity
+```
+
+系统会记录两个最小验证事件：
+
+```text
+DETAIL_VIEW
+PARTICIPATION_METHOD_VIEW
+```
+
+它们只用于判断用户是否真的打开详情和查看参与方式，不代表平台内报名关系。
+
+## 3. 你要帮忙验证什么
 
 请不要主要测试聊天。
 
@@ -31,9 +56,10 @@ chat-room 当前是一个 **Activity-first 校园参与平台**。
 → 打开详情
 → 查看参与方式
 → 判断是否愿意联系发起者
+→ 判断是否愿意自己发布一个 Activity
 ```
 
-## 3. 当前不会做什么
+## 4. 当前不会做什么
 
 第一版不验证：
 
@@ -44,14 +70,18 @@ chat-room 当前是一个 **Activity-first 校园参与平台**。
 - 评论区；
 - 通知中心；
 - 平台内报名；
+- “我参与的 Activity”；
 - 收藏 / 关注 / 好友；
-- 图片海报上传。
+- 图片海报上传；
+- Activity 编辑 UI。
 
 如果你觉得“没有聊天”或者“不能直接报名”，这不是 bug，是当前 MVP 边界。
 
-## 4. 测试账号
+Organization / Channel / Chat 是历史能力，当前前端已降级为 legacy，不在主导航中作为验收入口。
 
-当前 Docker 初始化测试账号密码均为：
+## 5. 测试账号
+
+当前初始化测试账号密码均为：
 
 ```text
 123456
@@ -63,18 +93,13 @@ chat-room 当前是一个 **Activity-first 校园参与平台**。
 | `test001` | `123456` | 普通用户 / 发起者视角 |
 | `test002` | `123456` | 另一个普通用户视角 |
 
-## 5. 本地启动
+## 6. 本地启动
+
+### Docker Compose
 
 ```bash
 cp .env.deploy.example .env.deploy
 
-docker compose --env-file .env.deploy up -d --build
-```
-
-重置数据：
-
-```bash
-docker compose --env-file .env.deploy down -v
 docker compose --env-file .env.deploy up -d --build
 ```
 
@@ -84,9 +109,57 @@ docker compose --env-file .env.deploy up -d --build
 http://localhost:3000
 ```
 
-## 6. 20 分钟试用流程
+### 本地开发模式
 
-### 6.1 登录
+后端：
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn spring-boot:run
+```
+
+前端：
+
+```bash
+cd frontend
+npm run build
+npm run dev
+```
+
+通常访问：
+
+```text
+http://localhost:5173
+```
+
+## 7. 重置本地数据
+
+当前 SQL 目录只保留三类：
+
+```text
+backend/sql/init/       初始化
+backend/sql/delete/     删除
+backend/sql/changes/    变动
+```
+
+本地 MySQL 重置：
+
+```bash
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/002_seed.sql
+```
+
+如果重置后浏览器还保留旧登录态，可以清理：
+
+```js
+localStorage.removeItem('chat_room_token')
+```
+
+## 8. 15–20 分钟试用流程
+
+### 8.1 登录
 
 使用：
 
@@ -100,15 +173,16 @@ test001 / 123456
 - 登录后是否进入“发现事情”页面；
 - 第一屏是否能理解这个平台是干什么的。
 
-### 6.2 浏览 Activity Feed
+### 8.2 浏览 Activity Feed
 
 检查：
 
-- 是否有“即将发生”和“持续招募”两个区；
+- 是否有“即将发生”和“持续招募”两个 tab；
+- tab 数量是否清楚；
 - 卡片是否能快速看懂：做什么、什么时候、在哪里、谁发起；
 - Activity 是否像“邀请别人一起做事”，而不是普通帖子 / 广告。
 
-### 6.3 搜索和筛选
+### 8.3 搜索和筛选
 
 尝试：
 
@@ -122,9 +196,10 @@ test001 / 123456
 
 - 是否能找到感兴趣的 Activity；
 - 分类是否够直观；
-- 标签是否帮助判断。
+- 标签是否帮助判断；
+- 筛选后 Upcoming / Ongoing tabs 是否同步变化。
 
-### 6.4 Activity 详情
+### 8.4 Activity 详情
 
 打开一个感兴趣的 Activity。
 
@@ -135,7 +210,7 @@ test001 / 123456
 - 发起者是谁是否清楚；
 - 是否有明确的“查看参与方式”。
 
-### 6.5 查看参与方式
+### 8.5 查看参与方式
 
 点击：
 
@@ -149,7 +224,7 @@ test001 / 123456
 - 你是否愿意按这个方式联系发起者；
 - 如果不愿意，是因为 Activity 不感兴趣、信息不清楚、还是联系方式不可信？
 
-### 6.6 发布 Activity
+### 8.6 发布 Activity
 
 进入：
 
@@ -171,9 +246,9 @@ test001 / 123456
 - 发布表单是否知道怎么填；
 - category / tags 是否够用；
 - participationMethod 是否足够表达参与方式；
-- 发布后是否出现在 Feed。
+- 发布后是否出现在对应 Feed。
 
-### 6.7 我的发布
+### 8.7 我的发布
 
 进入：
 
@@ -185,11 +260,12 @@ test001 / 123456
 
 - 是否能看到自己发布的 Activity；
 - 是否能区分状态；
-- 是否能编辑 / 关闭。
+- 是否能关闭自己发布的 Activity；
+- 关闭后的 Activity 是否不再出现在默认 Feed。
 
-## 7. 反馈格式
+## 9. 反馈格式
 
-请按这个格式反馈：
+如果是 bug，请按这个格式反馈：
 
 ```text
 我用的账号：
@@ -209,10 +285,11 @@ test001 / 123456
 你会不会点击查看参与方式？
 你会不会真的联系发起者？
 什么信息会让你更敢参与？
+你会不会自己发布一个 Activity？
 你会不会下次回来继续找？
 ```
 
-## 8. 这次试用成功意味着什么
+## 10. 这次试用成功意味着什么
 
 不是消息多。
 
@@ -230,3 +307,35 @@ test001 / 123456
 有人真的参与了现实中的事情
 有人愿意下次回来继续找
 ```
+
+## 11. 后续长期方向
+
+当前不急着恢复 Organization / Chat。后续方向分成两大块。
+
+### 方向 A：调整样式设计
+
+目标是降低第一次使用的理解成本，让页面更像“发现值得一起做的事”，而不是工程功能堆叠。
+
+可能包含：
+
+- Activity card 信息层级优化；
+- Feed 首屏视觉改版；
+- category / tag 交互优化；
+- detail 页面参与动机强化；
+- 发布表单更像“发起邀请”，而不是后台表单；
+- 移动端布局优化；
+- 空状态、错误状态、legacy 提示的视觉统一。
+
+### 方向 B：增加新功能
+
+新功能要从真实反馈出发，不先假设要恢复聊天。
+
+可能包含：
+
+- 发起者 profile / 历史发布；
+- Activity 编辑 UI；
+- Activity 草稿；
+- 我感兴趣 / 收藏；
+- 更好的活动质量和推荐排序；
+- 参与意向表达；
+- 后续再重新设计 post-MVP Organization 能力。

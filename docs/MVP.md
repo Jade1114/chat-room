@@ -126,7 +126,7 @@ Activity 不要求来自社团。
 
 ## Core Features
 
-必须完成：
+当前已验收 MVP 完成：
 
 - 用户登录；
 - Activity Feed；
@@ -134,7 +134,6 @@ Activity 不要求来自社团。
 - Activity 分类 / 标签筛选；
 - Activity 详情；
 - 发布 Activity；
-- 编辑自己 `DRAFT` / `PUBLISHED` 的 Activity；
 - 关闭自己发布的 Activity；
 - 查看参与方式；
 - 我的发布；
@@ -142,11 +141,16 @@ Activity 不要求来自社团。
   - `DETAIL_VIEW`
   - `PARTICIPATION_METHOD_VIEW`
 
+当前保留但不作为已验收 UI 主能力：
+
+- `DRAFT` 模型状态；
+- Activity 编辑 API / 未来编辑 UI。
+
 ---
 
 ## Activity Feed
 
-Feed 默认分成两块：
+Feed 默认分成两个区，当前前端用 tabs 表达：
 
 ### 即将发生 Upcoming
 
@@ -163,6 +167,27 @@ Feed 默认分成两块：
 - 按 `createdAt` 倒序
 
 搜索、分类筛选、标签筛选后仍然保留这两个分区。
+
+---
+
+## Current implementation status
+
+Activity-first MVP 主链路已经本地手动验收通过：
+
+```text
+登录
+→ /activities
+→ Upcoming / Ongoing tabs
+→ search / category / tag filter
+→ /activities/:activityId
+→ 查看参与方式
+→ DETAIL_VIEW / PARTICIPATION_METHOD_VIEW event logs
+→ /activities/new
+→ /me/activities
+→ close my initiated Activity
+```
+
+Organization / Channel / Chat 相关能力是历史工程资产和 post-MVP 可能方向。当前前端已将这些 route 降级为 legacy，不进入 Activity-first MVP 主导航。
 
 ---
 
