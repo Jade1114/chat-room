@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Superseded for the current MVP by [ADR 0003: Activity-first MVP](0003-activity-first-mvp.md).
+
+This ADR remains historical context for the previous Organization-first phase.
 
 ## Context
 

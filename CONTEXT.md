@@ -1,105 +1,138 @@
 # Context Glossary
 
-This file defines the domain language for the project. It is a glossary, not an implementation spec.
+This file defines the current domain language for the project. It is a glossary, not an implementation spec.
 
 ## Project
 
-The project is an always-on organization discovery and participation platform. Its primary purpose is to help people discover organizations outside short recruitment windows, understand their public activities, decide whether to join, and only then continue communication in organization-related channels.
+The project is an Activity-first campus participation platform.
 
-The first concrete scenario is campus clubs whose discovery is normally concentrated in an annual recruitment day. The core model can also apply to online communities and other interest organizations, but realtime chat is a participation enhancer rather than the primary reason the product exists.
+Its purpose is to make worthwhile things to do together continuously discoverable. The project does not primarily validate chat, organization management, community persistence, or complex social relationships.
 
-The first version uses a dashboard as the post-login entry. The dashboard keeps a global left-side route layout and uses the main area to guide users toward the core actions: enter the Public Square channel, create their own organization, explore organizations, and view organization activity schedules.
+The first-version hypothesis is:
 
-The left sidebar uses a two-section layout. One section contains operational routes such as Dashboard, Organization Hall, My Organizations, Activity Schedule, and Create Organization. The other section contains all organizations the user has already joined. Joined organizations in this section act as entry points to their default channels in the MVP.
-
-The joined-organization section in the sidebar is a fast channel-entry surface. The My Organizations page is an organization-relationship management surface: it shows which organizations the user has joined, whether the user is a normal member or Organizer, and provides entry points for channel access or organization management.
-
-The Organization Hall page is the always-on replacement for a one-day recruitment fair. It lists public organizations for discovery beyond recruitment day. In the first version it supports keyword search, tag filtering, and public organization cards. Each organization card should help users quickly judge whether to inspect or join the organization, showing information such as name, introduction, tags, member count, recent or upcoming activity summary, whether the user has joined, and either a join or enter-channel action.
-
-The Organization Detail page helps non-members decide whether to join, helps members enter the channel and inspect activities, and helps Organizers maintain the organization. In the first version it shows organization name, introduction, tags, member count, organizer/creator, public activity list, membership status, and either a join or enter-channel action. For Organizers it also exposes actions to edit organization information, publish activities, view members, and view or generate the organization invitation/application code.
-
-The Activity Schedule page has two first-version views: Discover Activities and My Schedule. Discover Activities shows public activities from public organizations so that users can discover organizations through activities. My Schedule shows activities from organizations the user has joined. Because the first version has no registration or RSVP workflow, My Schedule means "activities from my joined organizations", not "activities I signed up for".
-
-The first-version core data model is intentionally small: User, Organization, OrganizationMember, Channel, Activity, and InvitationCode. Channel access is derived from OrganizationMember in the MVP. The first version does not require ChannelMember, ActivityRegistration, OrganizationJoinRequest, ModerationAction, or Notification entities.
+> If campus has an always-open platform where anyone can publish worthwhile things to do together, will people discover them and participate?
 
 ## User
 
-A person using the platform.
+A logged-in person using the platform.
 
-A user may discover organizations, participate in public communication, join organizations, and communicate in channels they are allowed to access.
+In the MVP, a User can browse Activities, publish Activities, open Activity details, view participation methods, and manage Activities they initiated.
 
-## Organization
-
-A group that gathers people around a shared identity, interest, activity, or purpose.
-
-Examples include anime clubs, Go clubs, game communities, military-interest groups, campus societies, and online hobby groups.
-
-An organization is the core domain object of the product. It must have outward-facing display content, such as a name and introduction, so that users can understand what the group is before joining or interacting with it.
-
-An organization has members and activities.
-
-Organizations can have visibility state in the domain model. In the first version, newly created organizations are public by default so that the organization hall has useful discovery content. Later safety work may expand this into private, draft, review, or moderation states.
-
-Organizations can also have a join policy in the domain model. In the first version, public organizations are open to direct joining by logged-in users. Later safety work may expand this into approval-required, invite-only, banned-member, or other controlled membership states.
-
-In the first version, any logged-in user may create an organization. The creator becomes an Organizer, joins the organization automatically, and receives access to the organization's default channel.
+The MVP does not model following, friends, private messaging, profile pages, reputation, or social graph relationships.
 
 ## Activity
 
-A public or organization-scoped arrangement published by an organization.
+A worthwhile thing someone wants others to participate in together.
 
-An activity represents something people may want to know about or participate in, such as a meeting, event, game session, club recruitment, or discussion plan.
+Examples include workshops, matches, game sessions, study groups, sports, photography walks, reading groups, Hackathon team-ups, project collaborator searches, travel companion searches, or finding people to complete something together.
 
-Activities are part of the reason an organization exists and one of the main things users inspect when deciding whether to participate, especially when they missed or were not interested during the annual recruitment window.
+An Activity is not required to belong to an organization, club, lab, course, or channel. In the first version, every Activity is initiated by an individual User. If the thing is associated with a club or organization, that context is written in the Activity title or description.
 
-In the first version, an Activity is an independent lightweight display entity, not a full event-management workflow. It may have a title, description, time, location or link, organization owner, and visibility. The first version does not include registration, RSVP, attendance, capacity limits, cancellation workflows, or activity-specific notifications.
+## Initiator
 
-## Channel
+The User who publishes an Activity.
 
-A communication space where users exchange messages.
+The MVP shows only the initiator's display name and the publish time on Activity Detail. If the initiator wants to provide background or identity context, they write it in the Activity description.
 
-A channel is the communication carrier for an organization after a user has joined. Its meaning comes from supporting ongoing participation, activity discussion, and member communication; it is not the primary discovery surface.
+## Participation Method
 
-An organization may have multiple channels in the domain model. In the current MVP, each organization has one default primary channel.
+A free-text instruction that tells interested users how to participate or contact the initiator.
 
-An organization contains its channels. A channel belongs to one organization.
+Examples: a WeChat ID, QQ group, email, external form link, meeting link, offline gathering instructions, or preparation requirements.
 
-A channel is not an isolated chat room. It belongs to a product context such as an organization.
+The MVP intentionally does not structure contact type, contact value, QR code upload, external form link handling, or contact analytics as product features.
 
-## Public Square
+## Activity Category
 
-The default organization maintained by the platform team.
+A fixed first-level classification for discovery and filtering.
 
-A user joins the Public Square organization automatically when they create an account. Its default channel is visible to users by default.
+The MVP categories are:
 
-The Public Square is used for open conversation, organization discovery, activity promotion, and finding people with shared interests.
+- `STUDY`: 学习
+- `SPORTS`: 运动
+- `GAME`: 游戏
+- `PROJECT`: 项目
+- `WORKSHOP`: Workshop
+- `COMPETITION`: 比赛
+- `TRAVEL`: 出行
+- `TEAM_UP`: 找队友 / 找搭子
+- `OTHER`: 其他
 
-It also acts as the best example organization for users who want to create and maintain their own organizations.
+## Activity Tags
+
+Free-text labels used for flexible discovery.
+
+An Activity may have up to 5 tags. Search may match title, description, and tags.
+
+## Activity Time Mode
+
+The way an Activity stays valid in the Feed.
+
+### SCHEDULED
+
+A concrete-time Activity, such as a workshop, game session, match, meetup, or reading group.
+
+A `SCHEDULED` Activity has a `startTime` and may have an `endTime`.
+
+### ONGOING
+
+A continuous invitation or recruiting need, such as finding teammates, study partners, project collaborators, or travel companions.
+
+An `ONGOING` Activity must have an `expiresAt`. The MVP maximum duration is 30 days.
+
+## Activity Status
+
+The small lifecycle model for Activity.
+
+- `DRAFT`: not publicly visible yet. Reserved for future flows; the MVP UI does not need save-draft.
+- `PUBLISHED`: visible in the Activity Feed while valid.
+- `EXPIRED`: no longer valid because time has passed.
+- `CLOSED`: manually closed by the initiator.
+
+Expired Activities do not return to `DRAFT` automatically.
+
+## Activity Feed
+
+The logged-in user's main product entry.
+
+The Feed has two default sections:
+
+- `Upcoming / 即将发生`: valid `SCHEDULED` Activities ordered by `startTime` ascending.
+- `Ongoing / 持续招募`: valid `ONGOING` Activities ordered by `createdAt` descending.
+
+Search and category/tag filtering preserve this two-section structure.
+
+## Activity Event
+
+A minimal measurement log for MVP validation.
+
+The MVP records:
+
+- `DETAIL_VIEW`: a User opens an Activity detail page.
+- `PARTICIPATION_METHOD_VIEW`: a User clicks to reveal the participation method.
+
+These are measurement events only. They are not participation relationships, favorites, registrations, or social relationships.
+
+## Organization
+
+A future or historical capability representing a longer-lived group.
+
+Organizations are not a current MVP core object. Previous Organization-first documents live in `docs/archive/organization-first/`. Existing organization, membership, channel, and chat code may remain as implementation assets, but they do not define the current MVP.
 
 ## Membership
 
-The relationship between a user and an organization.
+A previous Organization-first relationship between User and Organization.
 
-Membership means the user has joined the organization. It is separate from organization visibility.
+Membership is not part of the Activity-first MVP. The MVP does not model platform-internal Activity registration or participation relationships.
 
-A user may be able to see a public organization and inspect its public profile or public activities without being a member.
+## Channel / Chat
 
-Membership determines whether the user belongs to the organization and may affect which organization channels or activities the user can access.
+A previous or future communication capability.
 
-A new user starts as a member of only the platform-maintained Public Square organization. Before joining any other organization, they are not subscribed to any other organization channels.
-
-Users can discover or join organizations through several paths: using an organization-bound invitation/application code, finding organizations through the Public Square, or searching public organizations in the organization hall.
-
-When users say they "join a channel" in the MVP, the domain meaning is that they join the organization and therefore receive access to that organization's default channel.
-
-## Organizer
-
-A user responsible for maintaining an organization’s public information, activities, and organization-related communication spaces.
-
-In the first version, an Organizer may edit organization profile information, publish/edit/delete lightweight activities, view the organization member list, and generate or view the organization invitation/application code.
-
-In the first version, an Organizer does not manage complex moderation or governance workflows such as kicking members, muting members, transferring ownership, creating multiple subchannels, defining custom channel permissions, or configuring approval workflows.
+Realtime chat is not part of the MVP. Concrete Activity coordination happens off-platform through the Activity's participation method.
 
 ## Admin
 
-A platform-level operator with authority to manage platform data and resolve administrative needs across organizations.
+A platform-level operator role that may be useful later for moderation or takedown.
+
+The MVP does not require pre-publication review, `PENDING_REVIEW`, `REJECTED`, or platform moderation states. Logged-in users publish Activities directly; initiators can close their own Activities.

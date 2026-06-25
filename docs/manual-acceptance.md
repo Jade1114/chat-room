@@ -1,115 +1,73 @@
 # Manual Acceptance Checklist
 
-> 目的：用轻量手动验收证明当前组织中心交流平台 MVP 可运行、可观察、可解释。
+> 目的：用轻量手动验收证明 Activity-first MVP 主链路可运行、可观察、可解释。
 >
-> 本文档只验收当前真实能力；尚未实现的创建组织、真实 Activity 等能力必须标记为缺口，不写成已完成。
+> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知或平台内报名。
 
-## 1. 当前验收范围
+## 1. Acceptance scope
 
 当前主线：
 
 ```text
 Auth
-→ Public Square default Membership
-→ Organization discovery / join
-→ Membership-derived Channel access
-→ WebSocket workspace session
-→ Channel chat
-→ Message history
-→ Redis presence / unread
-→ RabbitMQ fanout
+→ Activity Feed
+→ Activity search/filter
+→ Activity Detail
+→ participation method reveal
+→ Activity event logs
+→ Publish Activity
+→ My initiated Activities
 ```
 
-### 1.1 当前验收内容
+### 1.1 验收内容
 
-- 注册 / 登录 / dev-login；
+- 登录 / 注册；
 - JWT 恢复当前用户；
-- 新注册用户默认加入 Public Square；
-- 公开组织列表；
-- 组织详情；
-- 加入公开组织；
-- 已加入组织列表 / sidebar；
-- `/api/channels` 只返回当前用户可访问的 Organization Channels；
-- 未授权 Channel detail / messages 返回 404；
-- WebSocket 通过 token 建立连接；
-- Channel view changed 后才能发送当前 Channel 消息；
-- 消息持久化和历史消息加载；
-- Redis workspace online / current channel / unread；
-- RabbitMQ 消息发布、消费和广播；
-- Organization Channel route renders real ChatWorkspace；
+- 登录后默认进入 `/activities`；
+- Activity Feed 分为 Upcoming / Ongoing；
+- Activity 搜索；
+- category 筛选；
+- tags 展示 / 筛选；
+- Activity Detail；
+- 打开详情记录 `DETAIL_VIEW`；
+- 点击查看参与方式后展示 `participationMethod`；
+- 点击查看参与方式记录 `PARTICIPATION_METHOD_VIEW`；
+- 发布 Activity；
+- 编辑自己 `PUBLISHED` 的 Activity；
+- 关闭自己发布的 Activity；
+- `/me/activities` 展示我的发布；
+- 过期 Activity 不进入默认 Feed；
 - 前端构建和后端编译。
 
-### 1.2 当前不验收内容
+### 1.2 不验收内容
 
-- 创建组织完整链路；
-- Activity 后端模型和日程页；
-- Organization Detail 中真实 member preview / activity list / organizer actions；
-- 多频道组织；
-- 私密组织 / 审核 / 邀请码限制；
-- 私聊、文件上传、完整通知中心；
-- school / course / class / assignment teaching-platform 方向。
+- 组织系统；
+- 组织主页；
+- Membership；
+- 多频道聊天；
+- 实时聊天；
+- 评论区；
+- 通知中心；
+- 推荐算法；
+- 图片 / 文件上传；
+- 人数上限 / 报名 / 候补 / 签到；
+- “我参与的 Activity”。
 
-## 2. 前置依赖
+## 2. Prerequisites
 
 后端默认连接本机服务：
 
 | 依赖 | 默认地址 | 说明 |
 | --- | --- | --- |
 | MySQL | `localhost:3306` | 数据库名：`chat_room` |
-| Redis | `localhost:6379` | workspace presence / unread / recent messages |
-| RabbitMQ | `localhost:5672` | 聊天消息分发 |
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
 
-配置入口：
+Redis / RabbitMQ may still exist as legacy infrastructure, but they are not part of Activity-first MVP acceptance.
 
-```text
-backend/src/main/resources/application.yaml
-backend/.env.example
-frontend/src/config.ts
-```
+## 3. Build verification
 
-## 3. 数据库初始化
-
-在 MySQL 中执行：
-
-```bash
-mysql -u root -p < backend/sql/schema.sql
-mysql -u root -p < backend/sql/seed.sql
-```
-
-当前 seed 的核心数据：
-
-### 3.1 Users
-
-所有测试账号密码均为 `123456`。
-
-| username | userId | displayName | platform role | 说明 |
-| --- | --- | --- | --- | --- |
-| `admin` | `u-admin` | 平台管理员 | ADMIN | 平台默认数据和管理视角 |
-| `test001` | `u-test-001` | 测试用户001 | MEMBER | 围棋社 Organizer，二次元同好会非成员 |
-| `test002` | `u-test-002` | 测试用户002 | MEMBER | 二次元同好会 Organizer，围棋社成员 |
-
-### 3.2 Organizations
-
-| organizationId | name | default channel | note |
-| --- | --- | --- | --- |
-| `org-public-square` | Public Square | `ch-public-square` | 默认官方组织，三个测试账号都已加入 |
-| `org-go-club` | 围棋社 | `ch-go-club` | `test001` 是 Organizer，`test002` 是成员 |
-| `org-anime-club` | 二次元同好会 | `ch-anime-club` | `test002` 是 Organizer，`test001` 默认未加入 |
-| `org-indie-game-lab` | 独立游戏实验室 | `ch-indie-game-lab` | `admin` 是 Organizer，普通测试用户默认未加入 |
-
-### 3.3 Seed Memberships
-
-- `u-admin`、`u-test-001`、`u-test-002` 已加入 Public Square；
-- `u-test-001` 是围棋社 Organizer；
-- `u-test-002` 是围棋社成员，也是二次元同好会 Organizer；
-- `u-test-001` 默认未加入二次元同好会，可用于验证非成员只能查看公开主页、加入后才能进入频道；
-- `u-test-001` / `u-test-002` 默认都未加入独立游戏实验室。
-
-## 4. 构建验证
-
-### 4.1 Backend
+### Backend
 
 ```bash
 cd backend
@@ -122,7 +80,7 @@ mvn test
 BUILD SUCCESS
 ```
 
-### 4.2 Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -132,438 +90,229 @@ npm run build
 期望：
 
 ```text
-✓ built
+built successfully
 ```
 
-## 5. 启动验证
+## 4. Auth acceptance
 
-### 5.1 Backend
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-期望：
-
-- Spring Boot 正常启动；
-- 未报 MySQL / Redis / RabbitMQ 连接失败；
-- 监听 `localhost:8080`。
-
-### 5.2 Frontend
+### Login
 
 ```bash
-cd frontend
-npm run dev
-```
-
-期望：
-
-- Vite dev server 正常启动；
-- 浏览器可打开前端；
-- 前端能请求后端 API。
-
-## 6. Auth 验收
-
-### 6.1 Dev login
-
-```bash
-curl -s -X POST 'http://localhost:8080/api/auth/dev-login' \
+curl -s -X POST 'http://localhost:8080/api/auth/login' \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"u-test-001"}'
+  -d '{"username":"test001","password":"123456"}'
 ```
 
 期望：
 
 - HTTP 200；
-- 返回 token；
-- userId 为 `u-test-001`；
-- role 为 `MEMBER`。
+- 返回 JWT；
+- 返回当前用户信息。
 
-建议把登录返回的 JWT 保存为变量，后续请求统一带上 auth header。
-
-```bash
-JWT='<copy jwt from login/dev-login response>'
-LOGIN_HEADER='<copy the auth header value built from JWT>'
-```
-
-### 6.2 Current auth user
+### Current user
 
 ```bash
 curl -s 'http://localhost:8080/api/auth/me' \
-  -H "$LOGIN_HEADER"
-```
-
-期望：
-
-- 返回 `u-test-001`；
-- `displayName` 为 测试用户001；
-- `role` 为 MEMBER。
-
-### 6.3 Register default Public Square membership
-
-手动注册新用户：
-
-```bash
-curl -s -X POST 'http://localhost:8080/api/auth/register' \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"acceptance-user","displayName":"Acceptance User","password":"password123"}'
+  -H '<auth header>'
 ```
 
 期望：
 
 - HTTP 200；
-- 返回 token；
-- 新用户可以访问 Public Square 默认 Channel；
-- 新用户不应自动访问其他组织 Channel。
+- 返回当前用户。
 
-## 7. Organization API 验收
+## 5. Activity Feed acceptance
 
-### 7.1 获取公开组织列表
-
-```bash
-curl -s 'http://localhost:8080/api/organizations' \
-  -H "$LOGIN_HEADER"
-```
-
-期望：
-
-- 返回 Public Square、围棋社、二次元同好会、独立游戏实验室；
-- `org-public-square.joined = true`；
-- `org-go-club.joined = true`；
-- `org-anime-club.joined = false` for `u-test-001`；
-- 每个组织有 `defaultChannelId`。
-
-### 7.2 获取组织详情
-
-```bash
-curl -s 'http://localhost:8080/api/organizations/org-go-club' \
-  -H "$LOGIN_HEADER"
-```
-
-期望：
-
-- HTTP 200；
-- 返回 `org-go-club`；
-- `joined = true`；
-- `channels` 包含 `ch-go-club`。
-
-### 7.3 加入公开组织
-
-```bash
-curl -s -X POST 'http://localhost:8080/api/organizations/org-anime-club/join' \
-  -H "$LOGIN_HEADER"
-```
-
-期望：
-
-- HTTP 200；
-- 返回 `org-anime-club` detail；
-- `joined = true`；
-- 再请求 `/api/channels` 时应包含 `ch-anime-club`。
-
-## 8. Channel access 验收
-
-### 8.1 当前用户可访问频道列表
-
-```bash
-curl -s 'http://localhost:8080/api/channels' \
-  -H "$LOGIN_HEADER"
-```
-
-使用 seed 初始状态下，`u-test-001` 期望包含：
-
-- `ch-public-square`；
-- `ch-go-club`。
-
-期望不包含：
-
-- `ch-anime-club`；
-- `ch-indie-game-lab`。
-
-如果已经执行过加入二次元同好会，则 `ch-anime-club` 会变成可访问，这是正确结果。
-
-### 8.2 有权限 Channel detail
-
-```bash
-curl -i 'http://localhost:8080/api/channels/ch-go-club' \
-  -H "$LOGIN_HEADER"
-```
-
-期望：
-
-- HTTP 200；
-- 返回 `ch-go-club`；
-- 包含 `onlineCount` 和 `onlineUsers`。
-
-### 8.3 无权限 Channel detail
-
-```bash
-curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab' \
-  -H "$LOGIN_HEADER"
-```
-
-如果 `u-test-001` 未加入独立游戏实验室，期望：
-
-- HTTP 404。
-
-验收意义：直接访问 Channel detail 不能绕过 Membership。
-
-### 8.4 无权限 Channel messages
-
-```bash
-curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab/messages' \
-  -H "$LOGIN_HEADER"
-```
-
-如果 `u-test-001` 未加入独立游戏实验室，期望：
-
-- HTTP 404。
-
-验收意义：历史消息接口不能泄露未授权 Channel。
-
-## 9. 前端组织主链路验收
-
-步骤：
-
-1. 打开前端；
-2. 使用 dev-login 或真实登录进入系统；
-3. 查看左侧“我的组织”；
-4. 确认 Public Square 和已加入组织显示；
-5. 进入组织发现中心；
-6. 查看公开组织卡片；
-7. 加入一个未加入组织；
-8. 确认该组织出现在左侧已加入组织中；
-9. 进入 Organization Detail；
-10. 点击该组织的 Channel 入口；
-11. 确认进入 `/organizations/:organizationId/channels/:channelId`；
-12. 确认页面渲染真实 ChatWorkspace；
-13. 确认左侧展示当前组织内部频道；
-14. 确认中间展示当前频道聊天记录和输入框；
-15. 确认右侧展示活动记录与 members / 在线成员；
-16. 确认聊天 header 展示 `Organization / # Channel`。
-
-当前已知缺口：
-
-- `/messages` 仍是兼容聊天入口，尚未决定是否重定向到 Public Square/default Channel；
-- Organization Detail 的 Activity / Member 数据仍不应当作真实后端能力验收。
-
-## 10. WebSocket 聊天验收
-
-WebSocket 地址：
+打开：
 
 ```text
-ws://localhost:8080/ws/chat?token=<jwt-token>
-```
-
-### 10.1 前端手动验收
-
-步骤：
-
-1. 打开两个浏览器窗口；
-2. 分别登录两个能访问同一 Channel 的用户，例如 `u-test-001` 和 `u-test-002` 都能访问 Public Square；
-3. 进入真实聊天 workspace；
-4. 选择 `ch-public-square`；
-5. 一个窗口发送消息；
-6. 另一个窗口确认收到消息。
-
-期望：
-
-- WebSocket 连接状态正常；
-- 发送消息有 ACK；
-- 两个窗口都能看到 `USER_CHAT`；
-- 刷新或重新进入后能加载历史消息；
-- 在线成员会更新。
-
-### 10.2 命令行 WebSocket 验收（可选）
-
-如果安装了 `websocat`：
-
-```bash
-websocat "ws://localhost:8080/ws/chat?token=$TOKEN"
-```
-
-连接后发送 Channel view changed：
-
-```json
-{
-  "type": "CHANNEL_VIEW_CHANGED",
-  "displayName": "测试用户001",
-  "channelId": "ch-public-square",
-  "content": "切换当前查看频道",
-  "userId": "u-test-001"
-}
-```
-
-再发送聊天消息：
-
-```json
-{
-  "type": "USER_CHAT",
-  "displayName": "测试用户001",
-  "channelId": "ch-public-square",
-  "content": "hello from websocat"
-}
+/activities
 ```
 
 期望：
 
-- 后端不报 JSON 解析错误；
-- 有权限 Channel view changed 成功；
-- 聊天消息经 RabbitMQ 消费后广播回来；
-- 客户端收到 `MESSAGE_ACK`。
+- 未登录访问会进入登录流程；
+- 登录后默认进入 `/activities`；
+- 页面主文案围绕“发现事情 / 有没人一起”；
+- 页面包含 Upcoming / 即将发生；
+- 页面包含 Ongoing / 持续招募；
+- 默认只展示仍有效的 `PUBLISHED` Activities；
+- `SCHEDULED` Activities 按 startTime 升序；
+- `ONGOING` Activities 按 createdAt 倒序。
 
-## 11. Redis 验收
+## 6. Search / filter acceptance
 
-当前 Redis key 语义：
-
-```text
-workspace:online
-workspace:user:sessions:{userId}
-workspace:session:user:{sessionId}
-workspace:session:channel:{sessionId}
-channel:viewing:{channelId}
-user:unread:{userId}
-channel:messages:{channelId}
-```
-
-### 11.1 workspace online
-
-用户连接 WebSocket 后：
-
-```bash
-redis-cli SMEMBERS workspace:online
-```
-
-期望包含当前 userId。
-
-### 11.2 current channel viewing
-
-用户切换到 `ch-public-square` 后：
-
-```bash
-redis-cli SMEMBERS channel:viewing:ch-public-square
-```
-
-期望至少存在一个 sessionId。
-
-### 11.3 recent messages cache
-
-发送消息后：
-
-```bash
-redis-cli LRANGE channel:messages:ch-public-square 0 2
-```
-
-期望看到最近消息 JSON。
-
-### 11.4 unread count
-
-当用户 A 在 `ch-public-square` 发消息，用户 B 在线但当前不查看该 Channel 时：
-
-```bash
-redis-cli HGETALL user:unread:u-test-002
-```
-
-期望对应 Channel unread 增加。
-
-## 12. RabbitMQ 验收
-
-当前 RabbitMQ 设计：
-
-- exchange：`exchange01`；
-- queue：`chat.queue.0`、`chat.queue.1`、`chat.queue.2`、`chat.queue.3`；
-- routing key：`0`、`1`、`2`、`3`；
-- bucket 根据 `channelId.hashCode() % 4` 计算。
-
-### 12.1 队列存在
-
-```bash
-rabbitmqctl list_queues name messages consumers
-```
-
-期望看到：
+操作：
 
 ```text
-chat.queue.0
-chat.queue.1
-chat.queue.2
-chat.queue.3
+输入关键词
+选择 category
+点击 tag
 ```
 
-### 12.2 发送聊天消息后发布与消费成功
+期望：
 
-步骤：
+- 搜索匹配 title / description / tags；
+- category 只显示对应分类；
+- tags 能缩小结果；
+- 筛选后仍保留 Upcoming / Ongoing 两个区。
 
-1. 前端进入 `ch-public-square`；
-2. 发送聊天消息；
-3. 观察后端日志。
+## 7. Activity Detail acceptance
 
-期望看到类似日志：
+打开：
 
 ```text
-RabbitMQ 发布成功 channelId=ch-public-square bucketIndex=...
-RabbitMQ 消费成功 channelId=ch-public-square message=...
+/activities/:activityId
 ```
 
-## 13. 当前 MVP 验收清单
+期望展示：
 
-### 13.1 构建
+- title；
+- description；
+- category；
+- tags；
+- timeMode；
+- time / expiresAt；
+- location；
+- initiator displayName；
+- publish time；
+- `查看参与方式` 按钮。
 
-- [ ] 后端 `mvn test` 通过；
-- [ ] 前端 `npm run build` 通过。
+期望不展示：
 
-### 13.2 Auth
+- 评论区；
+- 报名人数；
+- 加入按钮；
+- 聊天入口；
+- 组织主页入口作为主行为。
 
-- [ ] dev-login 返回 token；
-- [ ] `/api/auth/me` 可通过 token 返回当前用户；
-- [ ] register 后新用户默认可访问 Public Square。
+## 8. Participation method acceptance
 
-### 13.3 Organization
-
-- [ ] `/api/organizations` 返回公开组织；
-- [ ] Organization item 包含 joined 和 defaultChannelId；
-- [ ] `/api/organizations/{id}` 返回 organization detail；
-- [ ] join public organization 后 joined 变 true；
-- [ ] join 后对应 default Channel 出现在 `/api/channels`。
-
-### 13.4 Channel access
-
-- [ ] `/api/channels` 只返回当前用户可访问 Organization Channels；
-- [ ] 有权限 Channel detail 返回 200；
-- [ ] 无权限 Channel detail 返回 404；
-- [ ] 无权限 Channel messages 返回 404。
-
-### 13.5 WebSocket / Chat
-
-- [ ] WebSocket token connection 成功；
-- [ ] `CHANNEL_VIEW_CHANGED` 有权限时成功；
-- [ ] 无权限 Channel 不会成为当前查看 Channel；
-- [ ] 同 Channel 多用户能实时收发消息；
-- [ ] 聊天消息持久化后可通过 history API 读回。
-
-### 13.6 Redis / RabbitMQ
-
-- [ ] `workspace:online` 记录在线用户；
-- [ ] `channel:viewing:{channelId}` 记录当前查看 Channel 的 sessions；
-- [ ] `channel:messages:{channelId}` 缓存最近消息；
-- [ ] unread hash 会随消息增加 / 清零；
-- [ ] RabbitMQ queue 存在；
-- [ ] 发送消息后有发布和消费日志。
-
-## 14. 验收记录模板
+在 Activity Detail 点击：
 
 ```text
-日期：
-分支 / commit：
-后端构建：通过 / 失败
-前端构建：通过 / 失败
-Auth：通过 / 失败
-Organization：通过 / 失败
-Channel access：通过 / 失败
-WebSocket / Chat：通过 / 失败
-Redis：通过 / 失败
-RabbitMQ：通过 / 失败
-发现的问题：
-下一步：
+查看参与方式
 ```
+
+期望：
+
+- 点击前不突出展示 `participationMethod`；
+- 点击后展示完整参与方式；
+- 行为记录为 `PARTICIPATION_METHOD_VIEW`；
+- 该行为不创建报名关系、不进入“我参与”。
+
+## 9. Publish Activity acceptance
+
+打开：
+
+```text
+/activities/new
+```
+
+填写：
+
+- title；
+- description；
+- category；
+- tags；
+- timeMode；
+- startTime 或 expiresAt；
+- location；
+- participationMethod。
+
+期望：
+
+- 所有登录用户可以发布；
+- 发布后直接 `PUBLISHED`；
+- 不进入审核；
+- 不要求 organization；
+- 不要求 capacity；
+- 不上传图片；
+- 出现在对应 Feed 分区。
+
+## 10. Activity lifecycle acceptance
+
+### Ongoing max duration
+
+创建 `ONGOING` Activity 时：
+
+- 必须填写 expiresAt；
+- expiresAt 不得超过 30 天。
+
+### Close Activity
+
+发起者关闭自己的 Activity。
+
+期望：
+
+- status 变为 `CLOSED`；
+- 不再出现在默认 Feed；
+- 仍可在我的发布中看到。
+
+### Expired Activity
+
+过期后：
+
+- status 可被计算或更新为 `EXPIRED`；
+- 不出现在默认 Feed；
+- 不自动回到 `DRAFT`。
+
+## 11. My initiated Activities acceptance
+
+打开：
+
+```text
+/me/activities
+```
+
+期望：
+
+- 只展示当前用户发起的 Activities；
+- 展示 `PUBLISHED` / `EXPIRED` / `CLOSED` / `DRAFT` 状态；
+- 可进入详情；
+- 可编辑 `PUBLISHED`；
+- 可关闭 `PUBLISHED`。
+
+不期望：
+
+- 展示我参与的；
+- 展示我收藏的；
+- 展示我查看过联系方式的。
+
+## 12. Manual user feedback
+
+MVP 需要人工问：
+
+```text
+你看到哪些 Activity 感兴趣？
+你有没有点开详情？
+你有没有点击查看参与方式？
+你有没有真的联系发起者？
+你最后有没有参与？
+如果没有，为什么？
+你会不会下次回来继续找事情？
+```
+
+## 13. Checklist
+
+### Build
+
+- [ ] Backend `mvn test` passes；
+- [ ] Frontend `npm run build` passes。
+
+### Product flow
+
+- [ ] Login works；
+- [ ] `/activities` is the post-login entry；
+- [ ] Activity Feed has Upcoming / Ongoing；
+- [ ] Search works；
+- [ ] Category filter works；
+- [ ] Tag filter works；
+- [ ] Activity Detail works；
+- [ ] `DETAIL_VIEW` is recorded；
+- [ ] Participation method reveal works；
+- [ ] `PARTICIPATION_METHOD_VIEW` is recorded；
+- [ ] Publish Activity works；
+- [ ] My initiated Activities works；
+- [ ] Close Activity works；
+- [ ] Organization / Chat is not the MVP primary path。
