@@ -31,9 +31,7 @@ function ChannelIcon({ channel }: { channel: OrganizationChannel }) {
 }
 
 function Hero({ organization, joining, onJoin }: { organization: OrganizationViewModel; joining: boolean; onJoin: () => void }) {
-  const defaultChannelHref = organization.defaultChannelId
-    ? `/organizations/${organization.id}/channels/${organization.defaultChannelId}`
-    : `/organizations/${organization.id}`;
+  const defaultChannelId = organization.defaultChannelId || organization.channels[0]?.id;
 
   return (
     <section className={`relative overflow-hidden rounded-[32px] bg-gradient-to-br ${organization.colors} p-7 text-white shadow-panel`}>
@@ -46,11 +44,16 @@ function Hero({ organization, joining, onJoin }: { organization: OrganizationVie
               {organization.creatorName && <> · 创建者: {organization.creatorName}</>}
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">{organization.name}</h1>
+            {!organization.joined && (
+              <p className="mt-2 max-w-xl text-xs leading-5 text-white/75">
+                这是公开组织主页。加入组织后才能进入频道聊天；加入前可以先查看成员人数、公开活动和公开频道。
+              </p>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
-          {organization.joined ? (
-            <Link to="/organizations/$organizationId/channels/$channelId" params={{ organizationId: organization.id, channelId: organization.defaultChannelId || organization.channels[0]?.id || '' }} className="rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-[#13211e]">
+          {organization.joined && defaultChannelId ? (
+            <Link to="/organizations/$organizationId/channels/$channelId" params={{ organizationId: organization.id, channelId: defaultChannelId }} className="rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-[#13211e]">
               进入默认频道
             </Link>
           ) : (
@@ -58,7 +61,6 @@ function Hero({ organization, joining, onJoin }: { organization: OrganizationVie
               {joining ? '加入中...' : '加入组织'}
             </button>
           )}
-          <a href={defaultChannelHref} className="rounded-xl border border-white/20 px-4 py-2.5 text-xs font-semibold text-white">频道入口</a>
         </div>
       </div>
       <p className="relative z-10 mt-5 max-w-2xl text-sm leading-7 text-white/75">{organization.description}</p>
@@ -74,30 +76,57 @@ function Hero({ organization, joining, onJoin }: { organization: OrganizationVie
   );
 }
 
-function ChannelsSection({ organization }: { organization: OrganizationViewModel }) {
+function ChannelsSection({ organization, joining, onJoin }: { organization: OrganizationViewModel; joining: boolean; onJoin: () => void }) {
   return (
     <article className="rounded-3xl border border-divider bg-card p-5">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-strong">Channels</h2>
-          <p className="mt-1 text-xs text-muted">频道是组织下的交流入口，不再等同于组织本身。</p>
+          <p className="mt-1 text-xs text-muted">
+            {organization.joined
+              ? '频道是组织下的交流入口，不再等同于组织本身。'
+              : '加入前只展示公开频道信息；加入组织后才能进入频道聊天。'}
+          </p>
         </div>
-        <button className="rounded-xl border border-divider px-3 py-2 text-xs font-semibold text-primary">New channel</button>
+        {organization.joined ? (
+          <button className="rounded-xl border border-divider px-3 py-2 text-xs font-semibold text-primary">New channel</button>
+        ) : (
+          <button type="button" onClick={onJoin} disabled={joining} className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-on-accent disabled:opacity-60">
+            {joining ? '加入中...' : '加入组织'}
+          </button>
+        )}
       </div>
       <div className="mt-4 grid gap-2">
         {organization.channels.length === 0 && (
           <div className="rounded-2xl bg-active px-4 py-3 text-xs text-muted">这个组织还没有可展示频道。</div>
         )}
-        {organization.channels.map((channel) => (
-          <Link key={channel.id} to="/organizations/$organizationId/channels/$channelId" params={{ organizationId: organization.id, channelId: channel.id }} className="flex items-center gap-3 rounded-2xl bg-active px-4 py-3 transition hover:bg-hover">
-            <span className="grid size-9 place-items-center rounded-xl bg-card text-muted"><ChannelIcon channel={channel} /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-strong"># {channel.name}</span>
-              <span className="block truncate text-xs text-muted">{channel.purpose}</span>
-            </span>
-            {channel.unreadCount > 0 && <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white">{channel.unreadCount}</span>}
-          </Link>
-        ))}
+        {organization.channels.map((channel) => {
+          const channelContent = (
+            <>
+              <span className="grid size-9 place-items-center rounded-xl bg-card text-muted"><ChannelIcon channel={channel} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-strong"># {channel.name}</span>
+                <span className="block truncate text-xs text-muted">{channel.purpose}</span>
+              </span>
+              {organization.joined && channel.unreadCount > 0 && <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white">{channel.unreadCount}</span>}
+              {!organization.joined && <span className="rounded-full bg-card px-2 py-1 text-[10px] font-semibold text-muted">加入后可进入</span>}
+            </>
+          );
+
+          if (!organization.joined) {
+            return (
+              <div key={channel.id} className="flex items-center gap-3 rounded-2xl bg-active px-4 py-3 opacity-90">
+                {channelContent}
+              </div>
+            );
+          }
+
+          return (
+            <Link key={channel.id} to="/organizations/$organizationId/channels/$channelId" params={{ organizationId: organization.id, channelId: channel.id }} className="flex items-center gap-3 rounded-2xl bg-active px-4 py-3 transition hover:bg-hover">
+              {channelContent}
+            </Link>
+          );
+        })}
       </div>
     </article>
   );
@@ -266,6 +295,18 @@ function ActivitiesSection({ organization, canCreateActivity, onActivityCreated 
 }
 
 function MembersSection({ organization }: { organization: OrganizationViewModel }) {
+  if (!organization.joined) {
+    return (
+      <article className="rounded-3xl border border-divider bg-card p-5">
+        <h2 className="text-base font-semibold text-strong">Members</h2>
+        <p className="mt-1 text-xs text-muted">加入前只公开成员人数，不展示具体成员列表。</p>
+        <div className="mt-4 rounded-2xl bg-active px-4 py-3 text-sm text-muted">
+          当前共有 <span className="font-semibold text-strong">{organization.memberCount}</span> 名成员。
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="rounded-3xl border border-divider bg-card p-5">
       <h2 className="text-base font-semibold text-strong">Members</h2>
@@ -287,7 +328,7 @@ function OverviewTab({ organization, joining, onJoin, canCreateActivity, onActiv
     <div className="space-y-5">
       <Hero organization={organization} joining={joining} onJoin={onJoin} />
       <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-5 max-xl:grid-cols-1">
-        <ChannelsSection organization={organization} />
+        <ChannelsSection organization={organization} joining={joining} onJoin={onJoin} />
         <ActivitiesSection organization={organization} canCreateActivity={canCreateActivity} onActivityCreated={onActivityCreated} />
       </div>
       <MembersSection organization={organization} />
@@ -295,8 +336,8 @@ function OverviewTab({ organization, joining, onJoin, canCreateActivity, onActiv
   );
 }
 
-function PlaceholderTab({ organization, tab, canCreateActivity, onActivityCreated }: { organization: OrganizationViewModel; tab: OrganizationTab; canCreateActivity: boolean; onActivityCreated: (activity: ActivityResponse) => void }) {
-  if (tab === 'channels') return <ChannelsSection organization={organization} />;
+function PlaceholderTab({ organization, tab, joining, onJoin, canCreateActivity, onActivityCreated }: { organization: OrganizationViewModel; tab: OrganizationTab; joining: boolean; onJoin: () => void; canCreateActivity: boolean; onActivityCreated: (activity: ActivityResponse) => void }) {
+  if (tab === 'channels') return <ChannelsSection organization={organization} joining={joining} onJoin={onJoin} />;
   if (tab === 'activities') return <ActivitiesSection organization={organization} canCreateActivity={canCreateActivity} onActivityCreated={onActivityCreated} />;
   if (tab === 'members') return <MembersSection organization={organization} />;
   return (
@@ -391,7 +432,7 @@ export function OrganizationDetailPage() {
         {!loading && !error && displayOrganization && (
           activeTab === 'overview'
             ? <OverviewTab organization={displayOrganization} joining={joining} onJoin={handleJoin} canCreateActivity={canCreateActivity} onActivityCreated={handleActivityCreated} />
-            : <PlaceholderTab organization={displayOrganization} tab={activeTab} canCreateActivity={canCreateActivity} onActivityCreated={handleActivityCreated} />
+            : <PlaceholderTab organization={displayOrganization} tab={activeTab} joining={joining} onJoin={handleJoin} canCreateActivity={canCreateActivity} onActivityCreated={handleActivityCreated} />
         )}
       </section>
     </main>

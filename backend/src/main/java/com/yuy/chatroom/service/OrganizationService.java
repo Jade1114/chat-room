@@ -89,7 +89,10 @@ public class OrganizationService {
 
     String creatorName = resolveCreatorName(organization.getCreatedBy());
 
-    List<MemberPreview> members = organizationMemberMapper.findMembersByOrganizationId(organizationId);
+    boolean joined = summary.isJoined();
+    List<MemberPreview> members = joined
+        ? organizationMemberMapper.findMembersByOrganizationId(organizationId)
+        : Collections.emptyList();
     if (members == null) members = Collections.emptyList();
 
     List<Activity> activities = activityMapper.findPublicByOrganizationId(organizationId);
