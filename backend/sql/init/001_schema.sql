@@ -47,6 +47,15 @@ CREATE TABLE organization_member (
         FOREIGN KEY (user_id) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE organization_tag (
+    organization_id VARCHAR(32)  NOT NULL,
+    tag             VARCHAR(32)  NOT NULL,
+    PRIMARY KEY (organization_id, tag),
+    INDEX idx_org_tag_org (organization_id),
+    CONSTRAINT fk_org_tag_organization
+        FOREIGN KEY (organization_id) REFERENCES organization(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE organization_channel (
     id              VARCHAR(32)     PRIMARY KEY,
     name            VARCHAR(64)     NOT NULL,
@@ -56,6 +65,25 @@ CREATE TABLE organization_channel (
     is_readonly     TINYINT(1)      NOT NULL DEFAULT 0,
     CONSTRAINT fk_channel_organization
         FOREIGN KEY (organization_id) REFERENCES organization(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE activity (
+    id              VARCHAR(32)     PRIMARY KEY,
+    organization_id VARCHAR(32)     NOT NULL,
+    title           VARCHAR(128)    NOT NULL,
+    description     VARCHAR(512)    NULL,
+    location        VARCHAR(128)    NULL,
+    start_time      DATETIME(3)     NOT NULL,
+    end_time        DATETIME(3)     NULL,
+    visibility      VARCHAR(16)     NOT NULL DEFAULT 'PUBLIC' COMMENT 'PUBLIC | ORGANIZATION',
+    created_by      VARCHAR(32)     NOT NULL,
+    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_activity_org (organization_id),
+    INDEX idx_activity_time (start_time),
+    CONSTRAINT fk_activity_organization
+        FOREIGN KEY (organization_id) REFERENCES organization(id),
+    CONSTRAINT fk_activity_user
+        FOREIGN KEY (created_by) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE chat_message (
