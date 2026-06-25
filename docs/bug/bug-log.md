@@ -271,3 +271,25 @@
 **预期**: `expireOutdated` 应生成合法 SQL，用 `<` 比较过期时间，Activity Feed 正常返回 Upcoming / Ongoing。
 
 **原因追踪**: `ActivityMapper.expireOutdated` 是普通 `@Update` 注解，不是 MyBatis `<script>` XML 片段；这里不应该写 XML entity `&lt;`。`&lt;` 被原样发送给 MySQL，造成 SQL 语法错误。
+
+---
+
+## B-018: 重置数据库后旧 JWT 仍可通过过滤器导致 Activity event 外键失败
+
+**状态**: ✅ 已修复（待提交）
+
+**发现日期**: 2026-06-25
+
+**现象**: 重置本地数据库后，进入 Activity Detail 或点击查看参与方式时，后端抛出 `DataIntegrityViolationException`。错误为 `activity_event.user_id` 外键失败：JWT 中的 `userId` 不存在于当前 `app_user` 表。
+
+**复现步骤**:
+
+1. 浏览器保留旧 `chat_room_token`
+2. 本地数据库重置，旧 token 中的用户行被删除
+3. 访问 `/activities/:activityId` 或点击“查看参与方式”
+4. 后端尝试写入 `activity_event(activity_id, user_id, event_type)`
+5. MySQL 拒绝插入不存在的 `user_id`
+
+**预期**: JWT 里的用户如果已经不存在，后端应直接返回 401，让前端清理本地 token 并重新登录；不应该让业务层继续执行到事件日志写入。
+
+**原因追踪**: `JwtAuthFilter` 只校验 token 签名和过期时间，没有验证 token subject 对应的用户仍存在。重置数据库后，旧 token 仍然能把不存在的 `userId` 写入 request attribute，最终触发 `activity_event` 外键错误。

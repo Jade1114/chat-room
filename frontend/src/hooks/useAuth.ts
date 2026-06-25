@@ -93,15 +93,29 @@ export function useAuth() {
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: 'Bearer ' + token },
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        clearToken();
+        setTokenAtom(null);
+        setCurrentUser(null);
+        return null;
+      }
       const user = await res.json();
-      if (!user || !user.id) return null;
+      if (!user || !user.id) {
+        clearToken();
+        setTokenAtom(null);
+        setCurrentUser(null);
+        return null;
+      }
       setCurrentUser(user);
+      setTokenAtom(token);
       return user as CurrentUser;
     } catch {
+      clearToken();
+      setTokenAtom(null);
+      setCurrentUser(null);
       return null;
     }
-  }, [setCurrentUser]);
+  }, [setCurrentUser, setTokenAtom]);
 
   const fetchMockUsers = useCallback(async (): Promise<CurrentUser[]> => {
     try {

@@ -8,6 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.yuy.chatroom.mapper.UserMapper;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,10 +19,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
   private final JwtTokenProvider jwtTokenProvider;
+  private final UserMapper userMapper;
   private final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
-  public JwtAuthFilter(JwtTokenProvider jwtTokenProvider) {
+  public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, UserMapper userMapper) {
     this.jwtTokenProvider = jwtTokenProvider;
+    this.userMapper = userMapper;
   }
 
   @Override
@@ -56,6 +60,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     String token = header.substring(7);
     String userId = jwtTokenProvider.getUserId(token);
     if (userId == null) {
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      return;
+    }
+
+    if (userMapper.findById(userId) == null) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       return;
     }
