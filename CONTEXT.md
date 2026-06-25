@@ -4,9 +4,9 @@ This file defines the domain language for the project. It is a glossary, not an 
 
 ## Project
 
-The project is an organization-centered communication platform. Its primary purpose is to help people discover organizations, understand their activities, and communicate in organization-related channels.
+The project is an always-on organization discovery and participation platform. Its primary purpose is to help people discover organizations outside short recruitment windows, understand their public activities, decide whether to join, and only then continue communication in organization-related channels.
 
-The first concrete scenarios are campuses and online communities, but the core model is not limited to formal education.
+The first concrete scenario is campus clubs whose discovery is normally concentrated in an annual recruitment day. The core model can also apply to online communities and other interest organizations, but realtime chat is a participation enhancer rather than the primary reason the product exists.
 
 The first version uses a dashboard as the post-login entry. The dashboard keeps a global left-side route layout and uses the main area to guide users toward the core actions: enter the Public Square channel, create their own organization, explore organizations, and view organization activity schedules.
 
@@ -14,7 +14,7 @@ The left sidebar uses a two-section layout. One section contains operational rou
 
 The joined-organization section in the sidebar is a fast channel-entry surface. The My Organizations page is an organization-relationship management surface: it shows which organizations the user has joined, whether the user is a normal member or Organizer, and provides entry points for channel access or organization management.
 
-The Organization Hall page lists public organizations for discovery. In the first version it supports keyword search, tag filtering, and public organization cards. Each organization card should help users quickly judge whether to inspect or join the organization, showing information such as name, introduction, tags, member count, recent or upcoming activity summary, whether the user has joined, and either a join or enter-channel action.
+The Organization Hall page is the always-on replacement for a one-day recruitment fair. It lists public organizations for discovery beyond recruitment day. In the first version it supports keyword search, tag filtering, and public organization cards. Each organization card should help users quickly judge whether to inspect or join the organization, showing information such as name, introduction, tags, member count, recent or upcoming activity summary, whether the user has joined, and either a join or enter-channel action.
 
 The Organization Detail page helps non-members decide whether to join, helps members enter the channel and inspect activities, and helps Organizers maintain the organization. In the first version it shows organization name, introduction, tags, member count, organizer/creator, public activity list, membership status, and either a join or enter-channel action. For Organizers it also exposes actions to edit organization information, publish activities, view members, and view or generate the organization invitation/application code.
 
@@ -50,7 +50,7 @@ A public or organization-scoped arrangement published by an organization.
 
 An activity represents something people may want to know about or participate in, such as a meeting, event, game session, club recruitment, or discussion plan.
 
-Activities are part of the reason an organization exists and one of the main things users inspect when deciding whether to participate.
+Activities are part of the reason an organization exists and one of the main things users inspect when deciding whether to participate, especially when they missed or were not interested during the annual recruitment window.
 
 In the first version, an Activity is an independent lightweight display entity, not a full event-management workflow. It may have a title, description, time, location or link, organization owner, and visibility. The first version does not include registration, RSVP, attendance, capacity limits, cancellation workflows, or activity-specific notifications.
 
@@ -58,7 +58,7 @@ In the first version, an Activity is an independent lightweight display entity, 
 
 A communication space where users exchange messages.
 
-A channel is the communication carrier for an organization. Its meaning comes from supporting organization members and interested users in communication, activity publishing, and discussion.
+A channel is the communication carrier for an organization after a user has joined. Its meaning comes from supporting ongoing participation, activity discussion, and member communication; it is not the primary discovery surface.
 
 An organization may have multiple channels in the domain model. In the current MVP, each organization has one default primary channel.
 

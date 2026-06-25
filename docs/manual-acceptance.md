@@ -82,28 +82,30 @@ mysql -u root -p < backend/sql/seed.sql
 
 ### 3.1 Users
 
-| userId | displayName | role |
-| --- | --- | --- |
-| `u-yuy` | Yuy | MEMBER |
-| `u-mina` | Mina | MEMBER |
-| `u-luna` | Luna | MEMBER |
-| `u-admin` | Platform Admin | ADMIN |
+所有测试账号密码均为 `123456`。
+
+| username | userId | displayName | platform role | 说明 |
+| --- | --- | --- | --- | --- |
+| `admin` | `u-admin` | 平台管理员 | ADMIN | 平台默认数据和管理视角 |
+| `test001` | `u-test-001` | 测试用户001 | MEMBER | 围棋社 Organizer，二次元同好会非成员 |
+| `test002` | `u-test-002` | 测试用户002 | MEMBER | 二次元同好会 Organizer，围棋社成员 |
 
 ### 3.2 Organizations
 
 | organizationId | name | default channel | note |
 | --- | --- | --- | --- |
-| `org-public-square` | Public Square | `ch-public-square` | 默认官方组织 |
-| `org-go-club` | 围棋社 | `ch-go-club` | Yuy 是 Organizer |
-| `org-anime-club` | 二次元同好会 | `ch-anime-club` | Luna 是 Organizer |
-| `org-indie-game-lab` | 独立游戏实验室 | `ch-indie-game-lab` | Mina 是 Organizer |
+| `org-public-square` | Public Square | `ch-public-square` | 默认官方组织，三个测试账号都已加入 |
+| `org-go-club` | 围棋社 | `ch-go-club` | `test001` 是 Organizer，`test002` 是成员 |
+| `org-anime-club` | 二次元同好会 | `ch-anime-club` | `test002` 是 Organizer，`test001` 默认未加入 |
+| `org-indie-game-lab` | 独立游戏实验室 | `ch-indie-game-lab` | `admin` 是 Organizer，普通测试用户默认未加入 |
 
 ### 3.3 Seed Memberships
 
-- `u-yuy` 已加入 Public Square 和围棋社；
-- `u-mina` 已加入 Public Square 和独立游戏实验室；
-- `u-luna` 已加入 Public Square 和二次元同好会；
-- `u-admin` 是 Public Square Organizer。
+- `u-admin`、`u-test-001`、`u-test-002` 已加入 Public Square；
+- `u-test-001` 是围棋社 Organizer；
+- `u-test-002` 是围棋社成员，也是二次元同好会 Organizer；
+- `u-test-001` 默认未加入二次元同好会，可用于验证非成员只能查看公开主页、加入后才能进入频道；
+- `u-test-001` / `u-test-002` 默认都未加入独立游戏实验室。
 
 ## 4. 构建验证
 
@@ -124,7 +126,7 @@ BUILD SUCCESS
 
 ```bash
 cd frontend
-pnpm build
+npm run build
 ```
 
 期望：
@@ -152,7 +154,7 @@ mvn spring-boot:run
 
 ```bash
 cd frontend
-pnpm dev
+npm run dev
 ```
 
 期望：
@@ -168,36 +170,34 @@ pnpm dev
 ```bash
 curl -s -X POST 'http://localhost:8080/api/auth/dev-login' \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"u-yuy"}'
+  -d '{"userId":"u-test-001"}'
 ```
 
 期望：
 
 - HTTP 200；
 - 返回 token；
-- userId 为 `u-yuy`；
+- userId 为 `u-test-001`；
 - role 为 `MEMBER`。
 
-建议把 token 保存为 shell 变量：
+建议把登录返回的 JWT 保存为变量，后续请求统一带上 auth header。
 
 ```bash
-TOKEN=$(curl -s -X POST 'http://localhost:8080/api/auth/dev-login' \
-  -H 'Content-Type: application/json' \
-  -d '{"userId":"u-yuy"}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
-AUTH_HEADER="$(printf 'Authorization: %s %s' Bearer "$TOKEN")"
+JWT='<copy jwt from login/dev-login response>'
+LOGIN_HEADER='<copy the auth header value built from JWT>'
 ```
 
 ### 6.2 Current auth user
 
 ```bash
 curl -s 'http://localhost:8080/api/auth/me' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
 期望：
 
-- 返回 `u-yuy`；
-- `displayName` 为 Yuy；
+- 返回 `u-test-001`；
+- `displayName` 为 测试用户001；
 - `role` 为 MEMBER。
 
 ### 6.3 Register default Public Square membership
@@ -223,7 +223,7 @@ curl -s -X POST 'http://localhost:8080/api/auth/register' \
 
 ```bash
 curl -s 'http://localhost:8080/api/organizations' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
 期望：
@@ -231,14 +231,14 @@ curl -s 'http://localhost:8080/api/organizations' \
 - 返回 Public Square、围棋社、二次元同好会、独立游戏实验室；
 - `org-public-square.joined = true`；
 - `org-go-club.joined = true`；
-- `org-anime-club.joined = false` for `u-yuy`；
+- `org-anime-club.joined = false` for `u-test-001`；
 - 每个组织有 `defaultChannelId`。
 
 ### 7.2 获取组织详情
 
 ```bash
 curl -s 'http://localhost:8080/api/organizations/org-go-club' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
 期望：
@@ -252,7 +252,7 @@ curl -s 'http://localhost:8080/api/organizations/org-go-club' \
 
 ```bash
 curl -s -X POST 'http://localhost:8080/api/organizations/org-anime-club/join' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
 期望：
@@ -268,10 +268,10 @@ curl -s -X POST 'http://localhost:8080/api/organizations/org-anime-club/join' \
 
 ```bash
 curl -s 'http://localhost:8080/api/channels' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
-使用 seed 初始状态下，`u-yuy` 期望包含：
+使用 seed 初始状态下，`u-test-001` 期望包含：
 
 - `ch-public-square`；
 - `ch-go-club`。
@@ -287,7 +287,7 @@ curl -s 'http://localhost:8080/api/channels' \
 
 ```bash
 curl -i 'http://localhost:8080/api/channels/ch-go-club' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
 期望：
@@ -300,10 +300,10 @@ curl -i 'http://localhost:8080/api/channels/ch-go-club' \
 
 ```bash
 curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
-如果 `u-yuy` 未加入独立游戏实验室，期望：
+如果 `u-test-001` 未加入独立游戏实验室，期望：
 
 - HTTP 404。
 
@@ -313,10 +313,10 @@ curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab' \
 
 ```bash
 curl -i 'http://localhost:8080/api/channels/ch-indie-game-lab/messages' \
-  -H "$AUTH_HEADER"
+  -H "$LOGIN_HEADER"
 ```
 
-如果 `u-yuy` 未加入独立游戏实验室，期望：
+如果 `u-test-001` 未加入独立游戏实验室，期望：
 
 - HTTP 404。
 
@@ -361,7 +361,7 @@ ws://localhost:8080/ws/chat?token=<jwt-token>
 步骤：
 
 1. 打开两个浏览器窗口；
-2. 分别登录两个能访问同一 Channel 的用户，例如 `u-yuy` 和 `u-mina` 都能访问 Public Square；
+2. 分别登录两个能访问同一 Channel 的用户，例如 `u-test-001` 和 `u-test-002` 都能访问 Public Square；
 3. 进入真实聊天 workspace；
 4. 选择 `ch-public-square`；
 5. 一个窗口发送消息；
@@ -388,10 +388,10 @@ websocat "ws://localhost:8080/ws/chat?token=$TOKEN"
 ```json
 {
   "type": "CHANNEL_VIEW_CHANGED",
-  "displayName": "Yuy",
+  "displayName": "测试用户001",
   "channelId": "ch-public-square",
   "content": "切换当前查看频道",
-  "userId": "u-yuy"
+  "userId": "u-test-001"
 }
 ```
 
@@ -400,7 +400,7 @@ websocat "ws://localhost:8080/ws/chat?token=$TOKEN"
 ```json
 {
   "type": "USER_CHAT",
-  "displayName": "Yuy",
+  "displayName": "测试用户001",
   "channelId": "ch-public-square",
   "content": "hello from websocat"
 }
@@ -462,7 +462,7 @@ redis-cli LRANGE channel:messages:ch-public-square 0 2
 当用户 A 在 `ch-public-square` 发消息，用户 B 在线但当前不查看该 Channel 时：
 
 ```bash
-redis-cli HGETALL user:unread:u-mina
+redis-cli HGETALL user:unread:u-test-002
 ```
 
 期望对应 Channel unread 增加。
@@ -511,7 +511,7 @@ RabbitMQ 消费成功 channelId=ch-public-square message=...
 ### 13.1 构建
 
 - [ ] 后端 `mvn test` 通过；
-- [ ] 前端 `pnpm build` 通过。
+- [ ] 前端 `npm run build` 通过。
 
 ### 13.2 Auth
 
