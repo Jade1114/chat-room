@@ -13,13 +13,19 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Activity {
     private String id;
-    private String organizationId;
     private String title;
     private String description;
-    private String location;
+    private String category;
+    private String tags;
+    private String timeMode;
     private Instant startTime;
     private Instant endTime;
-    private String visibility;
+    private Instant expiresAt;
+    private String location;
+    private String participationMethod;
+    private String status;
     private String createdBy;
+    private String initiatorDisplayName;
     private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -1,6 +1,5 @@
 package com.yuy.chatroom.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -8,15 +7,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yuy.chatroom.dto.CreateActivityRequest;
-import com.yuy.chatroom.model.Activity;
+import com.yuy.chatroom.dto.ParticipationMethodResponse;
 import com.yuy.chatroom.service.ActivityService;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -26,30 +26,88 @@ public class ActivityController {
   private final ActivityService activityService;
 
   @GetMapping("/api/activities")
-  public List<Activity> getUpcomingActivities() {
-    return activityService.getUpcomingPublicActivities();
+  public ResponseEntity<?> getFeed(@RequestParam(required = false) String query,
+      @RequestParam(required = false) String category,
+      @RequestParam(required = false) String tag) {
+    return ResponseEntity.ok(activityService.getFeed(query, category, tag));
   }
 
-  @PostMapping("/api/organizations/{organizationId}/activities")
-  public ResponseEntity<?> createOrganizationActivity(
-      @PathVariable String organizationId,
-      @RequestBody CreateActivityRequest createRequest,
-      HttpServletRequest request) {
-    String userId = (String) request.getAttribute("userId");
-    if (userId == null || userId.isBlank()) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "未登录"));
-    }
-
+  @GetMapping("/api/activities/{activityId}")
+  public ResponseEntity<?> getDetail(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      Activity activity = activityService.createActivity(organizationId, createRequest, userId);
-      return ResponseEntity.ok(activity);
+      return ResponseEntity.ok(activityService.getDetail(activityId, currentUserId(request)));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
+    }
+  }
+
+  @PostMapping("/api/activities/{activityId}/participation-method")
+  public ResponseEntity<?> revealParticipationMethod(@PathVariable String activityId, HttpServletRequest request) {
+    try {
+      String method = activityService.revealParticipationMethod(activityId, currentUserId(request));
+      return ResponseEntity.ok(new ParticipationMethodResponse(activityId, method));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
+    }
+  }
+
+  @PostMapping("/api/activities")
+  public ResponseEntity<?> createActivity(@RequestBody CreateActivityRequest createRequest, HttpServletRequest request) {
+    try {
+      return ResponseEntity.ok(activityService.createActivity(createRequest, requireUserId(request)));
+    } catch (IllegalArgumentException error) {
+      return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
+    }
+  }
+
+  @PutMapping("/api/activities/{activityId}")
+  public ResponseEntity<?> updateActivity(@PathVariable String activityId,
+      @RequestBody CreateActivityRequest updateRequest,
+      HttpServletRequest request) {
+    try {
+      return ResponseEntity.ok(activityService.updateActivity(activityId, updateRequest, requireUserId(request)));
     } catch (SecurityException error) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
     } catch (IllegalArgumentException error) {
-      if ("组织不存在".equals(error.getMessage())) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", error.getMessage()));
-      }
-      return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
+      return notFoundOrBadRequest(error);
     }
+  }
+
+  @PostMapping("/api/activities/{activityId}/close")
+  public ResponseEntity<?> closeActivity(@PathVariable String activityId, HttpServletRequest request) {
+    try {
+      return ResponseEntity.ok(activityService.closeActivity(activityId, requireUserId(request)));
+    } catch (SecurityException error) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
+    }
+  }
+
+  @GetMapping("/api/me/activities")
+  public ResponseEntity<?> getMyInitiated(HttpServletRequest request) {
+    return ResponseEntity.ok(activityService.getMyInitiated(requireUserId(request)));
+  }
+
+  private String requireUserId(HttpServletRequest request) {
+    String userId = currentUserId(request);
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalArgumentException("未登录");
+    }
+    return userId;
+  }
+
+  private String currentUserId(HttpServletRequest request) {
+    return (String) request.getAttribute("userId");
+  }
+
+  private ResponseEntity<?> notFoundOrBadRequest(IllegalArgumentException error) {
+    if ("Activity 不存在".equals(error.getMessage())) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", error.getMessage()));
+    }
+    if ("未登录".equals(error.getMessage())) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", error.getMessage()));
+    }
+    return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
   }
 }

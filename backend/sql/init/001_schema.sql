@@ -1,5 +1,5 @@
--- Docker Compose init: organization platform schema
--- Keep this file in sync with backend/sql/schema.sql.
+-- Docker Compose init: Activity-first MVP schema
+-- Run this first, then seed.sql
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -21,6 +21,7 @@ CREATE TABLE app_user (
     role            VARCHAR(16)     NOT NULL COMMENT 'MEMBER | ORGANIZER | ADMIN'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Legacy organization/chat tables remain as reusable infrastructure, but they are not Activity-first MVP acceptance objects.
 CREATE TABLE organization (
     id              VARCHAR(32)     PRIMARY KEY,
     name            VARCHAR(64)     NOT NULL,
@@ -68,22 +69,40 @@ CREATE TABLE organization_channel (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE activity (
-    id              VARCHAR(32)     PRIMARY KEY,
-    organization_id VARCHAR(32)     NOT NULL,
-    title           VARCHAR(128)    NOT NULL,
-    description     VARCHAR(512)    NULL,
-    location        VARCHAR(128)    NULL,
-    start_time      DATETIME(3)     NOT NULL,
-    end_time        DATETIME(3)     NULL,
-    visibility      VARCHAR(16)     NOT NULL DEFAULT 'PUBLIC' COMMENT 'PUBLIC | ORGANIZATION',
-    created_by      VARCHAR(32)     NOT NULL,
-    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    INDEX idx_activity_org (organization_id),
-    INDEX idx_activity_time (start_time),
-    CONSTRAINT fk_activity_organization
-        FOREIGN KEY (organization_id) REFERENCES organization(id),
+    id                   VARCHAR(32)     PRIMARY KEY,
+    title                VARCHAR(128)    NOT NULL,
+    description          VARCHAR(2000)   NOT NULL,
+    category             VARCHAR(32)     NOT NULL COMMENT 'STUDY | SPORTS | GAME | PROJECT | WORKSHOP | COMPETITION | TRAVEL | TEAM_UP | OTHER',
+    tags                 VARCHAR(256)    NOT NULL DEFAULT '',
+    time_mode            VARCHAR(16)     NOT NULL COMMENT 'SCHEDULED | ONGOING',
+    start_time           DATETIME(3)     NULL,
+    end_time             DATETIME(3)     NULL,
+    expires_at           DATETIME(3)     NOT NULL,
+    location             VARCHAR(128)    NOT NULL,
+    participation_method VARCHAR(1000)   NOT NULL,
+    status               VARCHAR(16)     NOT NULL DEFAULT 'PUBLISHED' COMMENT 'DRAFT | PUBLISHED | EXPIRED | CLOSED',
+    created_by           VARCHAR(32)     NOT NULL,
+    created_at           DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at           DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_activity_feed (status, time_mode, expires_at, start_time),
+    INDEX idx_activity_category (category),
+    INDEX idx_activity_created_by (created_by, created_at),
     CONSTRAINT fk_activity_user
         FOREIGN KEY (created_by) REFERENCES app_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE activity_event (
+    id              VARCHAR(32)     PRIMARY KEY,
+    activity_id     VARCHAR(32)     NOT NULL,
+    user_id         VARCHAR(32)     NOT NULL,
+    event_type      VARCHAR(32)     NOT NULL COMMENT 'DETAIL_VIEW | PARTICIPATION_METHOD_VIEW',
+    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_activity_event_activity (activity_id, event_type, created_at),
+    INDEX idx_activity_event_user (user_id, created_at),
+    CONSTRAINT fk_activity_event_activity
+        FOREIGN KEY (activity_id) REFERENCES activity(id),
+    CONSTRAINT fk_activity_event_user
+        FOREIGN KEY (user_id) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE chat_message (
