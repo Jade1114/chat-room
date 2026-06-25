@@ -4,6 +4,7 @@ import { fetchOrganization } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
 import { ChatWorkspace } from '../chat/ChatWorkspace';
 import { toOrganizationViewModel, type OrganizationViewModel, type OrganizationChannel } from './organizationViewModel';
+import { LegacyOrganizationBanner } from './LegacyOrganizationBanner';
 
 export function OrganizationChannelPage() {
   const { organizationId, channelId } = useParams({ from: '/organizations/$organizationId/channels/$channelId' });
@@ -84,6 +85,7 @@ export function OrganizationChannelPage() {
     return (
       <main className="grid h-screen place-items-center bg-content p-7">
         <article className="max-w-xl rounded-3xl border border-divider bg-card p-7 text-center text-sm text-muted shadow-card">
+          <div className="mb-5 text-left"><LegacyOrganizationBanner /></div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">Membership required</p>
           <h1 className="mt-2 text-xl font-semibold text-strong">加入组织后才能进入频道</h1>
           <p className="mt-3 leading-6">

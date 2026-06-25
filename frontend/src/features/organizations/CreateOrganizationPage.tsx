@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { createOrganization } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
 import { Icon } from '../../components/Icon';
+import { LegacyOrganizationBanner } from './LegacyOrganizationBanner';
 
 export function CreateOrganizationPage() {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ export function CreateOrganizationPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
+      <div className="mb-6"><LegacyOrganizationBanner /></div>
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-strong">创建组织</h1>
         <p className="mt-2 text-sm text-muted">创建一个新的组织，让成员发现、加入和实时交流。</p>

@@ -6,6 +6,7 @@ import { fetchOrganization, createActivity, type ActivityResponse } from '../../
 import { useOrganizations } from '../../hooks/useOrganizations';
 import { currentUserAtom, unreadCountsAtom } from '../../state/chatAtoms';
 import { toOrganizationActivities, toOrganizationViewModel, type OrganizationChannel, type OrganizationTab, type OrganizationViewModel } from './organizationViewModel';
+import { LegacyOrganizationBanner } from './LegacyOrganizationBanner';
 
 const tabLabels: Record<OrganizationTab, string> = {
   overview: 'Overview',
@@ -427,6 +428,7 @@ export function OrganizationDetailPage() {
         </nav>
       </header>
       <section className="min-h-0 overflow-y-auto p-7 max-sm:p-4">
+        <div className="mb-5"><LegacyOrganizationBanner /></div>
         {loading && <div className="rounded-3xl border border-divider bg-card p-7 text-sm text-muted">正在加载组织详情...</div>}
         {!loading && error && <div className="rounded-3xl border border-danger/30 bg-danger/10 p-7 text-sm text-danger">{error}</div>}
         {!loading && !error && displayOrganization && (

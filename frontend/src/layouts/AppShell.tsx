@@ -3,11 +3,9 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
-import { toOrganizationViewModel, type OrganizationViewModel } from '../features/organizations/organizationViewModel';
 import { useTheme } from '../features/theme/useTheme';
-import { currentUserAtom, isConnectedAtom, unreadCountsAtom } from '../state/chatAtoms';
+import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
 import { useAuth } from '../hooks/useAuth';
-import { useOrganizations } from '../hooks/useOrganizations';
 import type { UserRole } from '../types/chat';
 
 const roleLabel: Record<UserRole, string> = {
@@ -48,14 +46,6 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-function OrganizationMark({ organization }: { organization: OrganizationViewModel }) {
-  return (
-    <span className={`grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${organization.colors} text-sm font-bold text-white shadow-composer`}>
-      {organization.mark}
-    </span>
-  );
-}
-
 function SidebarNavigationItem({ item, pathname }: { item: NavigationItem; pathname: string }) {
   const active = item.activeWhen?.(pathname) ?? false;
   const className = `group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${active ? 'bg-accent-soft text-accent-strong ring-1 ring-accent-soft' : 'text-muted hover:bg-hover hover:text-primary'}`;
@@ -86,32 +76,6 @@ function SidebarNavigationItem({ item, pathname }: { item: NavigationItem; pathn
   );
 }
 
-function JoinedOrganizationCard({ organization, active, unreadCount }: { organization: OrganizationViewModel; active: boolean; unreadCount: number }) {
-  return (
-    <Link
-      to="/organizations/$organizationId"
-      params={{ organizationId: organization.id }}
-      className={`group flex items-center gap-3 rounded-2xl border p-3 transition ${active ? 'border-accent-soft bg-accent-wash shadow-card' : 'border-divider bg-card hover:border-accent-soft hover:bg-hover'}`}
-    >
-      <OrganizationMark organization={organization} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-strong">{organization.name}</span>
-        <span className="mt-0.5 block truncate text-[10px] text-faint">
-          {organization.membershipLabel} · {organization.memberCount} members
-        </span>
-      </span>
-      {unreadCount > 0 && (
-        <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold leading-none text-white">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </span>
-      )}
-      <Icon className="size-4 text-faint transition group-hover:translate-x-0.5 group-hover:text-muted">
-        <path d="m9 18 6-6-6-6" />
-      </Icon>
-    </Link>
-  );
-}
-
 export function AppShell() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -119,15 +83,7 @@ export function AppShell() {
 
   const currentUser = useAtomValue(currentUserAtom);
   const isConnected = useAtomValue(isConnectedAtom);
-  const unreadCounts = useAtomValue(unreadCountsAtom);
   const { restoreSession, logout } = useAuth();
-  const {
-    joinedOrganizations,
-    loading: organizationsLoading,
-    error: organizationsError,
-    refreshOrganizations,
-    clearOrganizations
-  } = useOrganizations();
   const [checking, setChecking] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -155,15 +111,6 @@ export function AppShell() {
     }
   }, [checking, currentUser, navigate]);
 
-  useEffect(() => {
-    if (checking || !currentUser) {
-      clearOrganizations();
-      return;
-    }
-
-    void refreshOrganizations().catch(() => undefined);
-  }, [checking, currentUser, clearOrganizations, refreshOrganizations]);
-
   if (checking) {
     return (
       <main className="min-h-screen bg-app flex items-center justify-center text-muted text-sm">
@@ -177,8 +124,6 @@ export function AppShell() {
   }
 
   const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
-  const activeOrganizationId = pathname.match(/\/organizations\/([^/]+)/)?.[1];
-  const joinedOrganizationViewModels = joinedOrganizations.map(toOrganizationViewModel);
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
@@ -219,35 +164,12 @@ export function AppShell() {
             </nav>
           </section>
 
-          <section className="mt-7 min-h-0 flex-1 overflow-y-auto pr-1">
-            <div className="mb-3 flex items-center justify-between px-1">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-faint">Legacy</p>
-                <h2 className="mt-0.5 text-sm font-semibold text-strong">旧组织能力</h2>
-              </div>
-              <span className="rounded-full bg-active px-2 py-1 text-[10px] font-semibold text-muted">
-                {joinedOrganizationViewModels.length}
-              </span>
-            </div>
-            <div className="grid gap-2">
-              {organizationsLoading && (
-                <div className="rounded-2xl border border-divider bg-card p-3 text-xs text-muted">正在加载我的组织...</div>
-              )}
-              {!organizationsLoading && organizationsError && (
-                <div className="rounded-2xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">{organizationsError}</div>
-              )}
-              {!organizationsLoading && !organizationsError && joinedOrganizationViewModels.length === 0 && (
-                <div className="rounded-2xl border border-divider bg-card p-3 text-xs leading-5 text-muted">还没有加入组织。去组织发现中心加入一个公开组织。</div>
-              )}
-              {joinedOrganizationViewModels.map((organization) => (
-                <JoinedOrganizationCard
-                  key={organization.id}
-                  organization={organization}
-                  active={activeOrganizationId === organization.id}
-                  unreadCount={organization.defaultChannelId ? unreadCounts[organization.defaultChannelId] || 0 : 0}
-                />
-              ))}
-            </div>
+          <section className="mt-7 flex-1 rounded-3xl border border-divider bg-card p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">MVP focus</p>
+            <h2 className="mt-2 text-sm font-semibold text-strong">Activity-first 验收主线</h2>
+            <p className="mt-2 text-xs leading-5 text-muted">
+              当前版本只围绕发现事情、查看参与方式、私下联系和我的发布验收。Organization / Channel / Chat 已降级为 legacy 能力，不再作为主导航入口。
+            </p>
           </section>
 
           <section className="mt-5 shrink-0 border-t border-divider pt-4">

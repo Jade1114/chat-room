@@ -4,6 +4,7 @@ import { Icon } from '../../components/Icon';
 import type { OrganizationSummaryResponse } from '../../lib/organizationApi';
 import { useOrganizations } from '../../hooks/useOrganizations';
 import { organizationColor, organizationMark } from './organizationViewModel';
+import { LegacyOrganizationBanner } from './LegacyOrganizationBanner';
 
 function OrganizationCard({
   organization,
@@ -118,6 +119,7 @@ export function OrganizationDiscoverPage() {
       </header>
 
       <section className="min-h-0 overflow-y-auto p-7 max-sm:p-4">
+        <div className="mb-5"><LegacyOrganizationBanner /></div>
         {error && (
           <div className="mb-4 rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             {error}
