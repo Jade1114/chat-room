@@ -33,10 +33,10 @@ export function LoginPage() {
           <div className="grid size-14 place-items-center rounded-2xl bg-accent text-on-accent shadow-accent">
             <Icon className="size-7"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
-          <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">Campus Workspace</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">登录组织频道空间</h1>
+          <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">校园活动中心</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">登录活动中心</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-muted">
-            使用账号和密码登录。系统会根据你加入的组织返回可访问频道。
+            登录后可以发布活动、管理自己的发布，并进入管理后台。
           </p>
           <div className="mt-8 grid gap-3 text-sm text-muted">
             <div className="flex items-center gap-3 rounded-2xl bg-accent-wash p-4">
@@ -45,11 +45,11 @@ export function LoginPage() {
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-info-soft p-4">
               <span className="grid size-9 place-items-center rounded-xl bg-card text-info">2</span>
-              <span>后端根据组织成员关系计算频道权限，只展示可访问频道。</span>
+              <span>发布你想邀请别人一起完成的事情。</span>
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-violet-soft p-4">
               <span className="grid size-9 place-items-center rounded-xl bg-card text-violet">3</span>
-              <span>进入频道后，系统维护在线状态并实时推送消息。</span>
+              <span>在活动详情中留下参与方式，方便感兴趣的人联系你。</span>
             </div>
           </div>
         </section>
@@ -75,7 +75,7 @@ export function LoginPage() {
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="20240101001"
+                placeholder="输入账号"
                 className="rounded-xl border border-divider bg-card px-4 py-3 text-sm text-primary outline-none transition focus:border-accent"
                 autoComplete="username"
               />
@@ -99,56 +99,8 @@ export function LoginPage() {
               {loading ? '登录中...' : '登录'}
             </button>
           </form>
-
-          <div className="mt-8 border-t border-divider pt-5">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-faint">Dev Quick Login</p>
-            <DevLoginButton onLogin={(auth) => { applyAuth(auth); navigate({ to: '/activities' }); }} />
-          </div>
         </section>
       </div>
     </main>
-  );
-}
-
-function DevLoginButton({ onLogin }: { onLogin: (auth: { token: string; userId: string; displayName: string; role: string }) => void }) {
-  const { devLogin, fetchMockUsers } = useAuth();
-  const [users, setUsers] = useState<Array<{ id: string; displayName: string; role: string }>>([]);
-  const [loading, setLoading] = useState(false);
-
-  useState(() => {
-    fetchMockUsers().then(setUsers);
-  });
-
-  async function handleDevClick(userId: string) {
-    setLoading(true);
-    try {
-      const auth = await devLogin(userId);
-      onLogin(auth);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="mt-3 grid gap-2">
-      {users.map(user => (
-        <button
-          key={user.id}
-          type="button"
-          disabled={loading}
-          onClick={() => handleDevClick(user.id)}
-          className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-divider bg-card p-3 text-left transition hover:border-accent-soft hover:bg-accent-wash disabled:opacity-50"
-        >
-          <span className="grid size-9 place-items-center rounded-lg bg-accent-soft text-xs font-bold text-accent-strong">
-            {user.displayName.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="text-sm font-medium text-primary">{user.displayName}</span>
-          <span className="text-xs text-faint">{user.role === 'ADMIN' ? '管理员' : user.role === 'ORGANIZER' ? '组织者' : '成员'}</span>
-        </button>
-      ))}
-      {users.length === 0 && <p className="text-xs text-faint">加载 Mock 用户...</p>}
-    </div>
   );
 }

@@ -21,7 +21,7 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/login' });
+    throw redirect({ to: '/activities' });
   }
 });
 

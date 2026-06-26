@@ -38,10 +38,10 @@ export function RegisterPage() {
           <div className="grid size-14 place-items-center rounded-2xl bg-accent text-on-accent shadow-accent">
             <Icon className="size-7"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
           </div>
-          <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">Get Started</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">注册组织平台账号</h1>
+          <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">加入活动中心</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-strong max-sm:text-3xl">创建活动中心账号</h1>
           <p className="mt-5 max-w-xl text-sm leading-7 text-muted">
-            注册后默认加入 Public Square。后续加入更多组织后，对应组织的默认频道会出现在你的频道列表中。
+            创建账号后，你可以发布自己的活动，也可以管理已经发布的内容。
           </p>
         </section>
 
@@ -66,7 +66,7 @@ export function RegisterPage() {
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="20240101001"
+                placeholder="输入账号"
                 className="rounded-xl border border-divider bg-card px-4 py-3 text-sm text-primary outline-none transition focus:border-accent"
                 autoComplete="username"
               />

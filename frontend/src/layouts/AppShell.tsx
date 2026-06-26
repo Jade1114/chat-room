@@ -25,7 +25,7 @@ interface NavigationItem {
 const navigationItems: NavigationItem[] = [
   {
     label: '发现事情',
-    description: '浏览即将发生和持续招募的 Activity',
+    description: '浏览即将发生和持续招募的活动',
     to: '/activities',
     activeWhen: (pathname) => pathname === '/activities' || (pathname.startsWith('/activities/') && pathname !== '/activities/new'),
     icon: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>
@@ -39,7 +39,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     label: '我的发布',
-    description: '管理我发起的 Activity',
+    description: '管理我发布过的活动',
     to: '/me/activities',
     activeWhen: (pathname) => pathname === '/me/activities',
     icon: <><path d="M16 21v-2a4 4 0 0 0-8 0v2" /><circle cx="12" cy="7" r="4" /><path d="M4 11h16" /></>
@@ -96,13 +96,6 @@ export function AppShell() {
   }, [restoreSession]);
 
   useEffect(() => {
-    if (!checking && !currentUser) {
-      const publicPaths = ['/login', '/register'];
-      if (!publicPaths.includes(window.location.pathname)) {
-        navigate({ to: '/login', replace: true });
-      }
-    }
-    // Safety net: logged-in user on public pages -> redirect to dashboard
     if (!checking && currentUser) {
       const publicPaths = ['/login', '/register'];
       if (publicPaths.includes(window.location.pathname)) {
@@ -136,12 +129,12 @@ export function AppShell() {
         <aside className="flex h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
           <section className="shrink-0">
             <div className="flex items-center gap-3 px-1">
-              <div className="grid size-11 place-items-center rounded-[16px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="Activity-first Platform">
+              <div className="grid size-11 place-items-center rounded-[16px] border border-accent-soft bg-accent text-on-accent shadow-accent" title="活动中心">
                 <Icon className="size-5"><path d="M3 21h18" /><path d="M6 21V9l6-4 6 4v12" /><path d="M9 21v-5h6v5" /><path d="M9 11h.01M15 11h.01" /></Icon>
               </div>
               <div>
-                <p className="text-sm font-semibold text-strong">Chat Room</p>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-faint">Activity-first MVP</p>
+                <p className="text-sm font-semibold text-strong">校园活动中心</p>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-faint">发现活动</p>
               </div>
             </div>
 
@@ -153,7 +146,7 @@ export function AppShell() {
                 <SidebarNavigationItem
                   item={{
                     label: '管理后台',
-                    description: '组织治理与平台配置',
+                    description: '平台数据与活动分析',
                     to: '/admin',
                     activeWhen: (path) => path.startsWith('/admin'),
                     icon: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></>
@@ -165,10 +158,10 @@ export function AppShell() {
           </section>
 
           <section className="mt-7 flex-1 rounded-3xl border border-divider bg-card p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">MVP focus</p>
-            <h2 className="mt-2 text-sm font-semibold text-strong">Activity-first 验收主线</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">关于这里</p>
+            <h2 className="mt-2 text-sm font-semibold text-strong">校园活动中心</h2>
             <p className="mt-2 text-xs leading-5 text-muted">
-              当前版本只围绕发现事情、查看参与方式、私下联系和我的发布验收。Organization / Channel / Chat 已降级为 legacy 能力，不再作为主导航入口。
+              这里收集校园里值得一起参与的活动。你可以浏览活动、查看参与方式，也可以发布自己的活动邀请。
             </p>
           </section>
 

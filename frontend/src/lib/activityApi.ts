@@ -1,5 +1,6 @@
 import { apiBaseUrl } from '../config';
-import { getToken } from './authApi';
+import { clearToken, getToken } from './authApi';
+import { getVisitorId } from './visitor';
 
 export type ActivityCategory = 'STUDY' | 'SPORTS' | 'GAME' | 'PROJECT' | 'WORKSHOP' | 'COMPETITION' | 'TRAVEL' | 'TEAM_UP' | 'OTHER';
 export type ActivityTimeMode = 'SCHEDULED' | 'ONGOING';
@@ -52,7 +53,10 @@ function buildApiUrl(path: string, params?: Record<string, string>) {
 
 function buildHeaders(): Record<string, string> {
   const token = getToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Visitor-Id': getVisitorId()
+  };
   if (token) headers.Authorization = 'B' + 'earer ' + token;
   return headers;
 }
@@ -60,6 +64,14 @@ function buildHeaders(): Record<string, string> {
 async function parseError(response: Response, fallback: string) {
   const body = await response.json().catch(() => ({}));
   return new Error(body.error || fallback);
+}
+
+export async function recordSiteVisit(): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/site-events/visit'), {
+    method: 'POST',
+    headers: buildHeaders()
+  });
+  if (!response.ok) throw await parseError(response, `site visit status ${response.status}`);
 }
 
 export async function fetchActivityFeed(filters: { query?: string; category?: string; tag?: string } = {}): Promise<ActivityFeedResponse> {
@@ -90,7 +102,13 @@ export async function createActivity(payload: ActivityPayload): Promise<Activity
     headers: buildHeaders(),
     body: JSON.stringify(payload)
   });
-  if (!response.ok) throw await parseError(response, `create activity status ${response.status}`);
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      throw new Error('发布失败，请刷新页面后重试');
+    }
+    throw await parseError(response, `create activity status ${response.status}`);
+  }
   return response.json();
 }
 

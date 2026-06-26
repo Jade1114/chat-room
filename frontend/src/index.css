@@ -32,6 +32,18 @@
   --shadow-panel: 0 24px 80px var(--theme-shadow);
   --shadow-composer: 0 16px 48px var(--theme-shadow-soft);
   --shadow-accent: 0 8px 28px var(--theme-accent-shadow);
+  --animate-fade-slide-up: fade-slide-up 0.35s ease-out;
+
+  @keyframes fade-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }
 
 :root {
