@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { createActivity, type ActivityCategory, type ActivityPayload, type ActivityTimeMode } from '../../lib/activityApi';
 import { categoryOptions, fromLocalInputValue } from './activityView';
+import { DateTimePicker } from '../../components/DateTimePicker';
 
 const inputClass = 'w-full rounded-2xl border border-divider bg-surface px-4 py-3 text-sm outline-none transition focus:border-accent-soft';
 const labelClass = 'grid gap-2 text-sm font-bold text-primary';
@@ -81,13 +82,15 @@ export function ActivityFormPage() {
             <label className={labelClass}>分类<select value={category} onChange={(e) => setCategory(e.target.value as ActivityCategory)} className={inputClass}>{categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
             <label className={labelClass}>标签<input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="最多 5 个，用逗号或空格分隔" className={inputClass} /></label>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label className={labelClass}>时间类型<select value={timeMode} onChange={(e) => setTimeMode(e.target.value as ActivityTimeMode)} className={inputClass}><option value="SCHEDULED">有明确时间</option><option value="ONGOING">持续招募</option></select></label>
-            {timeMode === 'SCHEDULED' ? <>
-              <label className={labelClass}>开始时间<input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className={inputClass} /></label>
-              <label className={labelClass}>结束时间<input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={inputClass} /></label>
-            </> : <label className={`${labelClass} sm:col-span-2`}>截止时间<input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} required className={inputClass} /></label>}
-          </div>
+          <label className={labelClass}>时间类型<select value={timeMode} onChange={(e) => setTimeMode(e.target.value as ActivityTimeMode)} className={inputClass}><option value="SCHEDULED">有明确时间</option><option value="ONGOING">持续招募</option></select></label>
+          {timeMode === 'SCHEDULED' ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DateTimePicker value={startTime} onChange={setStartTime} label="开始时间" placeholder="选择开始时间" />
+              <DateTimePicker value={endTime} onChange={setEndTime} label="结束时间" placeholder="选择结束时间" />
+            </div>
+          ) : (
+            <DateTimePicker value={expiresAt} onChange={setExpiresAt} label="截止时间" placeholder="选择截止时间" />
+          )}
           <label className={labelClass}>地点 / 线上说明<input value={location} onChange={(e) => setLocation(e.target.value)} required placeholder="例如：图书馆三楼 / 腾讯会议 / 操场" className={inputClass} /></label>
           <label className={labelClass}>参与方式<textarea value={participationMethod} onChange={(e) => setParticipationMethod(e.target.value)} required rows={5} placeholder="微信、QQ、邮箱、外部表单、线下集合说明等" className={inputClass} /></label>
           {error && <p className="rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>}
