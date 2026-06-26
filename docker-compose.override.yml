@@ -1,0 +1,21 @@
+# Local development overrides — auto-loaded by Docker Compose when present.
+# COPY THIS FILE to your server? → Don't. It adds seed data (test accounts).
+# On production: delete this file or add it to .gitignore / .dockerignore.
+#
+# What it does:
+# 1. Mounts dev seed SQL alongside the schema, so first MySQL init
+#    includes admin/test accounts and sample activities.
+# 2. Sets a local-only JWT secret (overridable via .env).
+#
+# How Docker Compose loads it:
+#   docker compose up           # auto-loads docker-compose.yml + docker-compose.override.yml
+#   docker compose up --no-override  # base file only (production simulation)
+
+services:
+  mysql:
+    volumes:
+      - ./backend/sql/dev-seed/002_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
+
+  backend:
+    environment:
+      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-jwt-secret-local-only}
