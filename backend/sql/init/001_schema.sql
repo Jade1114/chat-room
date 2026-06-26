@@ -94,14 +94,29 @@ CREATE TABLE activity (
 CREATE TABLE activity_event (
     id              VARCHAR(32)     PRIMARY KEY,
     activity_id     VARCHAR(32)     NOT NULL,
-    user_id         VARCHAR(32)     NOT NULL,
+    user_id         VARCHAR(32)     NULL,
+    visitor_id      VARCHAR(64)     NULL,
     event_type      VARCHAR(32)     NOT NULL COMMENT 'DETAIL_VIEW | PARTICIPATION_METHOD_VIEW',
     created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     INDEX idx_activity_event_activity (activity_id, event_type, created_at),
     INDEX idx_activity_event_user (user_id, created_at),
+    INDEX idx_activity_event_visitor (visitor_id, event_type, created_at),
     CONSTRAINT fk_activity_event_activity
         FOREIGN KEY (activity_id) REFERENCES activity(id),
     CONSTRAINT fk_activity_event_user
+        FOREIGN KEY (user_id) REFERENCES app_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE site_event (
+    id              VARCHAR(32)     PRIMARY KEY,
+    visitor_id      VARCHAR(64)     NOT NULL,
+    user_id         VARCHAR(32)     NULL,
+    event_type      VARCHAR(32)     NOT NULL COMMENT 'SITE_VISIT',
+    path            VARCHAR(256)    NOT NULL,
+    created_at      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_site_event_visitor (visitor_id, event_type, created_at),
+    INDEX idx_site_event_type (event_type, created_at),
+    CONSTRAINT fk_site_event_user
         FOREIGN KEY (user_id) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

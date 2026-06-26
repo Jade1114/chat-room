@@ -7,6 +7,7 @@ USE chat_room;
 
 INSERT INTO app_user (id, username, display_name, password_hash, role) VALUES
 ('u-admin',    'admin',   '平台管理员', '$2a$10$nB76XJURPpL5.5riCS3Ud.gVmOvH4Tjg6/BrPdqxSWJQdQvDWHUX6', 'ADMIN'),
+('u-public',   NULL,      '匿名发布者', NULL, 'MEMBER'),
 ('u-test-001', 'test001', '测试用户001', '$2a$10$47hZm96l.ZHx2Qc90/F.FeZHuzwBeQufrGwDK4/VNpI6qFdSQbT6K', 'MEMBER'),
 ('u-test-002', 'test002', '测试用户002', '$2a$10$BtdVDLEfinJknjf.c2o0d.wxK7bI3mXWjgD66Bw7pywahCrFAiAu2', 'MEMBER');
 

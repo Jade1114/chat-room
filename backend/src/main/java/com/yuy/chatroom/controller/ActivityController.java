@@ -35,7 +35,7 @@ public class ActivityController {
   @GetMapping("/api/activities/{activityId}")
   public ResponseEntity<?> getDetail(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.getDetail(activityId, currentUserId(request)));
+      return ResponseEntity.ok(activityService.getDetail(activityId, currentUserId(request), visitorId(request)));
     } catch (IllegalArgumentException error) {
       return notFoundOrBadRequest(error);
     }
@@ -44,17 +44,23 @@ public class ActivityController {
   @PostMapping("/api/activities/{activityId}/participation-method")
   public ResponseEntity<?> revealParticipationMethod(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      String method = activityService.revealParticipationMethod(activityId, currentUserId(request));
+      String method = activityService.revealParticipationMethod(activityId, currentUserId(request), visitorId(request));
       return ResponseEntity.ok(new ParticipationMethodResponse(activityId, method));
     } catch (IllegalArgumentException error) {
       return notFoundOrBadRequest(error);
     }
   }
 
+  @PostMapping("/api/site-events/visit")
+  public ResponseEntity<?> recordSiteVisit(HttpServletRequest request) {
+    activityService.recordSiteVisit(currentUserId(request), visitorId(request));
+    return ResponseEntity.ok(Map.of("ok", true));
+  }
+
   @PostMapping("/api/activities")
   public ResponseEntity<?> createActivity(@RequestBody CreateActivityRequest createRequest, HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.createActivity(createRequest, requireUserId(request)));
+      return ResponseEntity.ok(activityService.createActivity(createRequest, currentUserId(request)));
     } catch (IllegalArgumentException error) {
       return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
     }
@@ -99,6 +105,10 @@ public class ActivityController {
 
   private String currentUserId(HttpServletRequest request) {
     return (String) request.getAttribute("userId");
+  }
+
+  private String visitorId(HttpServletRequest request) {
+    return request.getHeader("X-Visitor-Id");
   }
 
   private ResponseEntity<?> notFoundOrBadRequest(IllegalArgumentException error) {

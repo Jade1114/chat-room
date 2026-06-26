@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.yuy.chatroom.dto.AdminOverviewResponse;
 import com.yuy.chatroom.dto.AssignChannelRequest;
+import com.yuy.chatroom.mapper.ActivityMapper;
 import com.yuy.chatroom.mapper.UserMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,9 +23,35 @@ import jakarta.servlet.http.HttpServletRequest;
 public class AdminController {
 
   private final UserMapper userMapper;
+  private final ActivityMapper activityMapper;
 
-  public AdminController(UserMapper userMapper) {
+  public AdminController(UserMapper userMapper, ActivityMapper activityMapper) {
     this.userMapper = userMapper;
+    this.activityMapper = activityMapper;
+  }
+
+  @GetMapping("/overview")
+  public ResponseEntity<?> overview(HttpServletRequest request) {
+    if (!isAdmin(request)) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "仅管理员可访问"));
+    }
+
+    long siteVisitors = activityMapper.countSiteVisitors();
+    long participationMethodViews = activityMapper.countEventsByType("PARTICIPATION_METHOD_VIEW");
+    double contactViewRate = siteVisitors == 0 ? 0 : (double) participationMethodViews / siteVisitors;
+
+    AdminOverviewResponse response = new AdminOverviewResponse(
+        siteVisitors,
+        activityMapper.countActivities(),
+        activityMapper.countActivitiesByStatus("PUBLISHED"),
+        activityMapper.countActivitiesByStatus("CLOSED"),
+        activityMapper.countActivitiesByStatus("EXPIRED"),
+        participationMethodViews,
+        contactViewRate,
+        activityMapper.findTopActivityMetrics(8),
+        activityMapper.findRecentEventMetrics(12));
+
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/users")

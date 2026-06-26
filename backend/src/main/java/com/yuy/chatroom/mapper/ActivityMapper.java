@@ -9,6 +9,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import com.yuy.chatroom.dto.AdminActivityMetric;
+import com.yuy.chatroom.dto.AdminEventMetric;
 import com.yuy.chatroom.model.Activity;
 
 @Mapper
@@ -114,10 +116,60 @@ public interface ActivityMapper {
   void expireOutdated(@Param("now") Instant now);
 
   @Insert("""
-      INSERT INTO activity_event (id, activity_id, user_id, event_type, created_at)
-      VALUES (#{id}, #{activityId}, #{userId}, #{eventType}, #{createdAt})
+      INSERT INTO activity_event (id, activity_id, user_id, visitor_id, event_type, created_at)
+      VALUES (#{id}, #{activityId}, #{userId}, #{visitorId}, #{eventType}, #{createdAt})
       """)
   void insertEvent(@Param("id") String id, @Param("activityId") String activityId,
+      @Param("userId") String userId, @Param("visitorId") String visitorId,
+      @Param("eventType") String eventType, @Param("createdAt") Instant createdAt);
+
+  @Insert("""
+      INSERT INTO site_event (id, visitor_id, user_id, event_type, path, created_at)
+      VALUES (#{id}, #{visitorId}, #{userId}, #{eventType}, #{path}, #{createdAt})
+      """)
+  void insertSiteEvent(@Param("id") String id, @Param("visitorId") String visitorId,
       @Param("userId") String userId, @Param("eventType") String eventType,
-      @Param("createdAt") Instant createdAt);
+      @Param("path") String path, @Param("createdAt") Instant createdAt);
+
+  @Select("SELECT COUNT(DISTINCT visitor_id) FROM site_event WHERE event_type = 'SITE_VISIT' AND visitor_id IS NOT NULL AND visitor_id != ''")
+  long countSiteVisitors();
+
+  @Select("SELECT COUNT(*) FROM activity")
+  long countActivities();
+
+  @Select("SELECT COUNT(*) FROM activity WHERE status = #{status}")
+  long countActivitiesByStatus(String status);
+
+  @Select("SELECT COUNT(*) FROM activity_event WHERE event_type = #{eventType}")
+  long countEventsByType(String eventType);
+
+  @Select("""
+      SELECT
+        a.id AS activity_id,
+        a.title AS title,
+        a.category AS category,
+        SUM(CASE WHEN e.event_type = 'DETAIL_VIEW' THEN 1 ELSE 0 END) AS detail_views,
+        SUM(CASE WHEN e.event_type = 'PARTICIPATION_METHOD_VIEW' THEN 1 ELSE 0 END) AS participation_method_views
+      FROM activity a
+      LEFT JOIN activity_event e ON e.activity_id = a.id
+      GROUP BY a.id, a.title, a.category
+      ORDER BY participation_method_views DESC, detail_views DESC, a.created_at DESC
+      LIMIT #{limit}
+      """)
+  List<AdminActivityMetric> findTopActivityMetrics(int limit);
+
+  @Select("""
+      SELECT
+        e.activity_id AS activity_id,
+        a.title AS title,
+        e.event_type AS event_type,
+        e.user_id AS user_id,
+        e.visitor_id AS visitor_id,
+        e.created_at AS created_at
+      FROM activity_event e
+      JOIN activity a ON a.id = e.activity_id
+      ORDER BY e.created_at DESC
+      LIMIT #{limit}
+      """)
+  List<AdminEventMetric> findRecentEventMetrics(int limit);
 }

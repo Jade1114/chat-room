@@ -12,18 +12,23 @@ import com.yuy.chatroom.dto.ActivityFeedResponse;
 import com.yuy.chatroom.dto.ActivityResponse;
 import com.yuy.chatroom.dto.CreateActivityRequest;
 import com.yuy.chatroom.mapper.ActivityMapper;
+import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.Activity;
 
 @Service
 public class ActivityService {
 
+  private static final String PUBLIC_CREATOR_USER_ID = "u-public";
+
   private static final List<String> CATEGORIES = List.of(
       "STUDY", "SPORTS", "GAME", "PROJECT", "WORKSHOP", "COMPETITION", "TRAVEL", "TEAM_UP", "OTHER");
 
   private final ActivityMapper activityMapper;
+  private final UserMapper userMapper;
 
-  public ActivityService(ActivityMapper activityMapper) {
+  public ActivityService(ActivityMapper activityMapper, UserMapper userMapper) {
     this.activityMapper = activityMapper;
+    this.userMapper = userMapper;
   }
 
   public ActivityFeedResponse getFeed(String query, String category, String tag) {
@@ -38,22 +43,37 @@ public class ActivityService {
         activities.stream().filter(a -> "ONGOING".equals(a.getTimeMode())).toList());
   }
 
-  public ActivityResponse getDetail(String activityId, String userId) {
+  public ActivityResponse getDetail(String activityId, String userId, String visitorId) {
     Activity activity = requireActivity(activityId);
-    recordEvent(activityId, userId, "DETAIL_VIEW");
+    recordEvent(activityId, userId, visitorId, "DETAIL_VIEW");
     return ActivityResponse.from(activity, false);
   }
 
-  public String revealParticipationMethod(String activityId, String userId) {
+  public String revealParticipationMethod(String activityId, String userId, String visitorId) {
     Activity activity = requireActivity(activityId);
-    recordEvent(activityId, userId, "PARTICIPATION_METHOD_VIEW");
+    recordEvent(activityId, userId, visitorId, "PARTICIPATION_METHOD_VIEW");
     return activity.getParticipationMethod();
   }
 
+  public void recordSiteVisit(String userId, String visitorId) {
+    String cleanedVisitorId = cleanOptional(visitorId);
+    if (cleanedVisitorId == null) return;
+    activityMapper.insertSiteEvent("site-" + UUID.randomUUID().toString().substring(0, 12),
+        cleanedVisitorId, cleanOptional(userId), "SITE_VISIT", "/activities", Instant.now());
+  }
+
   public ActivityResponse createActivity(CreateActivityRequest request, String userId) {
-    Activity activity = buildActivity(new Activity(), request, userId, true);
+    String creatorId = userId == null || userId.isBlank() ? publicCreatorUserId() : userId;
+    Activity activity = buildActivity(new Activity(), request, creatorId, true);
     activityMapper.insert(activity);
     return ActivityResponse.from(activityMapper.findById(activity.getId()), false);
+  }
+
+  private String publicCreatorUserId() {
+    if (userMapper.findById(PUBLIC_CREATOR_USER_ID) == null) {
+      userMapper.insertUser(PUBLIC_CREATOR_USER_ID, null, "匿名发布者", null, "MEMBER");
+    }
+    return PUBLIC_CREATOR_USER_ID;
   }
 
   public ActivityResponse updateActivity(String activityId, CreateActivityRequest request, String userId) {
@@ -152,9 +172,12 @@ public class ActivityService {
     }
   }
 
-  private void recordEvent(String activityId, String userId, String eventType) {
-    if (userId == null || userId.isBlank()) return;
-    activityMapper.insertEvent("evt-" + UUID.randomUUID().toString().substring(0, 12), activityId, userId, eventType, Instant.now());
+  private void recordEvent(String activityId, String userId, String visitorId, String eventType) {
+    String cleanedVisitorId = cleanOptional(visitorId);
+    String cleanedUserId = cleanOptional(userId);
+    if (cleanedUserId == null && cleanedVisitorId == null) return;
+    activityMapper.insertEvent("evt-" + UUID.randomUUID().toString().substring(0, 12),
+        activityId, cleanedUserId, cleanedVisitorId, eventType, Instant.now());
   }
 
   private String requiredText(String value, String blankMessage, int maxLength, String tooLongMessage) {

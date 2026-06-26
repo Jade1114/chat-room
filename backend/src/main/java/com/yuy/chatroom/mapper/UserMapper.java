@@ -18,6 +18,9 @@ public interface UserMapper {
   @Select("SELECT id, display_name, role FROM app_user")
   List<CurrentUser> findAll();
 
+  @Select("SELECT COUNT(*) FROM app_user")
+  long countUsers();
+
   @Select("SELECT id, display_name, role FROM app_user WHERE username = #{username}")
   CurrentUser findByUsername(String username);
 
