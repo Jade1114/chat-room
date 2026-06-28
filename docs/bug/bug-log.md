@@ -52,7 +52,7 @@
 
 **预期**: `/messages` 要么作为 workspace shortcut 正常可用，要么重定向到 Public Square 默认频道。
 
-**关联**: `current-mvp-gap-and-roadmap.md` Gap 1
+**关联**: `roadmap.md` Gap 1
 
 ---
 

@@ -8,6 +8,8 @@ The project is an Activity-first campus participation platform.
 
 Its purpose is to make worthwhile things to do together continuously discoverable. The project does not primarily validate chat, organization management, community persistence, or complex social relationships.
 
+A browser-local **Local Session** may act before login for low-friction browsing, Interest expression, and Activity initiation. A Local Session is not a User account; it is a temporary browser identity that may later be associated with a logged-in User.
+
 The first-version hypothesis is:
 
 > If campus has an always-open platform where anyone can publish worthwhile things to do together, will people discover them and participate?
@@ -26,13 +28,19 @@ A worthwhile thing someone wants others to participate in together.
 
 Examples include workshops, matches, game sessions, study groups, sports, photography walks, reading groups, Hackathon team-ups, project collaborator searches, travel companion searches, or finding people to complete something together.
 
-An Activity is not required to belong to an organization, club, lab, course, or channel. In the first version, every Activity is initiated by an individual User. If the thing is associated with a club or organization, that context is written in the Activity title or description.
+An Activity is not required to belong to an organization, club, lab, course, or channel. In the first version, every Activity is initiated by either a Local Session or a logged-in User. If the thing is associated with a club or organization, that context is written in the Activity title or description.
 
 ## Initiator
 
-The User who publishes an Activity.
+The Local Session or logged-in User who publishes an Activity.
 
-The MVP shows only the initiator's display name and the publish time on Activity Detail. If the initiator wants to provide background or identity context, they write it in the Activity description.
+A Local Session Initiator is identified by a browser-local session identity. A logged-in User Initiator is identified by a stable User identity. Both can publish Activities in the first version.
+
+The MVP shows only the initiator's display name and the publish time on Activity Detail. If the Initiator is a logged-in User, the display name is the User's display name. If the Initiator is a Local Session, the display name is a generic temporary-user label rather than the local session identity. If the initiator wants to provide background or identity context, they write it in the Activity description.
+
+A Local Session Initiator can manage the Activity only from the same browser identity that created it. Management includes editing and closing that Activity. Clearing local storage may cause the Local Session Initiator to lose management access; that is acceptable for the first version.
+
+If a Local Session Initiator later logs in or registers in the same browser, Activities created under that browser-local session identity may be associated with the logged-in User. This LocalSession-to-User Association happens immediately after successful login or registration, not lazily when the User later opens My Initiated Activities. After association, the Initiator display name and management identity become the logged-in User identity. Activities cannot be associated from another browser or after the local session identity is lost.
 
 ## Participation Method
 
@@ -112,6 +120,26 @@ The MVP records:
 - `PARTICIPATION_METHOD_VIEW`: a User clicks to reveal the participation method.
 
 These are measurement events only. They are not participation relationships, favorites, registrations, or social relationships.
+
+## Activity Interest
+
+A lightweight signal that a Local Session or logged-in User is interested in an Activity.
+
+An Activity Interest means "I am interested" or "I may want to participate". It is not registration, not confirmed participation, not attendance, and not a promise that coordination happens on the platform.
+
+An Activity Interest is visible to the Activity's Initiator as feedback that someone is interested. It is different from a favorite or bookmark because it sends a signal to the Initiator rather than only saving the Activity for the interested identity.
+
+The first version exposes Activity Interest to the Initiator only as an anonymous count and, when the Initiator is online, an anonymous real-time hint. It does not expose the interested User, local session identity, interested-user list, or any way for the Initiator to contact interested people through the platform.
+
+An online Interest hint is delivered to the Initiator identity. If the Activity is associated with a logged-in User, the hint is delivered to that User's active notification sessions. If the Activity is still associated only with a Local Session, the hint is delivered to active notification sessions for that browser-local session identity. Local Session notification sessions carry only anonymous hints and do not grant management access.
+
+The first version shows Interest Count on Activity Detail and My Initiated Activities. It does not show Interest Count on Activity Feed cards, Admin dashboard, or a notification center.
+
+A Local Session or logged-in User can express at most one Activity Interest per Activity. The Initiator of an Activity cannot express Interest in their own Activity; the product may instead offer a "promote my Activity" action for future work. After expressing interest, the same browser should be able to see that it has already expressed interest on that Activity's detail page. The first version does not model canceling interest, a personal interested-activities list, or Feed-level interested status.
+
+Activity Interest is a current-state relationship, not only an event log. The system may record an additional Activity Event for analytics, but the Interest relationship itself is the source of truth for already-interested state, counts, and LocalSession-to-User Association.
+
+In the first version, a Local Session may express Activity Interest using a browser-local session identity. If the Local Session later logs in or registers in the same browser, the Interest may be associated with the logged-in User rather than creating a duplicate Interest. Clearing local storage may create a new Local Session identity; that is acceptable for the first version.
 
 ## Organization
 

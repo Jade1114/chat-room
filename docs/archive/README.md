@@ -11,8 +11,7 @@ The active first-version product model is Activity-first and is documented in:
 - `docs/adr/0003-activity-first-mvp.md`
 - `README.md`
 - `CONTEXT.md`
-- `docs/product-engineering-map.md`
-- `docs/current-mvp-gap-and-roadmap.md`
+- `docs/roadmap.md`
 - `docs/api-contract.md`
 - `docs/manual-acceptance.md`
 - `docs/deployment.md`

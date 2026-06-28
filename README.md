@@ -243,7 +243,7 @@ Quick entry points:
 - `docs/MVP.md`: first-version MVP scope;
 - `docs/adr/0003-activity-first-mvp.md`: accepted Activity-first decisions;
 - `CONTEXT.md`: domain glossary;
-- `docs/current-mvp-gap-and-roadmap.md`: current implementation gap and roadmap;
+- `docs/roadmap.md`: current status and phased roadmap;
 - `docs/manual-acceptance.md`: manual acceptance checklist;
 - `docs/classmate-review-guide.md`: reviewer / classmate guide;
 - `DOCUMENTATION.md`: complete map, including local-only learning notes if present;
