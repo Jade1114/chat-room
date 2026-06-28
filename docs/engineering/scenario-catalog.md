@@ -10,18 +10,20 @@
 
 ### 产品
 
-用户在 Activity 详情页点"我想参与"，发起者实时看到"有 N 人对你的活动感兴趣"。不是报名系统，是一个轻量信号——降低表达兴趣的门槛，同时给发起者反馈。
+当前已完成 Slice 1：用户在 Activity 详情页点 `我感兴趣`，系统在 MySQL 中记录一个持久的 Activity Interest，并在详情页 / 我的发起中展示匿名 Interest Count。
+
+下一步工程场景：当 B 对 A 发起的 Activity 表达兴趣时，A 在线时收到匿名实时提示："有人对你的活动感兴趣"。这仍然不是报名系统，只是降低表达兴趣门槛，同时给发起者反馈。
 
 ### 为什么需要核心技术
 
 | 需求 | 技术 | 为什么必须 |
 |------|------|-----------|
-| 同一个人不能重复点 | Redis `SETNX` | MySQL unique constraint 太重；Redis 原子操作天然幂等 |
-| 1 秒内不能点 10 次 | Redis 滑动窗口限流 | 防刷；放在 Redis 是因为多实例共享计数器 |
-| 解除 HTTP 响应和后台处理耦合 | RabbitMQ | 用户点完后立即返回"已记录"，后台异步计数+推送 |
+| 同一个身份不能重复表达兴趣 | MySQL unique constraint + service-layer identity rules | Interest 是事实关系，去重必须落在 source of truth，而不是只靠缓存 |
+| 高频点击防刷 | Redis 滑动窗口 / Token Bucket | 防刷；放在 Redis 是因为多实例共享计数器 |
+| 解除 HTTP 响应和后台处理耦合 | RabbitMQ | Interest 写入 MySQL 后立即返回，后台异步计数、热度、通知 |
 | 发起者收到实时通知 | WebSocket 定向推送 | Feed 广播是群发，这个是点到点；需要知道发起者是否在线 |
 | 热度计数（浏览量+意向数） | Redis `Sorted Set` + `ZINCRBY` | 原子递增，天然排序，比 MySQL `COUNT` + `ORDER BY` 快几个数量级 |
-| 消息不丢 | RabbitMQ publisher confirm + consumer manual ack | 用户表达了意向，不能让消息丢了 |
+| 消息不丢 | RabbitMQ publisher confirm + consumer manual ack | Interest 事实已写入 MySQL，通知/热度等 side effect 应至少处理一次 |
 | 消费失败不丢 | Dead Letter Queue | 重试 N 次后仍然失败的进入 DLQ，人工/自动排查 |
 | 多 consumer 并发 | 线程安全审查 | 多个 consumer 同时处理不同用户的意向，计数不能错 |
 
@@ -36,15 +38,16 @@
 ### 数据路径
 
 ```
-用户点"我想参与"
-  → POST /api/activities/:id/intent
-    → Redis SETNX 去重（key: intent:{activityId}:{userId}）
-    → Redis 滑动窗口限流（key: ratelimit:intent:{userId}）
-    → MySQL INSERT activity_intents
-    → RabbitMQ publish (exchange: activity-events, routing: intent.created)
+用户点 `我感兴趣`
+  → POST /api/activities/:id/interest
+    → MySQL INSERT IGNORE activity_interest（source of truth，幂等）
+    → 返回 updated ActivityResponse（interestCount / interestedByCurrentIdentity）
+    → RabbitMQ publish (exchange: activity-events, routing: interest.created)
       → Consumer A: Redis ZINCRBY activity:hot:score
-      → Consumer B: 查询发起者 userId → Redis 查询在线状态 → WebSocket 定向推送
+      → Consumer B: 查询发起者身份 → Redis 查询在线状态 → WebSocket 定向推送
 ```
+
+当前 Slice 1 已实现到 MySQL 返回 updated ActivityResponse；RabbitMQ / Redis / WebSocket 是下一步 engineering slice。
 
 ### 证据产出
 

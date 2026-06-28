@@ -39,7 +39,9 @@ It explicitly does **not** represent registration, confirmed participation, atte
 
 ## 3. Delivery slices
 
-### Slice 1: Domain fact loop
+### Slice 1: Domain fact loop — implemented and accepted
+
+Status: ✅ Implemented in `a3ab00a feat: add activity interest local session flow`; Yuy manual acceptance passed.
 
 Goal: make Activity Interest a real persisted domain object.
 
@@ -127,13 +129,15 @@ Semantics:
 - repeated calls must not create duplicate Interest;
 - successful response means the durable Interest relationship exists in MySQL.
 
-Response:
+Response: returns the full `ActivityResponse` shape so the detail page can update itself immediately. Relevant fields include:
 
 ```json
 {
-  "activityId": "activity-id",
-  "interested": true,
-  "interestCount": 3
+  "id": "act-001",
+  "interestCount": 3,
+  "interestedByCurrentIdentity": true,
+  "canExpressInterest": false,
+  "initiatedByCurrentIdentity": false
 }
 ```
 
@@ -225,6 +229,8 @@ Exact MySQL indexing strategy should be decided during implementation because pa
 
 ## 6. Slice 1 acceptance checklist
 
+Status: ✅ Passed by Yuy after fixing the public-endpoint whitelist for `POST /api/activities/{activityId}/interest` in `JwtAuthFilter`.
+
 - Local Session opens Activity Detail and sees `我感兴趣`.
 - Local Session clicks it and sees `已感兴趣`.
 - Refreshing the same browser keeps `已感兴趣`.
@@ -233,10 +239,16 @@ Exact MySQL indexing strategy should be decided during implementation because pa
 - Logged-in user can express Interest.
 - Initiator cannot express Interest in their own Activity; UI shows `宣传我的活动` instead.
 - Local Session Initiator can see their own Activities in My Initiated Activities from the same browser.
-- Local Session Initiator can edit and close their own Activities from the same browser.
 - Same-browser login/register associates Local Session Activities and Interests to the User.
 - Interest Count appears on Activity Detail.
 - Initiator sees Interest Count on My Initiated Activities.
 - Feed cards do not show Interest Count.
 - No interested-user list is exposed.
 - Existing visitor naming is replaced rather than extended for this feature.
+
+## 7. Implementation notes from Slice 1
+
+- Public Local Session endpoints must be whitelisted in `JwtAuthFilter`; otherwise correct frontend headers still receive 401 before reaching the controller.
+- The implemented MySQL uniqueness strategy uses separate unique keys for `(activity_id, user_id)` and `(activity_id, local_session_id)` plus service-layer identity rules.
+- The UI labels self-owned Activities with `宣传我的活动` rather than allowing self-interest.
+- Slice 1 deliberately does not implement realtime hints. The next engineering slice should start from the product question: “when someone expresses Interest, how does the Initiator know?”

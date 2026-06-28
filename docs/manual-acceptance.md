@@ -9,11 +9,12 @@
 当前主线：
 
 ```text
-Auth
+Auth / Local Session
 → Activity Feed
 → Activity search/filter
 → Activity Detail
 → participation method reveal
+→ Activity Interest (`我感兴趣` / `已感兴趣`)
 → Activity event logs
 → Publish Activity
 → My initiated Activities
@@ -24,6 +25,7 @@ Auth
 
 - 登录 / 注册；
 - JWT 恢复当前用户；
+- Local Session：未登录浏览器可携带 `X-Local-Session-Id` 完成公开 Activity 行为；
 - 数据库重置后旧 JWT 会失效并要求重新登录；
 - 登录后默认进入 `/activities`；
 - Activity Feed 使用 Upcoming / Ongoing tabs；
@@ -34,6 +36,11 @@ Auth
 - 打开详情记录 `DETAIL_VIEW`；
 - 点击查看参与方式后展示 `participationMethod`；
 - 点击查看参与方式记录 `PARTICIPATION_METHOD_VIEW`；
+- 点击 `我感兴趣` 后变成 `已感兴趣`；
+- 刷新同一浏览器后保持 `已感兴趣`；
+- 重复点击不重复增加 `interestCount`；
+- 自己发起的 Activity 显示 `宣传我的活动`，不能表达兴趣；
+- Activity Detail 与 `/me/activities` 展示 `interestCount`；
 - 发布 Activity；
 - 关闭自己发布的 Activity；
 - `/me/activities` 展示我的发布；
@@ -83,13 +90,14 @@ backend/sql/changes/    变动
 ```bash
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/002_seed.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.sql
 ```
 
 重置后请清理浏览器旧 token，或让前端自动通过 `/api/auth/me` 401 清理：
 
 ```js
 localStorage.removeItem('chat_room_token')
+localStorage.removeItem('chat_room_local_session_id')
 ```
 
 Seed test account:
@@ -138,10 +146,10 @@ TOKEN=$(curl -s -X POST 'http://localhost:8080/api/auth/login' \
 ### Activity Feed
 
 ```bash
-AUTH_HEADER='<set this to your JWT HTTP auth header>'
+LOCAL_SESSION_ID="hermes-manual-local-session"
 
 curl -s 'http://localhost:8080/api/activities' \
-  -H "$AUTH_HEADER" \
+  -H "X-Local-Session-Id: $LOCAL_SESSION_ID" \
   | jq
 ```
 
@@ -152,28 +160,32 @@ upcoming
 ongoing
 ```
 
-### Detail + reveal
+### Detail + reveal + interest
 
 ```bash
 ACTIVITY_ID=act-study-001
-AUTH_HEADER='<set this to your JWT HTTP auth header>'
+LOCAL_SESSION_ID="hermes-manual-local-session"
 
 curl -s "http://localhost:8080/api/activities/$ACTIVITY_ID" \
-  -H "$AUTH_HEADER" \
+  -H "X-Local-Session-Id: $LOCAL_SESSION_ID" \
   | jq
 
 curl -s -X POST "http://localhost:8080/api/activities/$ACTIVITY_ID/participation-method" \
-  -H "$AUTH_HEADER" \
+  -H "X-Local-Session-Id: $LOCAL_SESSION_ID" \
   | jq
+
+curl -s -X POST "http://localhost:8080/api/activities/$ACTIVITY_ID/interest" \
+  -H "X-Local-Session-Id: $LOCAL_SESSION_ID" \
+  | jq '{id, interestCount, interestedByCurrentIdentity, canExpressInterest, initiatedByCurrentIdentity}'
 ```
 
-期望：详情返回 Activity；查看参与方式返回 `participationMethod`。
+期望：详情返回 Activity；查看参与方式返回 `participationMethod`；表达兴趣后 `interestedByCurrentIdentity=true`，重复调用不重复增加 `interestCount`。
 
 ### Event logs
 
 ```bash
 mysql --default-character-set=utf8mb4 -uroot -p -D chat_room -e "
-SELECT activity_id, user_id, event_type, created_at
+SELECT activity_id, user_id, visitor_id AS local_session_id, event_type, created_at
 FROM activity_event
 ORDER BY created_at DESC
 LIMIT 20;
@@ -195,7 +207,7 @@ PARTICIPATION_METHOD_VIEW
 http://localhost:5173
 ```
 
-登录：
+本地验收可登录，也可先用匿名 Local Session 走公开 Activity 链路。登录账号：
 
 ```text
 test001 / 123456
@@ -204,17 +216,19 @@ test001 / 123456
 完整主链路：
 
 ```text
-登录
-→ 自动进入 /activities
+打开 /activities
 → Feed tab 正常：Upcoming / Ongoing
 → 搜索 Redis
 → 分类筛选 STUDY / PROJECT
 → 标签筛选 后端 / 找队友
 → 打开 Activity Detail
 → 点击查看参与方式
+→ 点击 `我感兴趣`，按钮变 `已感兴趣`
+→ 刷新同一浏览器，仍然 `已感兴趣`
 → 发布 SCHEDULED Activity
 → 发布 ONGOING Activity
-→ 进入 /me/activities
+→ 进入 /me/activities，看到自己发起的 Activity 和 interestCount
+→ 自己发起的 Activity Detail 显示 `宣传我的活动`
 → 关闭自己发布的 Activity
 → 回到 /activities 确认 CLOSED 不出现在默认 Feed
 ```

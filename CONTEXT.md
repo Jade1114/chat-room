@@ -129,11 +129,11 @@ An Activity Interest means "I am interested" or "I may want to participate". It 
 
 An Activity Interest is visible to the Activity's Initiator as feedback that someone is interested. It is different from a favorite or bookmark because it sends a signal to the Initiator rather than only saving the Activity for the interested identity.
 
-The first version exposes Activity Interest to the Initiator only as an anonymous count and, when the Initiator is online, an anonymous real-time hint. It does not expose the interested User, local session identity, interested-user list, or any way for the Initiator to contact interested people through the platform.
+The current implemented version exposes Activity Interest as an anonymous count and current-identity status. It does not expose the interested User, local session identity, interested-user list, or any way for the Initiator to contact interested people through the platform.
 
-An online Interest hint is delivered to the Initiator identity. If the Activity is associated with a logged-in User, the hint is delivered to that User's active notification sessions. If the Activity is still associated only with a Local Session, the hint is delivered to active notification sessions for that browser-local session identity. Local Session notification sessions carry only anonymous hints and do not grant management access.
+Online Interest hints are a future engineering slice. If implemented, a hint should be delivered to the Initiator identity only after the durable Interest relationship exists in MySQL, and notification failure must not change the Interest fact.
 
-The first version shows Interest Count on Activity Detail and My Initiated Activities. It does not show Interest Count on Activity Feed cards, Admin dashboard, or a notification center.
+The current version shows Interest Count on Activity Detail and My Initiated Activities. It does not show Interest Count on Activity Feed cards, Admin dashboard, or a notification center.
 
 A Local Session or logged-in User can express at most one Activity Interest per Activity. The Initiator of an Activity cannot express Interest in their own Activity; the product may instead offer a "promote my Activity" action for future work. After expressing interest, the same browser should be able to see that it has already expressed interest on that Activity's detail page. The first version does not model canceling interest, a personal interested-activities list, or Feed-level interested status.
 

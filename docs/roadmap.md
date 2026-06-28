@@ -26,8 +26,10 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Spring Boot backend / React + Vite frontend
 - MySQL / Docker Compose
 - Activity-first schema / seed / migration
+- Local Session 低门槛身份：`chat_room_local_session_id` + `X-Local-Session-Id`
 - Activity Feed / Detail / Publish / My initiated APIs
 - Activity event logging (DETAIL_VIEW / PARTICIPATION_METHOD_VIEW)
+- Activity Interest：`我感兴趣`、幂等计数、当前身份状态、自发起 Activity 不可点
 - Activity-first frontend routes and navigation
 - legacy Organization / Channel / Chat 前端入口降级
 
@@ -40,6 +42,7 @@ login
 → search / category / tag filter
 → /activities/:activityId
 → 查看参与方式
+→ 我感兴趣 / 已感兴趣
 → DETAIL_VIEW / PARTICIPATION_METHOD_VIEW event logs
 → /activities/new publish
 → /me/activities
@@ -141,14 +144,20 @@ P6 Hide / downgrade legacy Organization routes    ✅
 
 #### Direction B: 功能补足
 
-**触发条件**：用户想参与但链路有断点（不敢联系、想记录意向、想了解更多发起者背景）。
+**触发条件**：用户想参与但链路有断点（不敢联系、想了解更多发起者背景、希望收到后续提醒）。
+
+**已完成**：
+- 参与意向表达：Activity Detail `我感兴趣` → `已感兴趣`
+- Interest Count：Activity Detail 与 My Initiated Activities 展示匿名计数
+- Local Session 支持：未登录浏览器可表达兴趣；登录后可关联同浏览器 Local Session 的 Interest
+- 幂等与自发起保护：重复点击不重复计数，发起者不能给自己的 Activity 表达兴趣
 
 **可能工作**：
 - Activity 编辑 UI
 - Activity 草稿
-- 我感兴趣 / 收藏
+- 收藏 / 个人感兴趣列表（不同于当前会通知发起者的 Interest）
 - 发起者 profile / 历史发布
-- 参与意向表达
+- Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名提示
 - 真实反馈收集面板
 
 **Frank 映射**：参与链路 / 业务信息建模 / 从浏览到行动的转化

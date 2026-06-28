@@ -10,12 +10,12 @@ The project is adding **Activity Interest**: a lightweight "I am interested" sig
 
 Activity Interest must support:
 
-- visitor and logged-in user identities;
+- Local Session and logged-in User identities;
 - one Interest per Activity per identity;
 - already-interested state on Activity Detail;
 - Interest Count on Activity Detail and My Initiated Activities;
-- Visitor-to-User Association when a same-browser Visitor logs in or registers;
-- real-time anonymous hints to the Activity Initiator.
+- LocalSession-to-User Association when a same-browser Local Session logs in or registers;
+- future real-time anonymous hints to the Activity Initiator.
 
 This feature naturally needs both durable state and hot-path protection:
 
@@ -52,17 +52,15 @@ RabbitMQ must not decide whether the Interest itself exists. If MySQL succeeds a
 ## Write path
 
 ```text
-Visitor/User clicks "I am interested"
-  → Redis rate-limit check
-  → Redis short-lived dedupe SETNX
-  → MySQL INSERT activity_interest
+Local Session/User clicks `我感兴趣`
+  → MySQL INSERT IGNORE activity_interest
   → Interest is successful only after MySQL succeeds
-  → HTTP response may return success after durable write
-  → publish Activity Interest event
-  → async consumers update Redis count / hot score, record analytics, and push notification
+  → HTTP response returns updated ActivityResponse after durable write
+  → future slice: publish Activity Interest event
+  → future async consumers update Redis count / hot score, record analytics, and push notification
 ```
 
-If Redis dedupe succeeds but MySQL insert fails, the system should release the dedupe key when possible or rely on a short TTL.
+In the implemented Slice 1, MySQL uniqueness and `INSERT IGNORE` provide the durable idempotency boundary. Redis dedupe/rate limiting can be added later as hot-path protection, but it must remain best-effort and cannot be the source of truth.
 
 ## Read path
 
@@ -143,7 +141,7 @@ Effects:
 
 ### Store Interest only as `activity_event`
 
-Rejected. An event log is good for analytics but weak as the source of current state. Interest needs uniqueness, already-interested checks, counts, and Visitor-to-User Association.
+Rejected. An event log is good for analytics but weak as the source of current state. Interest needs uniqueness, already-interested checks, counts, and LocalSession-to-User Association.
 
 ### Store Interest only in Redis
 

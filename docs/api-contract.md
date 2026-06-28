@@ -4,12 +4,15 @@
 
 ## 1. Common rules
 
-- All Activity MVP endpoints require login.
+- Public Activity discovery endpoints support low-friction Local Session access before login.
+- Requests that act as a browser-local identity should send `X-Local-Session-Id`; the frontend stores it in `localStorage.chat_room_local_session_id`.
+- If a JWT is present, backend treats the request as a logged-in User and may associate same-browser Local Session state to that User.
 - REST responses are JSON.
 - Time fields use ISO 8601 strings.
-- `401`: unauthenticated.
-- `403`: not allowed to edit/close another user's Activity.
+- `401`: invalid required authentication for protected endpoints.
+- `403`: not allowed to edit/close another identity's Activity.
 - `404`: resource not found or not visible.
+- `409`: valid request conflicts with domain rule, for example Initiator tries to express Interest in own Activity.
 - `400`: invalid request.
 
 Auth header examples in this document use `<auth header>` to avoid embedding token-shaped strings.
@@ -98,7 +101,13 @@ Response:
   "participationMethod": "加微信 test001，备注 羽毛球",
   "status": "PUBLISHED",
   "createdBy": "u-test-001",
-  "createdByDisplayName": "测试用户001",
+  "createdByUserId": "u-test-001",
+  "createdByLocalSessionId": "ls-browser-001",
+  "initiatorDisplayName": "测试用户001",
+  "interestCount": 3,
+  "interestedByCurrentIdentity": false,
+  "canExpressInterest": true,
+  "initiatedByCurrentIdentity": false,
   "createdAt": "2026-06-25T10:00:00Z",
   "updatedAt": "2026-06-25T10:00:00Z"
 }
@@ -121,7 +130,8 @@ DRAFT | PUBLISHED | EXPIRED | CLOSED
 
 ```http
 GET /api/activities?query=&category=&tag=
-<auth header>
+X-Local-Session-Id: <local-session-id optional>
+<auth header optional>
 ```
 
 Response:
@@ -141,7 +151,7 @@ Response:
       "expiresAt": null,
       "location": "体育馆 3 号场",
       "status": "PUBLISHED",
-      "createdByDisplayName": "测试用户001",
+      "initiatorDisplayName": "测试用户001",
       "createdAt": "2026-06-25T10:00:00Z"
     }
   ],
@@ -158,7 +168,7 @@ Response:
       "expiresAt": "2026-07-20T00:00:00Z",
       "location": "线上 / 图书馆均可",
       "status": "PUBLISHED",
-      "createdByDisplayName": "测试用户002",
+      "initiatorDisplayName": "测试用户002",
       "createdAt": "2026-06-25T12:00:00Z"
     }
   ]
@@ -176,20 +186,22 @@ Rules:
 
 ```http
 GET /api/activities/{activityId}
-<auth header>
+X-Local-Session-Id: <local-session-id optional>
+<auth header optional>
 ```
 
 Response includes full Activity data, but UI should still require a deliberate action before prominently displaying `participationMethod`.
 
 Expected side effect:
 
-- Record `DETAIL_VIEW` for the current user and Activity.
+- Record `DETAIL_VIEW` for the current User or Local Session and Activity.
 
 ## 6. Reveal participation method
 
 ```http
-POST /api/activities/{activityId}/participation-method-view
-<auth header>
+POST /api/activities/{activityId}/participation-method
+X-Local-Session-Id: <local-session-id optional>
+<auth header optional>
 ```
 
 Response:
@@ -207,12 +219,42 @@ Expected side effect:
 
 This does not create registration, membership, interest, favorite, or participation relationship.
 
-## 7. Publish Activity
+## 7. Express Activity Interest
+
+```http
+POST /api/activities/{activityId}/interest
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
+```
+
+Rules:
+
+- records a durable `activity_interest` relationship in MySQL;
+- if a JWT is present, the Interest belongs to the logged-in User;
+- if no JWT is present, the Interest belongs to the browser Local Session;
+- repeated calls by the same identity are idempotent and do not increase `interestCount` again;
+- the Activity Initiator cannot express Interest in their own Activity; returns `409`;
+- this is not registration, attendance, favorite, or platform-internal participation.
+
+Response returns the updated Activity shape. Relevant fields:
+
+```json
+{
+  "id": "act-001",
+  "interestCount": 3,
+  "interestedByCurrentIdentity": true,
+  "canExpressInterest": false,
+  "initiatedByCurrentIdentity": false
+}
+```
+
+## 8. Publish Activity
 
 ```http
 POST /api/activities
 Content-Type: application/json
-<auth header>
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
 ```
 
 Request:
@@ -250,12 +292,13 @@ Rules:
 - `ONGOING` requires `expiresAt` and max duration 30 days;
 - tags max 5.
 
-## 8. Update Activity
+## 9. Update Activity
 
 ```http
 PUT /api/activities/{activityId}
 Content-Type: application/json
-<auth header>
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
 ```
 
 Rules:
@@ -265,11 +308,12 @@ Rules:
 - no edit history;
 - no change notification.
 
-## 9. Close Activity
+## 10. Close Activity
 
 ```http
 POST /api/activities/{activityId}/close
-<auth header>
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
 ```
 
 Rules:
@@ -278,11 +322,12 @@ Rules:
 - status becomes `CLOSED`;
 - closed Activity is not shown in default Feed.
 
-## 10. My initiated Activities
+## 11. My initiated Activities
 
 ```http
 GET /api/me/activities
-<auth header>
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
 ```
 
 Response:
@@ -296,16 +341,17 @@ Response:
     "timeMode": "SCHEDULED",
     "startTime": "2026-06-26T11:00:00Z",
     "expiresAt": null,
+    "interestCount": 3,
     "createdAt": "2026-06-25T10:00:00Z"
   }
 ]
 ```
 
-This endpoint returns only Activities initiated by the current user.
+This endpoint returns only Activities initiated by the current logged-in User or current browser Local Session.
 
 It does not return joined, interested, favorited, or contact-viewed Activities.
 
-## 11. Activity events
+## 12. Activity events
 
 Activity events are internal validation logs.
 
@@ -328,7 +374,7 @@ Minimum fields:
 
 No analytics dashboard is required for MVP.
 
-## 12. Legacy APIs
+## 13. Legacy APIs
 
 Organization, Membership, Channel, WebSocket chat, unread, and presence APIs may still exist in code.
 

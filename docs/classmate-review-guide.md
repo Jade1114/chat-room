@@ -335,7 +335,7 @@ test001 / 123456
 - 发起者 profile / 历史发布；
 - Activity 编辑 UI；
 - Activity 草稿；
-- 我感兴趣 / 收藏；
+- 收藏 / 个人感兴趣列表（区别于当前已经实现、会反馈给发起者的 Activity Interest）；
+- Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名提示；
 - 更好的活动质量和推荐排序；
-- 参与意向表达；
 - 后续再重新设计 post-MVP Organization 能力。
