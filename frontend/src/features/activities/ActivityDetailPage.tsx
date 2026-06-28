@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { Icon } from '../../components/Icon';
-import { fetchActivityDetail, revealParticipationMethod, type ActivityResponse } from '../../lib/activityApi';
+import { fetchActivityDetail, revealParticipationMethod, expressActivityInterest, type ActivityResponse } from '../../lib/activityApi';
 import { activityTimeLabel, categoryLabels, splitTags } from './activityView';
 
 export function ActivityDetailPage() {
@@ -10,6 +10,7 @@ export function ActivityDetailPage() {
   const [participationMethod, setParticipationMethod] = useState('');
   const [loading, setLoading] = useState(true);
   const [revealing, setRevealing] = useState(false);
+  const [expressingInterest, setExpressingInterest] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,6 +34,18 @@ export function ActivityDetailPage() {
       setError(err instanceof Error ? err.message : '参与方式加载失败');
     } finally {
       setRevealing(false);
+    }
+  }
+
+  async function handleExpressInterest() {
+    setExpressingInterest(true);
+    setError('');
+    try {
+      setActivity(await expressActivityInterest(activityId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '表达兴趣失败');
+    } finally {
+      setExpressingInterest(false);
     }
   }
 
@@ -78,6 +91,26 @@ export function ActivityDetailPage() {
             <div className="rounded-2xl bg-active p-4">
               <dt className="text-xs font-bold uppercase tracking-[0.16em] text-faint">发布时间</dt>
               <dd className="mt-2 text-sm font-semibold text-primary">{new Date(activity.createdAt).toLocaleString('zh-CN')}</dd>
+            </div>
+          </section>
+
+          <section className="border-t border-divider p-4 sm:p-6">
+            <div className="rounded-[1.5rem] border border-divider bg-card p-4 sm:rounded-[1.75rem] sm:p-5">
+              <div className="grid gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-strong">参与意向</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted">{activity.interestCount} 个本地身份或用户表达了“我感兴趣”。这不是报名，只是给发起人的匿名反馈。</p>
+                </div>
+                {activity.initiatedByCurrentIdentity ? (
+                  <button type="button" className="w-full rounded-2xl border border-divider px-5 py-3 text-sm font-bold text-muted sm:w-auto" disabled>
+                    宣传我的活动
+                  </button>
+                ) : (
+                  <button type="button" onClick={handleExpressInterest} disabled={expressingInterest || activity.interestedByCurrentIdentity} className="w-full rounded-2xl bg-strong px-5 py-3 text-sm font-bold text-inverse transition hover:opacity-90 disabled:opacity-60 sm:w-auto">
+                    {activity.interestedByCurrentIdentity ? '已感兴趣' : expressingInterest ? '提交中...' : '我感兴趣'}
+                  </button>
+                )}
+              </div>
             </div>
           </section>
 

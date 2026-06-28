@@ -25,6 +25,8 @@ public class Activity {
     private String participationMethod;
     private String status;
     private String createdBy;
+    private String createdByUserId;
+    private String createdByLocalSessionId;
     private String initiatorDisplayName;
     private Instant createdAt;
     private Instant updatedAt;

@@ -35,7 +35,7 @@ public class ActivityController {
   @GetMapping("/api/activities/{activityId}")
   public ResponseEntity<?> getDetail(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.getDetail(activityId, currentUserId(request), visitorId(request)));
+      return ResponseEntity.ok(activityService.getDetail(activityId, currentUserId(request), localSessionId(request)));
     } catch (IllegalArgumentException error) {
       return notFoundOrBadRequest(error);
     }
@@ -44,8 +44,19 @@ public class ActivityController {
   @PostMapping("/api/activities/{activityId}/participation-method")
   public ResponseEntity<?> revealParticipationMethod(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      String method = activityService.revealParticipationMethod(activityId, currentUserId(request), visitorId(request));
+      String method = activityService.revealParticipationMethod(activityId, currentUserId(request), localSessionId(request));
       return ResponseEntity.ok(new ParticipationMethodResponse(activityId, method));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
+    }
+  }
+
+  @PostMapping("/api/activities/{activityId}/interest")
+  public ResponseEntity<?> expressInterest(@PathVariable String activityId, HttpServletRequest request) {
+    try {
+      return ResponseEntity.ok(activityService.expressInterest(activityId, currentUserId(request), localSessionId(request)));
+    } catch (SecurityException error) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", error.getMessage()));
     } catch (IllegalArgumentException error) {
       return notFoundOrBadRequest(error);
     }
@@ -53,14 +64,14 @@ public class ActivityController {
 
   @PostMapping("/api/site-events/visit")
   public ResponseEntity<?> recordSiteVisit(HttpServletRequest request) {
-    activityService.recordSiteVisit(currentUserId(request), visitorId(request));
+    activityService.recordSiteVisit(currentUserId(request), localSessionId(request));
     return ResponseEntity.ok(Map.of("ok", true));
   }
 
   @PostMapping("/api/activities")
   public ResponseEntity<?> createActivity(@RequestBody CreateActivityRequest createRequest, HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.createActivity(createRequest, currentUserId(request)));
+      return ResponseEntity.ok(activityService.createActivity(createRequest, currentUserId(request), localSessionId(request)));
     } catch (IllegalArgumentException error) {
       return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
     }
@@ -71,7 +82,7 @@ public class ActivityController {
       @RequestBody CreateActivityRequest updateRequest,
       HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.updateActivity(activityId, updateRequest, requireUserId(request)));
+      return ResponseEntity.ok(activityService.updateActivity(activityId, updateRequest, currentUserId(request), localSessionId(request)));
     } catch (SecurityException error) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
     } catch (IllegalArgumentException error) {
@@ -82,7 +93,7 @@ public class ActivityController {
   @PostMapping("/api/activities/{activityId}/close")
   public ResponseEntity<?> closeActivity(@PathVariable String activityId, HttpServletRequest request) {
     try {
-      return ResponseEntity.ok(activityService.closeActivity(activityId, requireUserId(request)));
+      return ResponseEntity.ok(activityService.closeActivity(activityId, currentUserId(request), localSessionId(request)));
     } catch (SecurityException error) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
     } catch (IllegalArgumentException error) {
@@ -92,23 +103,19 @@ public class ActivityController {
 
   @GetMapping("/api/me/activities")
   public ResponseEntity<?> getMyInitiated(HttpServletRequest request) {
-    return ResponseEntity.ok(activityService.getMyInitiated(requireUserId(request)));
-  }
-
-  private String requireUserId(HttpServletRequest request) {
-    String userId = currentUserId(request);
-    if (userId == null || userId.isBlank()) {
-      throw new IllegalArgumentException("未登录");
+    try {
+      return ResponseEntity.ok(activityService.getMyInitiated(currentUserId(request), localSessionId(request)));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
     }
-    return userId;
   }
 
   private String currentUserId(HttpServletRequest request) {
     return (String) request.getAttribute("userId");
   }
 
-  private String visitorId(HttpServletRequest request) {
-    return request.getHeader("X-Visitor-Id");
+  private String localSessionId(HttpServletRequest request) {
+    return request.getHeader("X-Local-Session-Id");
   }
 
   private ResponseEntity<?> notFoundOrBadRequest(IllegalArgumentException error) {

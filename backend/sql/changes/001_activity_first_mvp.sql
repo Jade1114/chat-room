@@ -5,6 +5,7 @@ SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE chat_room;
 
 DROP TABLE IF EXISTS activity_event;
+DROP TABLE IF EXISTS activity_interest;
 DROP TABLE IF EXISTS activity;
 
 CREATE TABLE activity (
@@ -21,13 +22,37 @@ CREATE TABLE activity (
     participation_method VARCHAR(1000)   NOT NULL,
     status               VARCHAR(16)     NOT NULL DEFAULT 'PUBLISHED' COMMENT 'DRAFT | PUBLISHED | EXPIRED | CLOSED',
     created_by           VARCHAR(32)     NOT NULL,
+    created_by_user_id   VARCHAR(32)     NULL,
+    created_by_local_session_id VARCHAR(128) NULL,
     created_at           DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     updated_at           DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     INDEX idx_activity_feed (status, time_mode, expires_at, start_time),
     INDEX idx_activity_category (category),
     INDEX idx_activity_created_by (created_by, created_at),
+    INDEX idx_activity_created_by_user (created_by_user_id, created_at),
+    INDEX idx_activity_created_by_local_session (created_by_local_session_id, created_at),
     CONSTRAINT fk_activity_user
-        FOREIGN KEY (created_by) REFERENCES app_user(id)
+        FOREIGN KEY (created_by) REFERENCES app_user(id),
+    CONSTRAINT fk_activity_created_by_user
+        FOREIGN KEY (created_by_user_id) REFERENCES app_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE activity_interest (
+    id               VARCHAR(32)     PRIMARY KEY,
+    activity_id      VARCHAR(32)     NOT NULL,
+    user_id          VARCHAR(32)     NULL,
+    local_session_id VARCHAR(128)    NULL,
+    created_at       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    associated_at    DATETIME(3)     NULL,
+    UNIQUE KEY uk_activity_interest_user (activity_id, user_id),
+    UNIQUE KEY uk_activity_interest_local_session (activity_id, local_session_id),
+    INDEX idx_activity_interest_activity (activity_id, created_at),
+    INDEX idx_activity_interest_user (user_id, created_at),
+    INDEX idx_activity_interest_local_session (local_session_id, created_at),
+    CONSTRAINT fk_activity_interest_activity
+        FOREIGN KEY (activity_id) REFERENCES activity(id),
+    CONSTRAINT fk_activity_interest_user
+        FOREIGN KEY (user_id) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE activity_event (
@@ -59,8 +84,8 @@ CREATE TABLE site_event (
         FOREIGN KEY (user_id) REFERENCES app_user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO activity (id, title, description, category, tags, time_mode, start_time, end_time, expires_at, location, participation_method, status, created_by, created_at, updated_at) VALUES
-('act-study-001', '周末 Redis 学习小组', '一起把 Redis 缓存、过期策略和项目里的使用场景讲清楚，适合正在做后端项目的同学。', 'STUDY', '后端,Redis,学习小组', 'SCHEDULED', '2026-07-04 14:00:00', '2026-07-04 17:00:00', '2026-07-04 17:00:00', '图书馆三楼讨论室', '加微信 redis-study-2026，备注“Redis学习”。', 'PUBLISHED', 'u-test-001', NOW(3), NOW(3)),
-('act-sports-001', '今晚操场慢跑搭子', '配速 6-7 分钟，跑 5 公里左右，主要是找人一起坚持。', 'SPORTS', '跑步,搭子,运动', 'SCHEDULED', '2026-07-01 20:00:00', '2026-07-01 21:00:00', '2026-07-01 21:00:00', '东操场入口', '直接到东操场入口集合，或 QQ 123456789 提前说一声。', 'PUBLISHED', 'u-test-002', NOW(3), NOW(3)),
-('act-project-001', '找 2 位同学一起做校园活动发现产品', '想做一个把校园里值得参与的事情持续展示出来的小产品，适合想练全栈/产品工程的同学。', 'PROJECT', '全栈,产品,找队友', 'ONGOING', NULL, NULL, '2026-07-25 23:59:00', '线上 + 咖啡厅讨论', '发邮件到 campus-build@example.com，附一句你想练什么。', 'PUBLISHED', 'u-admin', NOW(3), NOW(3)),
-('act-game-001', '独立游戏 Jam 临时组队', '48 小时做一个小原型，美术、程序、策划都欢迎。', 'GAME', 'GameJam,游戏开发,找队友', 'ONGOING', NULL, NULL, '2026-07-20 23:59:00', '线上 Discord', '填写飞书表单：https://example.com/game-jam-team', 'PUBLISHED', 'u-test-001', NOW(3), NOW(3));
+INSERT INTO activity (id, title, description, category, tags, time_mode, start_time, end_time, expires_at, location, participation_method, status, created_by, created_by_user_id, created_at, updated_at) VALUES
+('act-study-001', '周末 Redis 学习小组', '一起把 Redis 缓存、过期策略和项目里的使用场景讲清楚，适合正在做后端项目的同学。', 'STUDY', '后端,Redis,学习小组', 'SCHEDULED', '2026-07-04 14:00:00', '2026-07-04 17:00:00', '2026-07-04 17:00:00', '图书馆三楼讨论室', '加微信 redis-study-2026，备注“Redis学习”。', 'PUBLISHED', 'u-test-001', 'u-test-001', NOW(3), NOW(3)),
+('act-sports-001', '今晚操场慢跑搭子', '配速 6-7 分钟，跑 5 公里左右，主要是找人一起坚持。', 'SPORTS', '跑步,搭子,运动', 'SCHEDULED', '2026-07-01 20:00:00', '2026-07-01 21:00:00', '2026-07-01 21:00:00', '东操场入口', '直接到东操场入口集合，或 QQ 123456789 提前说一声。', 'PUBLISHED', 'u-test-002', 'u-test-002', NOW(3), NOW(3)),
+('act-project-001', '找 2 位同学一起做校园活动发现产品', '想做一个把校园里值得参与的事情持续展示出来的小产品，适合想练全栈/产品工程的同学。', 'PROJECT', '全栈,产品,找队友', 'ONGOING', NULL, NULL, '2026-07-25 23:59:00', '线上 + 咖啡厅讨论', '发邮件到 campus-build@example.com，附一句你想练什么。', 'PUBLISHED', 'u-admin', 'u-admin', NOW(3), NOW(3)),
+('act-game-001', '独立游戏 Jam 临时组队', '48 小时做一个小原型，美术、程序、策划都欢迎。', 'GAME', 'GameJam,游戏开发,找队友', 'ONGOING', NULL, NULL, '2026-07-20 23:59:00', '线上 Discord', '填写飞书表单：https://example.com/game-jam-team', 'PUBLISHED', 'u-test-001', 'u-test-001', NOW(3), NOW(3));

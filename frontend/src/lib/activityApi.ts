@@ -1,6 +1,6 @@
 import { apiBaseUrl } from '../config';
 import { clearToken, getToken } from './authApi';
-import { getVisitorId } from './visitor';
+import { getLocalSessionId } from './localSession';
 
 export type ActivityCategory = 'STUDY' | 'SPORTS' | 'GAME' | 'PROJECT' | 'WORKSHOP' | 'COMPETITION' | 'TRAVEL' | 'TEAM_UP' | 'OTHER';
 export type ActivityTimeMode = 'SCHEDULED' | 'ONGOING';
@@ -20,7 +20,13 @@ export interface ActivityResponse {
   participationMethod: string | null;
   status: ActivityStatus;
   createdBy: string;
+  createdByUserId: string | null;
+  createdByLocalSessionId: string | null;
   initiatorDisplayName: string;
+  interestCount: number;
+  interestedByCurrentIdentity: boolean;
+  canExpressInterest: boolean;
+  initiatedByCurrentIdentity: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,7 +61,7 @@ function buildHeaders(): Record<string, string> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-Visitor-Id': getVisitorId()
+    'X-Local-Session-Id': getLocalSessionId()
   };
   if (token) headers.Authorization = 'B' + 'earer ' + token;
   return headers;
@@ -94,6 +100,15 @@ export async function revealParticipationMethod(activityId: string): Promise<str
   if (!response.ok) throw await parseError(response, `participation method status ${response.status}`);
   const body = await response.json();
   return body.participationMethod;
+}
+
+export async function expressActivityInterest(activityId: string): Promise<ActivityResponse> {
+  const response = await fetch(buildApiUrl(`/api/activities/${encodeURIComponent(activityId)}/interest`), {
+    method: 'POST',
+    headers: buildHeaders()
+  });
+  if (!response.ok) throw await parseError(response, `activity interest status ${response.status}`);
+  return response.json();
 }
 
 export async function createActivity(payload: ActivityPayload): Promise<ActivityResponse> {

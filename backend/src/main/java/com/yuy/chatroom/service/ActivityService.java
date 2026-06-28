@@ -36,37 +36,47 @@ public class ActivityService {
     activityMapper.expireOutdated(now);
     List<ActivityResponse> activities = activityMapper.findFeed(now, cleanOptional(query), cleanOptional(category), cleanOptional(tag))
         .stream()
-        .map(activity -> ActivityResponse.from(activity, false))
+        .map(activity -> ActivityResponse.from(activity, false, activityMapper.countInterests(activity.getId()), false, false))
         .toList();
     return new ActivityFeedResponse(
         activities.stream().filter(a -> "SCHEDULED".equals(a.getTimeMode())).toList(),
         activities.stream().filter(a -> "ONGOING".equals(a.getTimeMode())).toList());
   }
 
-  public ActivityResponse getDetail(String activityId, String userId, String visitorId) {
+  public ActivityResponse getDetail(String activityId, String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
     Activity activity = requireActivity(activityId);
-    recordEvent(activityId, userId, visitorId, "DETAIL_VIEW");
-    return ActivityResponse.from(activity, false);
+    recordEvent(activityId, userId, localSessionId, "DETAIL_VIEW");
+    return responseForIdentity(activity, false, userId, localSessionId);
   }
 
-  public String revealParticipationMethod(String activityId, String userId, String visitorId) {
+  public String revealParticipationMethod(String activityId, String userId, String localSessionId) {
     Activity activity = requireActivity(activityId);
-    recordEvent(activityId, userId, visitorId, "PARTICIPATION_METHOD_VIEW");
+    recordEvent(activityId, userId, localSessionId, "PARTICIPATION_METHOD_VIEW");
     return activity.getParticipationMethod();
   }
 
-  public void recordSiteVisit(String userId, String visitorId) {
-    String cleanedVisitorId = cleanOptional(visitorId);
-    if (cleanedVisitorId == null) return;
+  public void recordSiteVisit(String userId, String localSessionId) {
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    if (cleanedLocalSessionId == null) return;
     activityMapper.insertSiteEvent("site-" + UUID.randomUUID().toString().substring(0, 12),
-        cleanedVisitorId, cleanOptional(userId), "SITE_VISIT", "/activities", Instant.now());
+        cleanedLocalSessionId, cleanOptional(userId), "SITE_VISIT", "/activities", Instant.now());
   }
 
-  public ActivityResponse createActivity(CreateActivityRequest request, String userId) {
-    String creatorId = userId == null || userId.isBlank() ? publicCreatorUserId() : userId;
-    Activity activity = buildActivity(new Activity(), request, creatorId, true);
+  public ActivityResponse createActivity(CreateActivityRequest request, String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
+    String cleanedUserId = cleanOptional(userId);
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    if (cleanedUserId == null && cleanedLocalSessionId == null) {
+      throw new IllegalArgumentException("缺少本地身份");
+    }
+
+    String legacyCreatorId = cleanedUserId == null ? publicCreatorUserId() : cleanedUserId;
+    Activity activity = buildActivity(new Activity(), request, legacyCreatorId, true);
+    activity.setCreatedByUserId(cleanedUserId);
+    activity.setCreatedByLocalSessionId(cleanedLocalSessionId);
     activityMapper.insert(activity);
-    return ActivityResponse.from(activityMapper.findById(activity.getId()), false);
+    return responseForIdentity(activityMapper.findById(activity.getId()), false, cleanedUserId, cleanedLocalSessionId);
   }
 
   private String publicCreatorUserId() {
@@ -76,34 +86,105 @@ public class ActivityService {
     return PUBLIC_CREATOR_USER_ID;
   }
 
-  public ActivityResponse updateActivity(String activityId, CreateActivityRequest request, String userId) {
+  public ActivityResponse updateActivity(String activityId, CreateActivityRequest request, String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
     Activity existing = requireActivity(activityId);
-    requireOwner(existing, userId);
+    requireOwner(existing, userId, localSessionId);
     if (!"DRAFT".equals(existing.getStatus()) && !"PUBLISHED".equals(existing.getStatus())) {
       throw new IllegalArgumentException("只能编辑草稿或已发布 Activity");
     }
-    Activity updated = buildActivity(existing, request, userId, false);
+    Activity updated = buildActivity(existing, request, existing.getCreatedBy(), false);
     activityMapper.update(updated);
-    return ActivityResponse.from(activityMapper.findById(activityId), false);
+    return responseForIdentity(activityMapper.findById(activityId), false, userId, localSessionId);
   }
 
-  public ActivityResponse closeActivity(String activityId, String userId) {
+  public ActivityResponse closeActivity(String activityId, String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
     Activity activity = requireActivity(activityId);
-    requireOwner(activity, userId);
+    requireOwner(activity, userId, localSessionId);
     activity.setStatus("CLOSED");
     activity.setUpdatedAt(Instant.now());
     activityMapper.update(activity);
-    return ActivityResponse.from(activityMapper.findById(activityId), false);
+    return responseForIdentity(activityMapper.findById(activityId), false, userId, localSessionId);
   }
 
-  public List<ActivityResponse> getMyInitiated(String userId) {
+  public List<ActivityResponse> getMyInitiated(String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
     activityMapper.expireOutdated(Instant.now());
-    return activityMapper.findByCreatedBy(userId).stream()
-        .map(activity -> ActivityResponse.from(activity, false))
+    String cleanedUserId = cleanOptional(userId);
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    List<Activity> activities;
+    if (cleanedUserId != null) {
+      activities = activityMapper.findByCreatedByUser(cleanedUserId);
+    } else {
+      if (cleanedLocalSessionId == null) {
+        throw new IllegalArgumentException("缺少本地身份");
+      }
+      activities = activityMapper.findByCreatedByLocalSession(cleanedLocalSessionId);
+    }
+    return activities.stream()
+        .map(activity -> responseForIdentity(activity, false, cleanedUserId, cleanedLocalSessionId))
         .toList();
   }
 
-  private Activity buildActivity(Activity activity, CreateActivityRequest request, String userId, boolean isNew) {
+  public ActivityResponse expressInterest(String activityId, String userId, String localSessionId) {
+    associateLocalSessionToUser(userId, localSessionId);
+    Activity activity = requireActivity(activityId);
+    String cleanedUserId = cleanOptional(userId);
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    if (cleanedUserId == null && cleanedLocalSessionId == null) {
+      throw new IllegalArgumentException("缺少本地身份");
+    }
+    if (isInitiator(activity, cleanedUserId, cleanedLocalSessionId)) {
+      throw new SecurityException("不能对自己发起的活动表达兴趣");
+    }
+
+    if (cleanedUserId != null) {
+      boolean alreadyByUser = activityMapper.hasUserInterest(activityId, cleanedUserId) > 0;
+      if (!alreadyByUser && cleanedLocalSessionId != null
+          && activityMapper.hasLocalSessionInterest(activityId, cleanedLocalSessionId) > 0) {
+        activityMapper.associateLocalSessionInterest(activityId, cleanedLocalSessionId, cleanedUserId, Instant.now());
+      } else if (!alreadyByUser) {
+        activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
+            activityId, cleanedUserId, cleanedLocalSessionId, Instant.now());
+      }
+    } else {
+      activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
+          activityId, null, cleanedLocalSessionId, Instant.now());
+    }
+
+    return responseForIdentity(activityMapper.findById(activityId), false, cleanedUserId, cleanedLocalSessionId);
+  }
+
+  private ActivityResponse responseForIdentity(Activity activity, boolean includeParticipationMethod,
+      String userId, String localSessionId) {
+    String cleanedUserId = cleanOptional(userId);
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    boolean interested = false;
+    if (cleanedUserId != null) {
+      interested = activityMapper.hasUserInterest(activity.getId(), cleanedUserId) > 0;
+    }
+    if (!interested && cleanedLocalSessionId != null) {
+      interested = activityMapper.hasLocalSessionInterest(activity.getId(), cleanedLocalSessionId) > 0;
+    }
+    boolean initiated = isInitiator(activity, cleanedUserId, cleanedLocalSessionId);
+    return ActivityResponse.from(activity, includeParticipationMethod,
+        activityMapper.countInterests(activity.getId()), interested, initiated);
+  }
+
+  private void associateLocalSessionToUser(String userId, String localSessionId) {
+    String cleanedUserId = cleanOptional(userId);
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    if (cleanedUserId == null || cleanedLocalSessionId == null) {
+      return;
+    }
+    Instant now = Instant.now();
+    activityMapper.associateLocalSessionActivities(cleanedLocalSessionId, cleanedUserId, now);
+    activityMapper.deleteDuplicateLocalSessionInterests(cleanedLocalSessionId, cleanedUserId);
+    activityMapper.associateLocalSessionInterests(cleanedLocalSessionId, cleanedUserId, now);
+  }
+
+  private Activity buildActivity(Activity activity, CreateActivityRequest request, String legacyUserId, boolean isNew) {
     String title = requiredText(request.getTitle(), "标题不能为空", 128, "标题不能超过 128 个字符");
     String description = requiredText(request.getDescription(), "说明不能为空", 2000, "说明不能超过 2000 个字符");
     String category = requiredText(request.getCategory(), "分类不能为空", 32, "分类不正确").toUpperCase();
@@ -140,7 +221,7 @@ public class ActivityService {
 
     if (isNew) {
       activity.setId("act-" + UUID.randomUUID().toString().substring(0, 8));
-      activity.setCreatedBy(userId);
+      activity.setCreatedBy(legacyUserId);
       activity.setCreatedAt(now);
       activity.setStatus("PUBLISHED");
     }
@@ -166,18 +247,29 @@ public class ActivityService {
     return activity;
   }
 
-  private void requireOwner(Activity activity, String userId) {
-    if (!activity.getCreatedBy().equals(userId)) {
+  private void requireOwner(Activity activity, String userId, String localSessionId) {
+    if (!isInitiator(activity, userId, localSessionId)) {
       throw new SecurityException("只能管理自己发起的 Activity");
     }
   }
 
-  private void recordEvent(String activityId, String userId, String visitorId, String eventType) {
-    String cleanedVisitorId = cleanOptional(visitorId);
+  private boolean isInitiator(Activity activity, String userId, String localSessionId) {
     String cleanedUserId = cleanOptional(userId);
-    if (cleanedUserId == null && cleanedVisitorId == null) return;
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    if (cleanedUserId != null && cleanedUserId.equals(activity.getCreatedByUserId())) {
+      return true;
+    }
+    return cleanedLocalSessionId != null
+        && activity.getCreatedByLocalSessionId() != null
+        && cleanedLocalSessionId.equals(activity.getCreatedByLocalSessionId());
+  }
+
+  private void recordEvent(String activityId, String userId, String localSessionId, String eventType) {
+    String cleanedLocalSessionId = cleanOptional(localSessionId);
+    String cleanedUserId = cleanOptional(userId);
+    if (cleanedUserId == null && cleanedLocalSessionId == null) return;
     activityMapper.insertEvent("evt-" + UUID.randomUUID().toString().substring(0, 12),
-        activityId, cleanedUserId, cleanedVisitorId, eventType, Instant.now());
+        activityId, cleanedUserId, cleanedLocalSessionId, eventType, Instant.now());
   }
 
   private String requiredText(String value, String blankMessage, int maxLength, String tooLongMessage) {

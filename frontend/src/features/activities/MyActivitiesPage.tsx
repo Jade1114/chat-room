@@ -63,6 +63,7 @@ export function MyActivitiesPage() {
                   </div>
                   <Link to="/activities/$activityId" params={{ activityId: activity.id }} className="mt-3 block text-lg font-black text-strong transition hover:text-accent-strong">{activity.title}</Link>
                   <p className="mt-2 text-sm leading-6 text-muted">{activityTimeLabel(activity)} · {activity.location}</p>
+                  <p className="mt-2 text-xs font-semibold text-accent-strong">{activity.interestCount} 人感兴趣</p>
                 </div>
                 {activity.status === 'PUBLISHED' && <button type="button" onClick={() => void handleClose(activity.id)} className="rounded-2xl border border-divider px-4 py-2 text-xs font-bold text-muted transition hover:bg-hover hover:text-primary">关闭</button>}
               </div>

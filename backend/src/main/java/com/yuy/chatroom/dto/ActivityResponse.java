@@ -23,11 +23,22 @@ public class ActivityResponse {
   private String participationMethod;
   private String status;
   private String createdBy;
+  private String createdByUserId;
+  private String createdByLocalSessionId;
   private String initiatorDisplayName;
+  private long interestCount;
+  private boolean interestedByCurrentIdentity;
+  private boolean canExpressInterest;
+  private boolean initiatedByCurrentIdentity;
   private Instant createdAt;
   private Instant updatedAt;
 
   public static ActivityResponse from(Activity activity, boolean includeParticipationMethod) {
+    return from(activity, includeParticipationMethod, 0, false, false);
+  }
+
+  public static ActivityResponse from(Activity activity, boolean includeParticipationMethod,
+      long interestCount, boolean interestedByCurrentIdentity, boolean initiatedByCurrentIdentity) {
     return new ActivityResponse(
         activity.getId(),
         activity.getTitle(),
@@ -42,7 +53,13 @@ public class ActivityResponse {
         includeParticipationMethod ? activity.getParticipationMethod() : null,
         activity.getStatus(),
         activity.getCreatedBy(),
+        activity.getCreatedByUserId(),
+        activity.getCreatedByLocalSessionId(),
         activity.getInitiatorDisplayName(),
+        interestCount,
+        interestedByCurrentIdentity,
+        !initiatedByCurrentIdentity && !interestedByCurrentIdentity,
+        initiatedByCurrentIdentity,
         activity.getCreatedAt(),
         activity.getUpdatedAt());
   }
