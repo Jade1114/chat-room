@@ -14,6 +14,8 @@
 
 下一步工程场景：当 B 对 A 发起的 Activity 表达兴趣时，A 在线时收到匿名实时提示："有人对你的活动感兴趣"。这仍然不是报名系统，只是降低表达兴趣门槛，同时给发起者反馈。
 
+当前设计入口：`docs/engineering/activity-interest-notification-design.md`。先完成通知语义对齐，再进入单实例 WebSocket proof。
+
 ### 为什么需要核心技术
 
 | 需求 | 技术 | 为什么必须 |

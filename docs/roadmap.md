@@ -157,7 +157,7 @@ P6 Hide / downgrade legacy Organization routes    ✅
 - Activity 草稿
 - 收藏 / 个人感兴趣列表（不同于当前会通知发起者的 Interest）
 - 发起者 profile / 历史发布
-- Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名提示
+- Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名提示（设计入口：`docs/engineering/activity-interest-notification-design.md`）
 - 真实反馈收集面板
 
 **Frank 映射**：参与链路 / 业务信息建模 / 从浏览到行动的转化

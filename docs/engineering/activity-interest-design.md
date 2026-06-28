@@ -65,15 +65,23 @@ Excludes:
 - Feed card count;
 - notification center.
 
-### Slice 2: Redis hot-path protection
+### Slice 2A: Notification semantics design — current
+
+Design doc: `docs/engineering/activity-interest-notification-design.md`.
+
+This slice defines targeted Interest Notification semantics before implementation: who receives the hint, what identity stays hidden, when duplicate clicks do not notify, and how online/offline behavior works.
+
+### Slice 2B: Single-instance WebSocket targeted hint
 
 Includes:
 
-- Redis short-lived dedupe marker;
-- Redis rate limiting;
-- fallback behavior when Redis is unavailable.
+- `/ws/notifications` or an equivalent notification socket;
+- userId session registry;
+- localSessionId session registry;
+- anonymous real-time hint delivered to Initiator identity after a new durable Interest is created;
+- no RabbitMQ/Redis requirement yet unless needed by implementation constraints.
 
-### Slice 3: RabbitMQ async side effects
+### Slice 2C: RabbitMQ async side effects
 
 Includes:
 
@@ -82,14 +90,14 @@ Includes:
 - record `INTEREST_EXPRESSED` analytics event;
 - publisher confirm, manual ack, retry, DLQ.
 
-### Slice 4: WebSocket targeted hint
+### Slice 2D: Redis hot-path and multi-instance routing
 
 Includes:
 
-- `/ws/notifications`;
-- userId session registry;
-- localSessionId session registry;
-- anonymous real-time hint delivered to Initiator identity.
+- Redis short-lived dedupe marker;
+- Redis rate limiting;
+- online session routing or pub/sub fanout for multiple backend instances;
+- fallback behavior when Redis is unavailable.
 
 ---
 
