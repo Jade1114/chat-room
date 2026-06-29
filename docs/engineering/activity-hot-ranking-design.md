@@ -164,17 +164,17 @@ Deliver this document and update roadmap/scenario catalog/manual acceptance.
 
 No production code.
 
-### Slice 3B: Redis write path
+### Slice 3B: Redis write path — implemented, pending acceptance
 
 Goal: update `activity:hot_score` when user behavior happens.
 
-Includes:
+Implemented:
 
-- Redis service wrapper for `ZINCRBY`;
-- score increment on `DETAIL_VIEW`;
-- score increment on `PARTICIPATION_METHOD_VIEW`;
-- score increment from `ActivityInterestCreatedEvent` consumer or a separate hot-score consumer;
-- graceful fallback if Redis write fails.
+- `ActivityHotScoreService` wraps Redis `ZINCRBY` for `activity:hot_score`;
+- `DETAIL_VIEW` increments +1 after MySQL activity_event write;
+- `PARTICIPATION_METHOD_VIEW` increments +3 after MySQL activity_event write;
+- `ActivityInterestCreatedEvent` consumer increments +5 after WebSocket notification side effect and before ACK;
+- Redis write failures are logged and do not block product actions.
 
 Acceptance:
 
@@ -184,24 +184,28 @@ Acceptance:
 - duplicate Interest does not add +5 again;
 - Redis failure does not block product action.
 
-### Slice 3C: Hot Feed read path
+### Slice 3C: Hot Feed read path — implemented, pending acceptance
 
 Goal: users can request hot ranking.
 
-Includes:
+Implemented:
 
 - `GET /api/activities?sort=hot`;
-- Redis `ZREVRANGE` / `ZREVRANGE_WITHSCORES` reads;
-- MySQL hydration for valid Activity rows;
-- status/time filtering remains MySQL-owned;
-- fallback to normal Feed order if Redis empty/unavailable.
+- Redis `ZREVRANGE` via `ActivityHotScoreService.rankActivityIds(...)`;
+- MySQL remains the visibility/hydration source by first loading valid Feed Activities;
+- Redis-ranked ids are intersected with visible MySQL Activities;
+- Redis empty/unavailable falls back to the default Feed order;
+- frontend Activity center has a `热门` tab that calls `sort=hot` and displays the returned `hot` list;
+- Hot Feed items include `hotMetrics` from MySQL facts plus Redis score so the UI can explain why an Activity is popular.
 
 Acceptance:
 
 - Activity with higher behavior score appears earlier in hot Feed;
 - closed/expired Activities do not appear;
 - default Feed remains unchanged;
-- category/tag/search filters still narrow results.
+- category/tag/search filters still narrow results;
+- Hot Feed response includes `hotMetrics.score`, `hotMetrics.detailViews`, `hotMetrics.participationMethodViews`, and `hotMetrics.interestCount`;
+- frontend Hot cards show a lightweight explanation such as `最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`.
 
 ### Slice 3D: Rebuild / operations boundary
 

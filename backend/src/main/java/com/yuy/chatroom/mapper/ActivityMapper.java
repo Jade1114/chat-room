@@ -167,6 +167,9 @@ public interface ActivityMapper {
   @Select("SELECT COUNT(*) FROM activity_interest WHERE activity_id = #{activityId}")
   long countInterests(@Param("activityId") String activityId);
 
+  @Select("SELECT COUNT(*) FROM activity_event WHERE activity_id = #{activityId} AND event_type = #{eventType}")
+  long countActivityEvents(@Param("activityId") String activityId, @Param("eventType") String eventType);
+
   @Select("""
       SELECT COUNT(*) FROM activity_interest
       WHERE activity_id = #{activityId} AND user_id = #{userId}

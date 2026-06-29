@@ -16,10 +16,13 @@ import com.yuy.chatroom.event.ActivityInterestCreatedEvent;
 @Service
 public class ActivityInterestEventConsumer {
   private final ActivityInterestNotificationPublisher notificationPublisher;
+  private final ActivityHotScoreService hotScoreService;
   private final Logger log = LoggerFactory.getLogger(ActivityInterestEventConsumer.class);
 
-  public ActivityInterestEventConsumer(ActivityInterestNotificationPublisher notificationPublisher) {
+  public ActivityInterestEventConsumer(ActivityInterestNotificationPublisher notificationPublisher,
+      ActivityHotScoreService hotScoreService) {
     this.notificationPublisher = notificationPublisher;
+    this.hotScoreService = hotScoreService;
   }
 
   @RabbitListener(
@@ -40,6 +43,7 @@ public class ActivityInterestEventConsumer {
           event.getInitiatorUserId(),
           event.getInitiatorLocalSessionId(),
           event.getInterestCount());
+      hotScoreService.incrementInterestCreated(event.getActivityId(), event.getEventId());
       channel.basicAck(deliveryTag, false);
       log.info("Activity Interest event consumed: eventId={} activityId={}", event.getEventId(), event.getActivityId());
     } catch (Exception error) {

@@ -6,6 +6,13 @@ export type ActivityCategory = 'STUDY' | 'SPORTS' | 'GAME' | 'PROJECT' | 'WORKSH
 export type ActivityTimeMode = 'SCHEDULED' | 'ONGOING';
 export type ActivityStatus = 'DRAFT' | 'PUBLISHED' | 'EXPIRED' | 'CLOSED';
 
+export interface ActivityHotMetrics {
+  score: number;
+  detailViews: number;
+  participationMethodViews: number;
+  interestCount: number;
+}
+
 export interface ActivityResponse {
   id: string;
   title: string;
@@ -27,6 +34,7 @@ export interface ActivityResponse {
   interestedByCurrentIdentity: boolean;
   canExpressInterest: boolean;
   initiatedByCurrentIdentity: boolean;
+  hotMetrics: ActivityHotMetrics | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +42,7 @@ export interface ActivityResponse {
 export interface ActivityFeedResponse {
   upcoming: ActivityResponse[];
   ongoing: ActivityResponse[];
+  hot?: ActivityResponse[];
 }
 
 export interface ActivityPayload {
@@ -80,7 +89,7 @@ export async function recordSiteVisit(): Promise<void> {
   if (!response.ok) throw await parseError(response, `site visit status ${response.status}`);
 }
 
-export async function fetchActivityFeed(filters: { query?: string; category?: string; tag?: string } = {}): Promise<ActivityFeedResponse> {
+export async function fetchActivityFeed(filters: { query?: string; category?: string; tag?: string; sort?: 'hot' } = {}): Promise<ActivityFeedResponse> {
   const response = await fetch(buildApiUrl('/api/activities', filters), { headers: buildHeaders() });
   if (!response.ok) throw await parseError(response, `activities status ${response.status}`);
   return response.json();

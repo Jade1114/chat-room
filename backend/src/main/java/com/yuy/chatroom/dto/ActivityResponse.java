@@ -30,6 +30,7 @@ public class ActivityResponse {
   private boolean interestedByCurrentIdentity;
   private boolean canExpressInterest;
   private boolean initiatedByCurrentIdentity;
+  private ActivityHotMetrics hotMetrics;
   private Instant createdAt;
   private Instant updatedAt;
 
@@ -39,6 +40,13 @@ public class ActivityResponse {
 
   public static ActivityResponse from(Activity activity, boolean includeParticipationMethod,
       long interestCount, boolean interestedByCurrentIdentity, boolean initiatedByCurrentIdentity) {
+    return from(activity, includeParticipationMethod, interestCount, interestedByCurrentIdentity,
+        initiatedByCurrentIdentity, null);
+  }
+
+  public static ActivityResponse from(Activity activity, boolean includeParticipationMethod,
+      long interestCount, boolean interestedByCurrentIdentity, boolean initiatedByCurrentIdentity,
+      ActivityHotMetrics hotMetrics) {
     return new ActivityResponse(
         activity.getId(),
         activity.getTitle(),
@@ -60,6 +68,7 @@ public class ActivityResponse {
         interestedByCurrentIdentity,
         !initiatedByCurrentIdentity && !interestedByCurrentIdentity,
         initiatedByCurrentIdentity,
+        hotMetrics,
         activity.getCreatedAt(),
         activity.getUpdatedAt());
   }

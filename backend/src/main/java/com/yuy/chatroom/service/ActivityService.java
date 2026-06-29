@@ -3,12 +3,15 @@ package com.yuy.chatroom.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
 import com.yuy.chatroom.dto.ActivityFeedResponse;
+import com.yuy.chatroom.dto.ActivityHotMetrics;
 import com.yuy.chatroom.dto.ActivityResponse;
 import com.yuy.chatroom.dto.CreateActivityRequest;
 import com.yuy.chatroom.mapper.ActivityMapper;
@@ -26,36 +29,71 @@ public class ActivityService {
   private final ActivityMapper activityMapper;
   private final UserMapper userMapper;
   private final ActivityInterestEventPublisher interestEventPublisher;
+  private final ActivityHotScoreService hotScoreService;
 
   public ActivityService(ActivityMapper activityMapper, UserMapper userMapper,
-      ActivityInterestEventPublisher interestEventPublisher) {
+      ActivityInterestEventPublisher interestEventPublisher, ActivityHotScoreService hotScoreService) {
     this.activityMapper = activityMapper;
     this.userMapper = userMapper;
     this.interestEventPublisher = interestEventPublisher;
+    this.hotScoreService = hotScoreService;
   }
 
-  public ActivityFeedResponse getFeed(String query, String category, String tag) {
+  public ActivityFeedResponse getFeed(String query, String category, String tag, String sort) {
     Instant now = Instant.now();
     activityMapper.expireOutdated(now);
-    List<ActivityResponse> activities = activityMapper.findFeed(now, cleanOptional(query), cleanOptional(category), cleanOptional(tag))
-        .stream()
-        .map(activity -> ActivityResponse.from(activity, false, activityMapper.countInterests(activity.getId()), false, false))
-        .toList();
+    List<Activity> visibleActivities = activityMapper.findFeed(now, cleanOptional(query), cleanOptional(category), cleanOptional(tag));
+    List<ActivityResponse> activities = isHotSort(sort)
+        ? hotRankedResponses(visibleActivities)
+        : visibleActivities.stream()
+            .map(activity -> ActivityResponse.from(activity, false, activityMapper.countInterests(activity.getId()), false, false))
+            .toList();
     return new ActivityFeedResponse(
         activities.stream().filter(a -> "SCHEDULED".equals(a.getTimeMode())).toList(),
-        activities.stream().filter(a -> "ONGOING".equals(a.getTimeMode())).toList());
+        activities.stream().filter(a -> "ONGOING".equals(a.getTimeMode())).toList(),
+        isHotSort(sort) ? activities : List.of());
+  }
+
+  private List<ActivityResponse> hotRankedResponses(List<Activity> visibleActivities) {
+    Map<String, Activity> byId = new LinkedHashMap<>();
+    for (Activity activity : visibleActivities) {
+      byId.put(activity.getId(), activity);
+    }
+    return hotScoreService.rankActivityIds(visibleActivities.stream().map(Activity::getId).toList()).stream()
+        .map(byId::get)
+        .filter(activity -> activity != null)
+        .map(activity -> {
+          long interestCount = activityMapper.countInterests(activity.getId());
+          return ActivityResponse.from(activity, false, interestCount, false, false,
+              hotMetrics(activity.getId(), interestCount));
+        })
+        .toList();
+  }
+
+  private ActivityHotMetrics hotMetrics(String activityId, long interestCount) {
+    return new ActivityHotMetrics(
+        hotScoreService.score(activityId),
+        activityMapper.countActivityEvents(activityId, "DETAIL_VIEW"),
+        activityMapper.countActivityEvents(activityId, "PARTICIPATION_METHOD_VIEW"),
+        interestCount);
+  }
+
+  private boolean isHotSort(String sort) {
+    return "hot".equalsIgnoreCase(cleanOptional(sort));
   }
 
   public ActivityResponse getDetail(String activityId, String userId, String localSessionId) {
     associateLocalSessionToUser(userId, localSessionId);
     Activity activity = requireActivity(activityId);
     recordEvent(activityId, userId, localSessionId, "DETAIL_VIEW");
+    hotScoreService.incrementDetailView(activityId);
     return responseForIdentity(activity, false, userId, localSessionId);
   }
 
   public String revealParticipationMethod(String activityId, String userId, String localSessionId) {
     Activity activity = requireActivity(activityId);
     recordEvent(activityId, userId, localSessionId, "PARTICIPATION_METHOD_VIEW");
+    hotScoreService.incrementParticipationMethodView(activityId);
     return activity.getParticipationMethod();
   }
 

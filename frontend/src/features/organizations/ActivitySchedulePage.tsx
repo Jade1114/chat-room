@@ -4,7 +4,7 @@ import { Icon } from '../../components/Icon';
 import { fetchActivityFeed, recordSiteVisit, type ActivityResponse } from '../../lib/activityApi';
 import { activityTimeLabel, categoryLabels, categoryOptions, splitTags } from '../activities/activityView';
 
-type FeedTab = 'upcoming' | 'ongoing';
+type FeedTab = 'upcoming' | 'ongoing' | 'hot';
 
 const tabMeta: Record<FeedTab, { label: string; description: string; empty: string }> = {
   upcoming: {
@@ -16,11 +16,17 @@ const tabMeta: Record<FeedTab, { label: string; description: string; empty: stri
     label: '持续招募',
     description: '长期开放的组队、学习、项目和兴趣邀请。',
     empty: '当前筛选下没有持续招募的活动。'
+  },
+  hot: {
+    label: '热门活动',
+    description: '根据浏览、查看参与方式和感兴趣行为排序，看看哪些活动正在被关注。',
+    empty: '当前筛选下还没有热门活动。'
   }
 };
 
-function ActivityCard({ activity }: { activity: ActivityResponse }) {
+function ActivityCard({ activity, showHotMetrics = false }: { activity: ActivityResponse; showHotMetrics?: boolean }) {
   const tags = splitTags(activity.tags);
+  const metrics = activity.hotMetrics;
   return (
     <Link
       to="/activities/$activityId"
@@ -57,6 +63,16 @@ function ActivityCard({ activity }: { activity: ActivityResponse }) {
           <span className="truncate">{activity.location}</span>
         </span>
       </div>
+      {showHotMetrics && metrics && (
+        <div className="mt-4 rounded-2xl border border-accent-soft/70 bg-accent-wash px-3 py-2 text-xs text-accent-strong">
+          <span className="font-black">🔥 最近被关注：</span>
+          <span>{metrics.interestCount} 人感兴趣</span>
+          <span className="mx-1.5 text-accent-strong/50">·</span>
+          <span>{metrics.participationMethodViews} 次查看参与方式</span>
+          <span className="mx-1.5 text-accent-strong/50">·</span>
+          <span>{metrics.detailViews} 次浏览</span>
+        </div>
+      )}
       <div className="mt-4 flex flex-col gap-2 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">
         <span>发起人：{activity.initiatorDisplayName}</span>
         <span className="font-semibold text-accent-strong">查看参与方式 →</span>
@@ -85,6 +101,7 @@ export function ActivitySchedulePage() {
   const [activeTab, setActiveTab] = useState<FeedTab>('upcoming');
   const [upcoming, setUpcoming] = useState<ActivityResponse[]>([]);
   const [ongoing, setOngoing] = useState<ActivityResponse[]>([]);
+  const [hot, setHot] = useState<ActivityResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const activityFeedRef = useRef<HTMLDivElement | null>(null);
@@ -98,9 +115,10 @@ export function ActivitySchedulePage() {
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const filters = useMemo(() => ({ query, category, tag }), [query, category, tag]);
-  const activeActivities = activeTab === 'upcoming' ? upcoming : ongoing;
+  const activeActivities = activeTab === 'upcoming' ? upcoming : activeTab === 'ongoing' ? ongoing : hot;
   const currentTab = tabMeta[activeTab];
   const totalActivities = upcoming.length + ongoing.length;
+  const activeTabIndex = activeTab === 'upcoming' ? 0 : activeTab === 'ongoing' ? 1 : 2;
 
   useEffect(() => {
     void recordSiteVisit().catch(() => {
@@ -123,11 +141,15 @@ export function ActivitySchedulePage() {
     let cancelled = false;
     setLoading(true);
     setError('');
-    fetchActivityFeed(filters)
-      .then((data) => {
+    Promise.all([
+      fetchActivityFeed(filters),
+      fetchActivityFeed({ ...filters, sort: 'hot' })
+    ])
+      .then(([data, hotData]) => {
         if (!cancelled) {
           setUpcoming(data.upcoming);
           setOngoing(data.ongoing);
+          setHot(hotData.hot || []);
         }
       })
       .catch((err) => {
@@ -260,10 +282,14 @@ export function ActivitySchedulePage() {
         {!loading && error && <div className="rounded-3xl border border-danger/30 bg-danger/10 p-8 text-center text-sm text-danger">{error}</div>}
         {!loading && !error && (
           <section className="grid gap-5">
-            <div className="relative grid grid-cols-2 overflow-hidden rounded-[1.5rem] bg-active p-1">
-              <div className={`absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-2xl bg-card shadow-sm ring-1 ring-divider transition-transform duration-300 ease-out ${activeTab === 'ongoing' ? 'translate-x-full' : 'translate-x-0'}`} />
+            <div className="relative grid grid-cols-3 overflow-hidden rounded-[1.5rem] bg-active p-1">
+              <div
+                className="absolute inset-y-1 left-1 rounded-2xl bg-card shadow-sm ring-1 ring-divider transition-transform duration-300 ease-out"
+                style={{ width: 'calc(33.333333% - 0.25rem)', transform: `translateX(${activeTabIndex * 100}%)` }}
+              />
               <FeedTabButton active={activeTab === 'upcoming'} label="即将发生" count={upcoming.length} onClick={() => setActiveTab('upcoming')} />
               <FeedTabButton active={activeTab === 'ongoing'} label="持续招募" count={ongoing.length} onClick={() => setActiveTab('ongoing')} />
+              <FeedTabButton active={activeTab === 'hot'} label="热门" count={hot.length} onClick={() => setActiveTab('hot')} />
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
@@ -277,7 +303,7 @@ export function ActivitySchedulePage() {
             <div className="grid gap-4 lg:grid-cols-2">
               {activeActivities.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-divider bg-card p-8 text-sm text-muted lg:col-span-2">{currentTab.empty}</div>
-              ) : activeActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)}
+              ) : activeActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} showHotMetrics={activeTab === 'hot'} />)}
             </div>
           </section>
         )}

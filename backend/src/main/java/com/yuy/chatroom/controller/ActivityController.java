@@ -28,8 +28,9 @@ public class ActivityController {
   @GetMapping("/api/activities")
   public ResponseEntity<?> getFeed(@RequestParam(required = false) String query,
       @RequestParam(required = false) String category,
-      @RequestParam(required = false) String tag) {
-    return ResponseEntity.ok(activityService.getFeed(query, category, tag));
+      @RequestParam(required = false) String tag,
+      @RequestParam(required = false) String sort) {
+    return ResponseEntity.ok(activityService.getFeed(query, category, tag, sort));
   }
 
   @GetMapping("/api/activities/{activityId}")

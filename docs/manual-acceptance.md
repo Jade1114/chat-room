@@ -470,17 +470,60 @@ MVP 需要人工问：
 你会不会下次回来继续找事情？
 ```
 
-## 17. Next engineering acceptance: Hot Activity Ranking
+## 17. Slice 3B/3C: Hot Activity Ranking acceptance
 
 Slice 3 设计入口：`docs/engineering/activity-hot-ranking-design.md`。
 
-下一阶段验收不属于当前 Slice 2 commit，但边界已经确定：
+当前 Slice 3B 验收 Redis 写路径，Slice 3C 验收 Hot Feed 读路径和前端 `热门` tab。Redis key：
 
-- Redis 用于 `activity:hot_score` Sorted Set；
-- `DETAIL_VIEW`、`PARTICIPATION_METHOD_VIEW`、`ActivityInterestCreatedEvent` 会成为热度来源；
-- `GET /api/activities?sort=hot` 是第一版 API 形态；
-- Redis 是 derived read model，MySQL 仍是 source of truth；
-- Redis 失败不应阻塞 Activity 浏览、查看参与方式或表达兴趣。
+```text
+activity:hot_score
+```
+
+操作前可以清空本地热度分数：
+
+```bash
+redis-cli DEL activity:hot_score
+```
+
+验收：
+
+- 打开 Activity Detail 后，Redis Sorted Set 中该 Activity score 增加 1；
+- 点击 `查看参与方式` 后，该 Activity score 再增加 3；
+- 另一 Local Session 点击 `我感兴趣` 并触发 RabbitMQ `ActivityInterestCreatedEvent` 消费后，该 Activity score 再增加 5；
+- 重复 `我感兴趣` 不再增加 5；
+- Redis 写失败时，浏览详情、查看参与方式、表达兴趣仍应成功；
+- 当前还没有 `GET /api/activities?sort=hot`，这是 Slice 3C。
+
+检查命令：
+
+```bash
+redis-cli ZREVRANGE activity:hot_score 0 -1 WITHSCORES
+```
+
+Slice 3C API 验收：
+
+```bash
+curl -s 'http://localhost:8080/api/activities?sort=hot' \
+  -H 'X-Local-Session-Id: slice3-hot-read' \
+  | jq '.hot[] | {id,title,hotMetrics}'
+```
+
+期望：
+
+- `hot` 按 Redis hot score 排序；
+- `hot[]` 每项包含 `hotMetrics.score/detailViews/participationMethodViews/interestCount`，用于解释热门依据；
+- `upcoming` / `ongoing` 仍然存在，保持原 Feed response 兼容；
+- 关闭或过期 Activity 不会因为 Redis 里有分数而出现在 `hot`；
+- Redis 为空或读取失败时，`sort=hot` fallback 到默认 Feed 顺序。
+
+前端验收：
+
+- `/activities` 出现第三个 tab：`热门`；
+- 点击 `热门` 后展示 Hot Feed；
+- 热门卡片展示 `最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`；
+- 搜索、category、tag 过滤后，热门列表也跟随缩小；
+- 默认 `即将发生` / `持续招募` 行为不变。
 
 ## 18. Checklist
 
