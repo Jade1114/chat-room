@@ -202,12 +202,13 @@ Redis should not be required for the first single-instance realtime proof unless
 
 ### RabbitMQ
 
-Potential future responsibility:
+Delivered in Slice 2C:
 
-- move notification/hot-score/analytics side effects out of the HTTP request path;
-- publisher confirm after MySQL success;
-- consumer manual ack;
-- retry and DLQ for failed side effects.
+- moves Interest notification side effect out of the HTTP request path;
+- publishes after MySQL success;
+- uses publisher confirm;
+- consumes with manual ack;
+- routes invalid/failing events to DLQ.
 
 RabbitMQ must not decide whether Interest exists.
 
@@ -287,7 +288,7 @@ Accepted behavior:
 - publishing a new Activity does not realtime-sync the Feed; other users refresh manually;
 - backend/frontend compile/build pass.
 
-### Slice 2C: Async Interest event — implemented, pending acceptance
+### Slice 2C: Async Interest event — implemented and accepted
 
 Goal: move side effects out of the HTTP request path.
 
@@ -313,15 +314,16 @@ MySQL new Interest created
 
 Current implementation keeps the event payload anonymous: it contains Activity id/title, Initiator routing identity, interestCount, eventId, and occurredAt. It does not include the interested identity.
 
-Acceptance should include:
+Accepted behavior:
 
-- publisher confirm or documented publish-failure handling;
-- consumer manual ack;
-- retry behavior;
-- duplicate event idempotency;
-- notification still does not expose interested identity.
+- publisher confirm is enabled and logged;
+- consumer uses manual ack;
+- invalid/failing event is NACKed without requeue and goes to DLQ;
+- duplicate Interest does not publish a new event;
+- notification still does not expose interested identity;
+- Local Session Initiator can open `/me/activities` and close own Activity without JWT 401 after filter allow-list fixes.
 
-### Slice 2D: Multi-instance online routing
+### Slice 2D: Multi-instance online routing — deferred
 
 Goal: support more than one backend instance.
 
@@ -331,7 +333,13 @@ Possible implementation shape:
 - WebSocket connections remain local to each backend instance;
 - Interest event can reach the instance that owns the Initiator session.
 
-This should wait until single-instance behavior is accepted.
+Current decision:
+
+- do not implement this in the current single-instance MVP;
+- reopen when deployment actually runs multiple backend instances;
+- use Redis next in Slice 3 Hot Activity Ranking instead, because it directly improves Activity discovery.
+
+Next design: `docs/engineering/activity-hot-ranking-design.md`.
 
 ## 9. Suggested payload shape
 
@@ -343,7 +351,7 @@ Server-to-client WebSocket payload can be small:
   "activityId": "act-001",
   "activityTitle": "周五晚羽毛球缺 2 人",
   "interestCount": 3,
-  "message": "有人对你的 Activity 感兴趣"
+  "message": "有人对你的活动感兴趣"
 }
 ```
 

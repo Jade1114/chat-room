@@ -12,7 +12,7 @@ It exists to:
 
 - let Local Sessions and logged-in Users express lightweight interest without becoming a registration system;
 - give the Activity Initiator anonymous feedback;
-- introduce system-level engineering depth through identity handling, Redis hot-path protection, RabbitMQ side effects, and WebSocket targeted hints.
+- introduce system-level engineering depth through identity handling, RabbitMQ side effects, WebSocket targeted hints, and documented Redis deferral.
 
 It explicitly does **not** represent registration, confirmed participation, attendance, bookmark/favorite, or platform-internal communication.
 
@@ -32,7 +32,7 @@ It explicitly does **not** represent registration, confirmed participation, atte
 - Interested user/local-session lists are not exposed.
 - Interest Count is shown on Activity Detail and My Initiated Activities, not Feed cards.
 - MySQL is Interest source of truth.
-- Redis is hot-path protection and acceleration.
+- Redis is deferred from the Interest notification path until multi-instance routing or rate limiting becomes real product/ops pressure.
 - RabbitMQ carries async side effects after durable MySQL write.
 
 ---
@@ -93,7 +93,7 @@ Accepted behavior:
 - self-interest shows `宣传我的活动` and does not notify;
 - publishing a new Activity does not realtime-sync other users' Feed; users refresh Feed manually.
 
-### Slice 2C: RabbitMQ async side effects — implemented, pending acceptance
+### Slice 2C: RabbitMQ async side effects — implemented and accepted
 
 Includes:
 
@@ -111,14 +111,22 @@ Out of scope for Slice 2C unless explicitly reopened:
 - notification center / offline persistence;
 - interested identity exposure.
 
-### Slice 2D: Redis hot-path and multi-instance routing
+### Slice 2D: Redis hot-path and multi-instance routing — deferred
 
-Includes:
+Original idea:
 
 - Redis short-lived dedupe marker;
 - Redis rate limiting;
 - online session routing or pub/sub fanout for multiple backend instances;
 - fallback behavior when Redis is unavailable.
+
+Current decision:
+
+- do not continue adding Redis to the Interest notification path in the single-instance MVP;
+- revisit this only when multiple backend instances or real abuse/rate-limit pressure appears;
+- use Redis next through Slice 3 Hot Activity Ranking, where Sorted Set ranking directly supports Activity discovery.
+
+Next design: `docs/engineering/activity-hot-ranking-design.md`.
 
 ---
 

@@ -31,6 +31,7 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Activity event logging (DETAIL_VIEW / PARTICIPATION_METHOD_VIEW)
 - Activity Interest：`我感兴趣`、幂等计数、当前身份状态、自发起 Activity 不可点
 - Activity Interest 实时通知：发起者在线时收到匿名右上角通知卡片
+- Activity Interest RabbitMQ 异步事件管道：`ActivityInterestCreatedEvent`、publisher confirm、manual ack、DLQ
 - Activity-first frontend routes and navigation
 - legacy Organization / Channel / Chat 前端入口降级
 
@@ -45,6 +46,7 @@ login
 → 查看参与方式
 → 我感兴趣 / 已感兴趣
 → 发起者收到匿名 Interest 通知卡片
+→ RabbitMQ 异步投递 Interest notification side effect
 → DETAIL_VIEW / PARTICIPATION_METHOD_VIEW event logs
 → /activities/new publish
 → /me/activities
@@ -63,6 +65,7 @@ P3 Activity event logging                         ✅
 P4 Activity-first frontend routes and navigation  ✅
 P5 Manual acceptance                              ✅
 P6 Hide / downgrade legacy Organization routes    ✅
+P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 ```
 
 ---
@@ -101,7 +104,7 @@ P6 Hide / downgrade legacy Organization routes    ✅
 | 轨道 | 文档 | 当前 |
 |------|------|------|
 | 产品轨道 | 本文档 Section 5.1-5.3 | Phase 0（收集反馈） |
-| 工程轨道 | `docs/engineering/scenario-catalog.md` | 从 5 个候选场景中按需推进 |
+| 工程轨道 | `docs/engineering/scenario-catalog.md` | Slice 2 完成；下一步 Slice 3A Hot Activity Ranking 设计 |
 
 产品轨道验证"用户是否需要这个产品"。工程轨道把项目从 MySQL CRUD 升级为能证明你**会做系统**的证据——WebSocket 实时推送、RabbitMQ 事件管道、Redis 热缓存、并发安全加固、一致性边界文档。
 
@@ -154,6 +157,7 @@ P6 Hide / downgrade legacy Organization routes    ✅
 - Local Session 支持：未登录浏览器可表达兴趣；登录后可关联同浏览器 Local Session 的 Interest
 - 幂等与自发起保护：重复点击不重复计数，发起者不能给自己的 Activity 表达兴趣
 - Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名右上角提示卡片
+- RabbitMQ async side effects：把 Interest notification 从 HTTP 同步 side effect 拆成 `ActivityInterestCreated` 事件管道
 - Feed 手动刷新边界：发布新 Activity 不广播到其他用户 Feed
 
 **可能工作**：
@@ -162,7 +166,12 @@ P6 Hide / downgrade legacy Organization routes    ✅
 - 收藏 / 个人感兴趣列表（不同于当前会通知发起者的 Interest）
 - 发起者 profile / 历史发布
 - 真实反馈收集面板
-- RabbitMQ async side effects：把 Interest notification 从 HTTP 同步 side effect 拆成 `ActivityInterestCreated` 事件管道（工程轨道 Slice 2C）
+
+**工程轨道下一步（Slice 3）**：
+- Hot Activity Ranking：用 Redis Sorted Set 把浏览、查看参与方式、表达兴趣等行为转化为热门活动排序（设计入口：`docs/engineering/activity-hot-ranking-design.md`）
+
+**暂缓**：
+- Redis multi-instance notification routing：等出现多 backend 实例部署需求时再做，不在当前单实例 MVP 中硬塞进 notification 链路
 
 **Frank 映射**：参与链路 / 业务信息建模 / 从浏览到行动的转化
 

@@ -74,8 +74,8 @@ Auth / Local Session
 | MySQL | `localhost:3306` | 数据库名：`chat_room` |
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
-
-Redis / RabbitMQ may still exist as legacy infrastructure, but they are not part of Activity-first MVP acceptance.
+| RabbitMQ | `localhost:5672` / management `localhost:15673` | Slice 2C Interest notification side effect |
+| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking planned |
 
 ## 3. Local database reset
 
@@ -456,7 +456,7 @@ Slice 2C 把通知 side effect 从 HTTP 同步调用改成 RabbitMQ event pipeli
 Legacy capability：组织 / 频道 / 聊天不属于当前 Activity-first MVP 验收主线。
 ```
 
-## 15. Manual user feedback
+## 16. Manual user feedback
 
 MVP 需要人工问：
 
@@ -470,7 +470,19 @@ MVP 需要人工问：
 你会不会下次回来继续找事情？
 ```
 
-## 16. Checklist
+## 17. Next engineering acceptance: Hot Activity Ranking
+
+Slice 3 设计入口：`docs/engineering/activity-hot-ranking-design.md`。
+
+下一阶段验收不属于当前 Slice 2 commit，但边界已经确定：
+
+- Redis 用于 `activity:hot_score` Sorted Set；
+- `DETAIL_VIEW`、`PARTICIPATION_METHOD_VIEW`、`ActivityInterestCreatedEvent` 会成为热度来源；
+- `GET /api/activities?sort=hot` 是第一版 API 形态；
+- Redis 是 derived read model，MySQL 仍是 source of truth；
+- Redis 失败不应阻塞 Activity 浏览、查看参与方式或表达兴趣。
+
+## 18. Checklist
 
 ### Build
 
