@@ -16,6 +16,8 @@
 
 当前设计入口：`docs/engineering/activity-interest-notification-design.md`。先完成通知语义对齐，再进入单实例 WebSocket proof。
 
+明确非目标：Activity 发布后不做 Feed 实时同步。Feed 在 MVP 中是手动刷新模型，其他用户通过刷新 `/activities` 获取最新活动；不要为了新活动发布引入 Feed broadcast / 自动插入列表 / 新活动提示。
+
 ### 为什么需要核心技术
 
 | 需求 | 技术 | 为什么必须 |

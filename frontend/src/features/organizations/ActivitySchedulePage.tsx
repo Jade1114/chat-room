@@ -222,6 +222,7 @@ export function ActivitySchedulePage() {
             </p>
             <div className="mt-5 grid gap-3 sm:mt-6 sm:flex sm:flex-wrap">
               <Link to="/activities/new" className="rounded-2xl bg-accent px-5 py-3 text-center text-sm font-bold text-on-accent shadow-accent transition hover:bg-accent-hover">发起一件事情</Link>
+              <Link to="/me/activities" className="rounded-2xl border border-accent-soft bg-card px-5 py-3 text-center text-sm font-bold text-accent-strong transition hover:bg-accent-soft">查看我的活动</Link>
               <button type="button" onClick={handleBrowseCurrentActivities} className="rounded-2xl border border-divider bg-card px-5 py-3 text-center text-sm font-bold text-primary transition hover:border-accent-soft hover:text-accent-strong">浏览当前活动</button>
             </div>
           </div>

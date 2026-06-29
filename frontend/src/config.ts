@@ -1,5 +1,6 @@
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const configuredWsUrl = import.meta.env.VITE_WS_URL;
+const configuredNotificationWsUrl = import.meta.env.VITE_NOTIFICATION_WS_URL;
 
 function defaultWsUrl() {
   if (import.meta.env.DEV) {
@@ -10,7 +11,12 @@ function defaultWsUrl() {
   return `${protocol}//${window.location.host}/ws/chat`;
 }
 
+function defaultNotificationWsUrl() {
+  return defaultWsUrl().replace(/\/ws\/chat$/, '/ws/notifications');
+}
+
 // DEV: use relative URL so all requests go through Vite proxy (same-origin, no CORS)
 // Production: same-origin (frontend served from backend domain)
 export const apiBaseUrl = configuredApiBaseUrl ?? (import.meta.env.DEV ? '' : '');
 export const wsUrl = configuredWsUrl || defaultWsUrl();
+export const notificationWsUrl = configuredNotificationWsUrl || defaultNotificationWsUrl();

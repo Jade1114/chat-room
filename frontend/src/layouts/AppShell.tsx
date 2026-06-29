@@ -3,9 +3,19 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Icon } from '../components/Icon';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { useTheme } from '../features/theme/useTheme';
 import { currentUserAtom, isConnectedAtom } from '../state/chatAtoms';
 import { useAuth } from '../hooks/useAuth';
+import { useActivityNotifications } from '../hooks/useActivityNotifications';
 import type { UserRole } from '../types/chat';
 
 const roleLabel: Record<UserRole, string> = {
@@ -76,6 +86,51 @@ function SidebarNavigationItem({ item, pathname }: { item: NavigationItem; pathn
   );
 }
 
+function ActivityInterestDialog({
+  notification,
+  onDismiss
+}: {
+  notification: ReturnType<typeof useActivityNotifications>['notifications'][number] | undefined;
+  onDismiss: (id: string) => void;
+}) {
+  const open = Boolean(notification);
+
+  return (
+    <Dialog modal={false} open={open} onOpenChange={(nextOpen) => {
+      if (!nextOpen && notification) onDismiss(notification.id);
+    }}>
+      <DialogContent
+        showOverlay={false}
+        className="!left-auto !right-4 !top-4 !w-[min(380px,calc(100vw-2rem))] !max-w-none !translate-x-0 !translate-y-0 gap-3 rounded-3xl border-accent-soft bg-surface/95 p-4 shadow-card backdrop-blur"
+      >
+        {notification && (
+          <div className="flex items-start gap-3 pr-6">
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent-strong">
+              <Icon className="size-5"><path d="M12 21s-6-4.35-8.25-8.24A4.5 4.5 0 0 1 12 7.5a4.5 4.5 0 0 1 8.25 5.26C18 16.65 12 21 12 21Z" /></Icon>
+            </span>
+            <div className="min-w-0 flex-1">
+              <DialogHeader className="gap-1 text-left">
+                <DialogTitle className="text-sm">有人对你的活动感兴趣</DialogTitle>
+                <DialogDescription className="text-xs leading-5">
+                  《{notification.activityTitle}》现在有 {notification.interestCount} 个感兴趣。
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="mt-3 flex-row justify-start gap-2 sm:justify-start">
+                <Button type="button" size="sm" variant="outline" onClick={() => onDismiss(notification.id)}>
+                  我知道了
+                </Button>
+                <Button asChild size="sm" onClick={() => onDismiss(notification.id)}>
+                  <Link to="/me/activities">查看我的活动</Link>
+                </Button>
+              </DialogFooter>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function AppShell() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -86,6 +141,7 @@ export function AppShell() {
   const { restoreSession, logout } = useAuth();
   const [checking, setChecking] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { notifications, removeNotification } = useActivityNotifications(!checking, currentUser?.id ?? 'local-session');
 
   useEffect(() => {
     let cancelled = false;
@@ -113,7 +169,12 @@ export function AppShell() {
   }
 
   if (!currentUser) {
-    return <Outlet />;
+    return (
+      <>
+        <ActivityInterestDialog notification={notifications[0]} onDismiss={removeNotification} />
+        <Outlet />
+      </>
+    );
   }
 
   const userTitle = `${currentUser.displayName} · ${roleLabel[currentUser.role]}`;
@@ -125,6 +186,7 @@ export function AppShell() {
 
   return (
     <main className="min-h-screen bg-app text-primary">
+      <ActivityInterestDialog notification={notifications[0]} onDismiss={removeNotification} />
       <div className="grid min-h-screen grid-cols-[320px_minmax(0,1fr)] max-lg:grid-cols-[minmax(0,1fr)]">
         <aside className="flex h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
           <section className="shrink-0">

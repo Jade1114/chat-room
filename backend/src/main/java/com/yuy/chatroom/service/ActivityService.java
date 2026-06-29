@@ -25,10 +25,13 @@ public class ActivityService {
 
   private final ActivityMapper activityMapper;
   private final UserMapper userMapper;
+  private final ActivityInterestNotificationPublisher interestNotificationPublisher;
 
-  public ActivityService(ActivityMapper activityMapper, UserMapper userMapper) {
+  public ActivityService(ActivityMapper activityMapper, UserMapper userMapper,
+      ActivityInterestNotificationPublisher interestNotificationPublisher) {
     this.activityMapper = activityMapper;
     this.userMapper = userMapper;
+    this.interestNotificationPublisher = interestNotificationPublisher;
   }
 
   public ActivityFeedResponse getFeed(String query, String category, String tag) {
@@ -139,21 +142,28 @@ public class ActivityService {
       throw new SecurityException("不能对自己发起的活动表达兴趣");
     }
 
+    boolean createdNewInterest = false;
     if (cleanedUserId != null) {
       boolean alreadyByUser = activityMapper.hasUserInterest(activityId, cleanedUserId) > 0;
       if (!alreadyByUser && cleanedLocalSessionId != null
           && activityMapper.hasLocalSessionInterest(activityId, cleanedLocalSessionId) > 0) {
         activityMapper.associateLocalSessionInterest(activityId, cleanedLocalSessionId, cleanedUserId, Instant.now());
       } else if (!alreadyByUser) {
-        activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
-            activityId, cleanedUserId, cleanedLocalSessionId, Instant.now());
+        createdNewInterest = activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
+            activityId, cleanedUserId, cleanedLocalSessionId, Instant.now()) > 0;
       }
     } else {
-      activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
-          activityId, null, cleanedLocalSessionId, Instant.now());
+      createdNewInterest = activityMapper.insertInterest("int-" + UUID.randomUUID().toString().substring(0, 12),
+          activityId, null, cleanedLocalSessionId, Instant.now()) > 0;
     }
 
-    return responseForIdentity(activityMapper.findById(activityId), false, cleanedUserId, cleanedLocalSessionId);
+    Activity updatedActivity = activityMapper.findById(activityId);
+    long interestCount = activityMapper.countInterests(activityId);
+    if (createdNewInterest) {
+      interestNotificationPublisher.publishNewInterest(updatedActivity, interestCount);
+    }
+
+    return responseForIdentity(updatedActivity, false, cleanedUserId, cleanedLocalSessionId);
   }
 
   private ActivityResponse responseForIdentity(Activity activity, boolean includeParticipationMethod,

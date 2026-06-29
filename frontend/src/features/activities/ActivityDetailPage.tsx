@@ -56,10 +56,15 @@ export function ActivityDetailPage() {
   return (
     <div className="min-h-screen bg-content px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-4xl">
-        <Link to="/activities" className="mb-4 inline-flex items-center gap-2 rounded-full border border-divider bg-card px-4 py-2 text-sm font-semibold text-muted transition hover:border-accent-soft hover:text-accent-strong sm:mb-6">
-          <Icon className="size-4"><path d="m15 18-6-6 6-6" /></Icon>
-          返回发现事情
-        </Link>
+        <div className="mb-4 flex flex-wrap gap-3 sm:mb-6">
+          <Link to="/activities" className="inline-flex items-center gap-2 rounded-full border border-divider bg-card px-4 py-2 text-sm font-semibold text-muted transition hover:border-accent-soft hover:text-accent-strong">
+            <Icon className="size-4"><path d="m15 18-6-6 6-6" /></Icon>
+            返回发现事情
+          </Link>
+          <Link to="/me/activities" className="inline-flex items-center gap-2 rounded-full border border-accent-soft bg-card px-4 py-2 text-sm font-semibold text-accent-strong transition hover:bg-accent-soft">
+            查看我的活动
+          </Link>
+        </div>
 
         <article className="overflow-hidden rounded-[1.5rem] border border-divider bg-card shadow-panel sm:rounded-[2.25rem]">
           <section className="relative overflow-hidden border-b border-divider bg-elevated p-5 sm:p-7">

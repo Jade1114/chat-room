@@ -144,6 +144,30 @@ For the first realtime slice:
 
 This keeps Slice 2 narrow. Offline notification persistence can become a later feature if product feedback shows it matters.
 
+### Non-goal: realtime Activity Feed synchronization
+
+Publishing an Activity does not broadcast realtime Feed updates in the MVP.
+
+Activity Feed is intentionally pull-based:
+
+```text
+User wants latest Activities
+→ user manually refreshes the Feed
+→ frontend calls GET /api/activities
+→ MySQL returns the current Activity list
+```
+
+This is a product boundary, not a missing realtime feature. New Activity publication has weaker immediacy than `有人对你的活动感兴趣`; users can refresh the Feed when they want the latest list.
+
+This slice must not add:
+
+- Feed WebSocket broadcast;
+- automatic insertion of newly published Activities into other users' lists;
+- "new Activity published" notification hints;
+- filter-aware realtime Feed merging.
+
+Those behaviors can be reconsidered later only if the product explicitly becomes a realtime Activity square. For the current MVP, manual refresh keeps the Feed simpler and avoids disturbing search/category/tag state.
+
 ## 6. System responsibility boundaries
 
 ### MySQL
