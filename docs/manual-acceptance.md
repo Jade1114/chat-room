@@ -470,11 +470,11 @@ MVP 需要人工问：
 你会不会下次回来继续找事情？
 ```
 
-## 17. Slice 3B/3C: Hot Activity Ranking acceptance
+## 17. Slice 3B/3C/3D: Hot Activity Ranking acceptance
 
 Slice 3 设计入口：`docs/engineering/activity-hot-ranking-design.md`。
 
-当前 Slice 3B 验收 Redis 写路径，Slice 3C 验收 Hot Feed 读路径和前端 `热门` tab。Redis key：
+当前 Slice 3B 验收 Redis 写路径，Slice 3C 验收 Hot Feed 读路径和前端 `热门` tab，Slice 3D 验收 Redis 派生读模型的恢复边界。Redis key：
 
 ```text
 activity:hot_score
@@ -493,7 +493,7 @@ redis-cli DEL activity:hot_score
 - 另一 Local Session 点击 `我感兴趣` 并触发 RabbitMQ `ActivityInterestCreatedEvent` 消费后，该 Activity score 再增加 5；
 - 重复 `我感兴趣` 不再增加 5；
 - Redis 写失败时，浏览详情、查看参与方式、表达兴趣仍应成功；
-- 当前还没有 `GET /api/activities?sort=hot`，这是 Slice 3C。
+- Redis 为空时，`GET /api/activities?sort=hot` fallback 到默认 Feed 顺序。
 
 检查命令：
 
@@ -524,6 +524,15 @@ curl -s 'http://localhost:8080/api/activities?sort=hot' \
 - 热门卡片展示 `最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`；
 - 搜索、category、tag 过滤后，热门列表也跟随缩小；
 - 默认 `即将发生` / `持续招募` 行为不变。
+
+Slice 3D 边界：
+
+- 当前不实现 rebuild script / admin rebuild endpoint；
+- MySQL 的 `activity_event` / `activity_interest` 是持久化事实；
+- Redis `activity:hot_score` 是可丢失、可恢复的派生读模型；
+- Redis 清空后，Hot Feed 允许短暂冷启动并 fallback；
+- 后续新行为会继续写入 Redis；
+- 只有当 Hot Feed 成为关键入口、不能接受冷启动时，才引入 scheduled rebuild job / admin rebuild endpoint / batch script。
 
 ## 18. Checklist
 

@@ -41,7 +41,7 @@ Engineering evidence:
 - Redis Sorted Set for ranking;
 - MySQL source of truth + Redis derived read model;
 - event-driven score updates;
-- fallback/rebuild boundary when Redis is unavailable or empty;
+- fallback/recovery boundary when Redis is unavailable or empty;
 - explainable consistency tradeoff.
 
 ---
@@ -103,7 +103,7 @@ Owns durable facts:
 - Activity rows and status;
 - `activity_event` rows;
 - `activity_interest` rows;
-- rebuild source for hot score.
+- recovery source for hot score if a future rebuild job becomes necessary.
 
 ### Redis
 
@@ -144,7 +144,7 @@ Hot ranking is eventually consistent.
 Accepted tradeoffs:
 
 - losing a small number of view increments is acceptable;
-- MySQL remains able to rebuild approximate hot scores from event logs and interest rows;
+- MySQL remains the durable source that can explain and, if later needed, reconstruct hot scores from event logs and interest rows;
 - Redis downtime must not block Activity Detail, participation reveal, or Interest creation;
 - Feed `sort=hot` should fall back to normal time ordering if Redis is unavailable or empty.
 
@@ -207,21 +207,25 @@ Acceptance:
 - Hot Feed response includes `hotMetrics.score`, `hotMetrics.detailViews`, `hotMetrics.participationMethodViews`, and `hotMetrics.interestCount`;
 - frontend Hot cards show a lightweight explanation such as `最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`.
 
-### Slice 3D: Rebuild / operations boundary
+### Slice 3D: Persistence and Redis recovery boundary — documented
 
-Goal: document and optionally implement hot-score rebuild.
+Goal: close the architecture boundary without adding an operations script in the current slice.
 
-Includes:
+Decision:
 
-- script or admin-only operation to rebuild `activity:hot_score` from MySQL events and interests;
-- manual RabbitMQ/Redis smoke commands;
-- notes for demo reset.
+- no rebuild script/job is implemented now;
+- MySQL persists the durable facts: `activity_event` and `activity_interest`;
+- Redis `activity:hot_score` is a derived read model for low-latency ranking;
+- if Redis is empty or unavailable, `sort=hot` falls back to the default Feed order;
+- after Redis recovers, new user behavior continues to repopulate hot scores;
+- a scheduled rebuild job, admin rebuild endpoint, or batch script is deferred until Hot Activity becomes a critical product surface.
 
-Acceptance:
+Future trigger conditions:
 
-- Redis hot-score key can be deleted;
-- rebuild reconstructs scores from durable records;
-- product actions still work while Redis is empty.
+- Hot Feed becomes the primary discovery entry and cannot cold-start empty;
+- Redis flush/restart must immediately recover historical hot scores;
+- operations or demo reset flows need a repeatable rebuild command;
+- data volume requires offline/batch recalculation.
 
 ---
 
@@ -264,7 +268,7 @@ Rules:
 - `热门` calls `GET /api/activities?sort=hot`;
 - no realtime Feed updates;
 - no personalized recommendations;
-- no explanation-heavy score display in first version.
+- show lightweight explanation only in the Hot tab (`最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`), not raw score math.
 
 Optional small copy:
 
