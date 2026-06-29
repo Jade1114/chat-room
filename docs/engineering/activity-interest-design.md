@@ -65,30 +65,51 @@ Excludes:
 - Feed card count;
 - notification center.
 
-### Slice 2A: Notification semantics design — current
+### Slice 2A: Notification semantics design — accepted
 
 Design doc: `docs/engineering/activity-interest-notification-design.md`.
 
 This slice defines targeted Interest Notification semantics before implementation: who receives the hint, what identity stays hidden, when duplicate clicks do not notify, and how online/offline behavior works.
 
-### Slice 2B: Single-instance WebSocket targeted hint
+### Slice 2B: Single-instance WebSocket targeted hint — accepted
 
-Includes:
+Delivered:
 
-- `/ws/notifications` or an equivalent notification socket;
+- `/ws/notifications` notification socket;
+- optional JWT + `localSessionId` handshake;
 - userId session registry;
 - localSessionId session registry;
-- anonymous real-time hint delivered to Initiator identity after a new durable Interest is created;
-- no RabbitMQ/Redis requirement yet unless needed by implementation constraints.
+- anonymous right-top notification card delivered to Initiator identity after a new durable Interest is created;
+- `GET /api/me/activities` public filter pass-through so Local Session initiators can open `查看我的活动`;
+- no RabbitMQ/Redis requirement.
 
-### Slice 2C: RabbitMQ async side effects
+Accepted behavior:
+
+- A creates or owns an Activity and keeps the app open;
+- B uses another browser/local session and clicks `我感兴趣`;
+- A sees one non-blocking notification card;
+- B refreshes and still sees `已感兴趣`;
+- repeated click/request does not notify again;
+- self-interest shows `宣传我的活动` and does not notify;
+- publishing a new Activity does not realtime-sync other users' Feed; users refresh Feed manually.
+
+### Slice 2C: RabbitMQ async side effects — implemented, pending acceptance
 
 Includes:
 
 - publish `ActivityInterestCreated` after MySQL success;
-- update Redis count/hot score;
-- record `INTEREST_EXPRESSED` analytics event;
-- publisher confirm, manual ack, retry, DLQ.
+- consumer sends the already-accepted WebSocket notification side effect;
+- publisher confirm or explicit publish-failure handling;
+- consumer manual ack;
+- retry / DLQ boundary;
+- duplicate event idempotency.
+
+Out of scope for Slice 2C unless explicitly reopened:
+
+- Redis count/hot score;
+- multi-instance WebSocket routing;
+- notification center / offline persistence;
+- interested identity exposure.
 
 ### Slice 2D: Redis hot-path and multi-instance routing
 

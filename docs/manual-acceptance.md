@@ -2,7 +2,7 @@
 
 > 目的：用轻量手动验收证明 Activity-first MVP 主链路可运行、可观察、可解释。
 >
-> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知或平台内报名。
+> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知中心或平台内报名。当前只验收 Activity Interest 的在线匿名提示卡片。
 
 ## 1. Acceptance scope
 
@@ -40,10 +40,12 @@ Auth / Local Session
 - 刷新同一浏览器后保持 `已感兴趣`；
 - 重复点击不重复增加 `interestCount`；
 - 自己发起的 Activity 显示 `宣传我的活动`，不能表达兴趣；
+- 发起者在线时收到匿名 Interest 通知卡片；
 - Activity Detail 与 `/me/activities` 展示 `interestCount`；
 - 发布 Activity；
 - 关闭自己发布的 Activity；
-- `/me/activities` 展示我的发布；
+- 未登录 Local Session 发起者关闭 Activity 不应出现 `close activity status 401`；
+- `/me/activities` 展示我的发布，并支持未登录 Local Session 访问；
 - 过期 / 关闭 Activity 不进入默认 Feed；
 - 前端构建和后端编译；
 - Organization / Channel / Chat 入口被降级为 legacy，不影响 MVP 第一印象。
@@ -251,7 +253,8 @@ test001 / 123456
 - tab 数量正确；
 - 默认只展示仍有效的 `PUBLISHED` Activities；
 - `SCHEDULED` Activities 按 startTime 升序；
-- `ONGOING` Activities 按 createdAt 倒序。
+- `ONGOING` Activities 按 createdAt 倒序；
+- 新发布 Activity 不会实时同步到其他用户 Feed，其他用户通过手动刷新 `/activities` 获取最新列表。
 
 ## 8. Search / filter acceptance
 
@@ -314,7 +317,47 @@ test001 / 123456
 - 行为记录为 `PARTICIPATION_METHOD_VIEW`；
 - 该行为不创建报名关系、不进入“我参与”。
 
-## 11. Publish Activity acceptance
+## 11. Activity Interest and realtime notification acceptance
+
+两个浏览器 / 两个本地身份：
+
+```text
+A = Activity 发起者，保持应用在线
+B = 另一浏览器或清理过 chat_room_local_session_id 的 Local Session
+```
+
+操作：
+
+```text
+B 打开 A 的 Activity Detail
+→ B 点击 `我感兴趣`
+```
+
+期望：
+
+- B 的按钮变成 `已感兴趣`；
+- B 刷新后仍然是 `已感兴趣`；
+- `interestCount` 增加一次；
+- B 重复点击 / 重复请求不重复增加 `interestCount`；
+- A 看到右上角非阻断通知卡片：`有人对你的活动感兴趣`；
+- 通知卡片只展示 Activity title / interestCount，不展示 interested identity；
+- 通知卡片的 `查看我的活动` 可以进入 `/me/activities`；
+- A 打开自己发起的 Activity Detail 时显示 `宣传我的活动`，不能点击 `我感兴趣`；
+- A 不会因为自发起 Activity 或重复 Interest 收到通知。
+
+### RabbitMQ Slice 2C smoke
+
+Slice 2C 把通知 side effect 从 HTTP 同步调用改成 RabbitMQ event pipeline。验收时 RabbitMQ 需要处于运行状态。
+
+期望：
+
+- B 点击 `我感兴趣` 后，A 仍然收到同样的右上角通知卡片；
+- HTTP response 仍然以 MySQL durable Interest 为准，B 看到 `已感兴趣`；
+- RabbitMQ 中应存在 `activity.interest.created.queue` 和 `activity.interest.created.dlq`；
+- 正常事件消费后 `activity.interest.created.queue` 不应积压消息；
+- consumer 采用 manual ack，失败事件进入 DLQ 而不是回滚 Interest。
+
+## 12. Publish Activity acceptance
 
 打开：
 
@@ -343,7 +386,7 @@ test001 / 123456
 - 不上传图片；
 - 出现在对应 Feed 分区。
 
-## 12. Activity lifecycle acceptance
+## 13. Activity lifecycle acceptance
 
 ### Ongoing max duration
 
@@ -359,6 +402,8 @@ test001 / 123456
 期望：
 
 - status 变为 `CLOSED`；
+- 未登录 Local Session 发起者关闭时不出现 `close activity status 401`；
+- 非发起者关闭返回 403；
 - 不再出现在默认 Feed；
 - 仍可在我的发布中看到。
 
@@ -370,7 +415,7 @@ test001 / 123456
 - 不出现在默认 Feed；
 - 不自动回到 `DRAFT`。
 
-## 13. My initiated Activities acceptance
+## 14. My initiated Activities acceptance
 
 打开：
 
@@ -380,7 +425,8 @@ test001 / 123456
 
 期望：
 
-- 只展示当前用户发起的 Activities；
+- 只展示当前登录用户或当前 Local Session 发起的 Activities；
+- 未登录 Local Session 访问不应出现 `my activities status 401`；
 - 展示 `PUBLISHED` / `EXPIRED` / `CLOSED` / `DRAFT` 状态；
 - 可进入详情；
 - 可关闭 `PUBLISHED`。
@@ -391,7 +437,7 @@ test001 / 123456
 - 展示我收藏的；
 - 展示我查看过联系方式的。
 
-## 14. Legacy routes acceptance
+## 15. Legacy routes acceptance
 
 主导航不展示 Organization / Channel / Chat。
 

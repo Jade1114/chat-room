@@ -28,14 +28,23 @@ public class ActivityInterestNotificationPublisher {
       return;
     }
 
+    publishHint(activity.getId(), activity.getTitle(), activity.getCreatedByUserId(), activity.getCreatedByLocalSessionId(), interestCount);
+  }
+
+  public void publishHint(String activityId, String activityTitle, String initiatorUserId,
+      String initiatorLocalSessionId, long interestCount) {
+    if (activityId == null || activityId.isBlank()) {
+      return;
+    }
+
     Map<String, Object> payload = Map.of(
         "type", "ACTIVITY_INTEREST_HINT",
-        "activityId", activity.getId(),
-        "activityTitle", activity.getTitle(),
+        "activityId", activityId,
+        "activityTitle", activityTitle == null ? "你的活动" : activityTitle,
         "interestCount", interestCount,
-        "message", "有人对你的 Activity 感兴趣");
+        "message", "有人对你的活动感兴趣");
 
-    Set<WebSocketSession> sessions = sessionsForInitiator(activity);
+    Set<WebSocketSession> sessions = sessionsForInitiator(initiatorUserId, initiatorLocalSessionId);
     if (sessions.isEmpty()) {
       return;
     }
@@ -46,15 +55,15 @@ public class ActivityInterestNotificationPublisher {
         send(session, serialized);
       }
     } catch (Exception error) {
-      log.warn("Activity Interest notification serialization failed: activityId={}", activity.getId(), error);
+      log.warn("Activity Interest notification serialization failed: activityId={}", activityId, error);
     }
   }
 
-  private Set<WebSocketSession> sessionsForInitiator(Activity activity) {
-    if (activity.getCreatedByUserId() != null && !activity.getCreatedByUserId().isBlank()) {
-      return notificationSessionManager.getSessionsForUser(activity.getCreatedByUserId());
+  private Set<WebSocketSession> sessionsForInitiator(String initiatorUserId, String initiatorLocalSessionId) {
+    if (initiatorUserId != null && !initiatorUserId.isBlank()) {
+      return notificationSessionManager.getSessionsForUser(initiatorUserId);
     }
-    return notificationSessionManager.getSessionsForLocalSession(activity.getCreatedByLocalSessionId());
+    return notificationSessionManager.getSessionsForLocalSession(initiatorLocalSessionId);
   }
 
   private void send(WebSocketSession session, String payload) {

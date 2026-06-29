@@ -25,13 +25,13 @@ public class ActivityService {
 
   private final ActivityMapper activityMapper;
   private final UserMapper userMapper;
-  private final ActivityInterestNotificationPublisher interestNotificationPublisher;
+  private final ActivityInterestEventPublisher interestEventPublisher;
 
   public ActivityService(ActivityMapper activityMapper, UserMapper userMapper,
-      ActivityInterestNotificationPublisher interestNotificationPublisher) {
+      ActivityInterestEventPublisher interestEventPublisher) {
     this.activityMapper = activityMapper;
     this.userMapper = userMapper;
-    this.interestNotificationPublisher = interestNotificationPublisher;
+    this.interestEventPublisher = interestEventPublisher;
   }
 
   public ActivityFeedResponse getFeed(String query, String category, String tag) {
@@ -160,7 +160,7 @@ public class ActivityService {
     Activity updatedActivity = activityMapper.findById(activityId);
     long interestCount = activityMapper.countInterests(activityId);
     if (createdNewInterest) {
-      interestNotificationPublisher.publishNewInterest(updatedActivity, interestCount);
+      interestEventPublisher.publishCreated(updatedActivity, interestCount);
     }
 
     return responseForIdentity(updatedActivity, false, cleanedUserId, cleanedLocalSessionId);

@@ -51,6 +51,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         || ("POST".equals(request.getMethod()) && path.equals("/api/site-events/visit"))
         || ("GET".equals(request.getMethod()) && path.equals("/api/me/activities"))
         || ("GET".equals(request.getMethod()) && path.matches("^/api/activities/[^/]+$"))
+        || ("POST".equals(request.getMethod()) && path.matches("^/api/activities/[^/]+/close$"))
         || ("POST".equals(request.getMethod()) && path.matches("^/api/activities/[^/]+/participation-method$"))
         || ("POST".equals(request.getMethod()) && path.matches("^/api/activities/[^/]+/interest$"))) {
       // /api/me and /api/mock-users are transitional — still accept query param userId

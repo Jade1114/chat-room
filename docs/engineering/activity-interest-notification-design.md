@@ -32,7 +32,7 @@ A publishes an Activity
 B opens the Activity Detail page
 B clicks `我感兴趣`
 A is currently online in the same browser/session or as a logged-in User
-A receives an anonymous hint: `有人对你的 Activity 感兴趣`
+A receives an anonymous hint card: `有人对你的活动感兴趣`
 ```
 
 The hint helps A notice that the Activity has traction. It does **not** turn the product into registration, private messaging, attendance tracking, or an in-platform contact system.
@@ -111,7 +111,7 @@ The interested identity is anonymous in the first version. The notification must
 The UI may say:
 
 ```text
-有人对你的 Activity 感兴趣
+有人对你的活动感兴趣
 ```
 
 or, with title context:
@@ -247,9 +247,7 @@ For this product, the preferred direction is: durable Interest first, side effec
 
 ## 8. Delivery slices
 
-### Slice 2A: Notification semantics design
-
-Status: current document.
+### Slice 2A: Notification semantics design — accepted
 
 Deliverable:
 
@@ -262,32 +260,34 @@ Deliverable:
 
 No production code in this slice.
 
-### Slice 2B: Single-instance realtime hint
+### Slice 2B: Single-instance realtime hint — accepted
 
-Goal: prove the user-facing realtime behavior with the smallest running implementation.
-
-Possible implementation shape:
+Delivered implementation:
 
 ```text
 POST /api/activities/{activityId}/interest
 → service attempts durable MySQL insert
-→ service knows whether a new row was created
-→ if new row created, call in-process NotificationPublisher
-→ WebSocket sends anonymous hint to Initiator sessions
+→ service records whether a new row was created
+→ if new row created, publish in-process Activity Interest notification
+→ /ws/notifications sends anonymous hint to Initiator sessions
+→ frontend shows a non-blocking right-top notification card
 ```
 
-This slice may avoid RabbitMQ and Redis if the app is running as one backend instance. The purpose is to validate the product behavior first.
+This slice intentionally avoids RabbitMQ and Redis because the product behavior is validated in a single backend instance first.
 
-Acceptance:
+Accepted behavior:
 
-- A opens a page with notification WebSocket connected;
+- A opens the app with `/ws/notifications` connected;
 - B uses another browser/local session and clicks `我感兴趣`;
-- A receives anonymous hint;
-- B repeats click and A does not receive a second hint;
+- A receives one anonymous right-top notification card;
+- the card exposes Activity title/count but no interested identity;
+- `查看我的活动` opens `/me/activities` for both logged-in and Local Session initiators;
+- B repeats click/request and A does not receive a second hint;
 - A does not receive a hint for self-interest attempt;
+- publishing a new Activity does not realtime-sync the Feed; other users refresh manually;
 - backend/frontend compile/build pass.
 
-### Slice 2C: Async Interest event
+### Slice 2C: Async Interest event — implemented, pending acceptance
 
 Goal: move side effects out of the HTTP request path.
 
@@ -301,6 +301,17 @@ MySQL new Interest created
 ```
 
 This is where RabbitMQ belongs.
+
+Implemented shape:
+
+```text
+MySQL new Interest created
+→ publish ActivityInterestCreatedEvent to activity.interest.exchange
+→ activity.interest.created.queue consumer manually ACKs after WebSocket notification side effect
+→ invalid/failing events are NACKed without requeue and routed to activity.interest.created.dlq
+```
+
+Current implementation keeps the event payload anonymous: it contains Activity id/title, Initiator routing identity, interestCount, eventId, and occurredAt. It does not include the interested identity.
 
 Acceptance should include:
 
@@ -340,18 +351,20 @@ Do not include interested identity fields.
 
 ## 10. UI placement options
 
-First version should be simple:
+First accepted UX:
 
-- toast / small banner while A is online;
-- optionally refresh `interestCount` on the current page if the Activity is visible;
+- shadcn/Radix-based non-modal notification card;
+- positioned at the top-right of the app;
+- no blocking overlay;
 - no notification center;
 - no unread badge;
 - no inbox.
 
-Good first UX:
+Accepted copy:
 
 ```text
-toast: 有人对《周五晚羽毛球缺 2 人》感兴趣
+有人对你的活动感兴趣
+《周五晚羽毛球缺 2 人》现在有 3 个感兴趣。
 button/link: 查看我的活动
 ```
 

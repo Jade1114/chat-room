@@ -318,6 +318,7 @@ X-Local-Session-Id: <local-session-id>
 
 Rules:
 
+- endpoint is public-filtered in `JwtAuthFilter`: Local Session initiators can close without JWT;
 - only the initiator may close;
 - status becomes `CLOSED`;
 - closed Activity is not shown in default Feed.
@@ -347,11 +348,40 @@ Response:
 ]
 ```
 
-This endpoint returns only Activities initiated by the current logged-in User or current browser Local Session.
+This endpoint returns only Activities initiated by the current logged-in User or current browser Local Session. It is public-filtered in `JwtAuthFilter`: no JWT is required when `X-Local-Session-Id` is present.
 
 It does not return joined, interested, favorited, or contact-viewed Activities.
 
-## 12. Activity events
+## 12. Activity Interest notification WebSocket
+
+```http
+GET /ws/notifications?localSessionId=<local-session-id>&token=<jwt optional>
+```
+
+Rules:
+
+- connection must carry either a valid `token` or `localSessionId`;
+- server indexes sessions by logged-in `userId` and/or Local Session id;
+- after a new durable `activity_interest` row is created, the Initiator receives an anonymous hint;
+- duplicate Interest calls and self-interest conflicts do not emit hints;
+- notification payload must not include interested `userId`, `localSessionId`, display name, profile, or contact method;
+- notification is best-effort online delivery, not offline persistence.
+
+Server-to-client payload:
+
+```json
+{
+  "type": "ACTIVITY_INTEREST_HINT",
+  "activityId": "act-001",
+  "activityTitle": "周五晚羽毛球缺 2 人",
+  "interestCount": 3,
+  "message": "有人对你的活动感兴趣"
+}
+```
+
+Frontend displays this as a non-modal right-top notification card with a `查看我的活动` action.
+
+## 13. Activity events
 
 Activity events are internal validation logs.
 
@@ -374,7 +404,7 @@ Minimum fields:
 
 No analytics dashboard is required for MVP.
 
-## 13. Legacy APIs
+## 14. Legacy APIs
 
 Organization, Membership, Channel, WebSocket chat, unread, and presence APIs may still exist in code.
 

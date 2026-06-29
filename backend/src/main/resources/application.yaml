@@ -23,6 +23,8 @@ spring:
     username: ${CHAT_ROOM_RABBITMQ_USERNAME}
     password: ${CHAT_ROOM_RABBITMQ_PASSWORD}
     virtual-host: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST}
+    publisher-confirm-type: correlated
+    publisher-returns: true
 
 mybatis:
   configuration:
