@@ -136,8 +136,13 @@ Activity 不要求来自社团。
 - 发布 Activity；
 - 关闭自己发布的 Activity；
 - 查看参与方式；
+- Activity Interest：`我感兴趣` / `已感兴趣`；
+- Activity Update：发起者单向补充说明；
 - 我的发布；
-- 最小行为事件记录：
+- Hot Activity Ranking：透明热门发现，不是推荐系统或游戏排行榜；
+- Activity Rate Limiting：公开发布和 Interest 点击防刷；
+- Activity Expiration Engine：到期后自动进入 `EXPIRED`；
+- 最小行为事件记录:
   - `DETAIL_VIEW`
   - `PARTICIPATION_METHOD_VIEW`
 
@@ -181,10 +186,15 @@ Activity-first MVP 主链路已经本地手动验收通过：
 → search / category / tag filter
 → /activities/:activityId
 → 查看参与方式
+→ 我感兴趣 / 已感兴趣
+→ 发起者收到在线匿名 Interest 提示
 → DETAIL_VIEW / PARTICIPATION_METHOD_VIEW event logs
+→ Hot tab 展示可解释热门排序
 → /activities/new
 → /me/activities
 → close my initiated Activity
+→ publish Activity Update
+→ interested online identity receives Activity Update hint
 ```
 
 Organization / Channel / Chat 相关能力是历史工程资产和 post-MVP 可能方向。当前前端已将这些 route 降级为 legacy，不进入 Activity-first MVP 主导航。
@@ -224,15 +234,14 @@ Organization / Channel / Chat 相关能力是历史工程资产和 post-MVP 可�
 - 多频道聊天；
 - 实时聊天；
 - 通知中心；
-- 推荐算法；
-- 排行榜；
-- 勋章；
+- 个性化推荐算法；
+- 游戏化排行榜 / 勋章；
 - 社交关系；
 - 评论区；
 - 图片 / 海报 / 文件上传；
 - 人数上限 / 候补 / 审核 / 签到。
 
-这些都不是 MVP。
+这些都不是 MVP。当前已实现的 Interest / Activity Update 在线提示只是 best-effort hint，不是通知中心；Hot Activity Ranking 是透明发现辅助，不是个性化推荐或游戏化排行榜。
 
 ---
 

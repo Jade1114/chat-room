@@ -14,7 +14,7 @@ Browser
 → MySQL container
 ```
 
-Redis / RabbitMQ may still run because of legacy chat infrastructure, but Activity-first MVP deployment acceptance does not depend on realtime chat, unread, presence, or message fanout.
+Redis / RabbitMQ are now part of the Activity-first engineering evidence path: Redis supports Hot Activity Ranking, Rate Limiting, and Expiration time indexing; RabbitMQ supports asynchronous Interest / Activity Update notification side effects. Deployment acceptance still does not depend on legacy realtime chat, unread, presence, or message fanout.
 
 ## 2. Local Docker Compose
 
@@ -81,11 +81,15 @@ curl -s 'http://localhost:3000/api/activities' \
 ```text
 login
 → /activities
-→ Activity Feed: Upcoming / Ongoing
+→ Activity Feed: Upcoming / Ongoing / Hot
 → search/filter
 → Activity Detail
 → view participation method
+→ express Interest
+→ initiator receives online Interest hint
 → /activities/new publish Activity
+→ publish Activity Update
+→ interested online identity receives update hint
 → /me/activities see initiated Activities
 ```
 
@@ -162,11 +166,15 @@ http://<VPS_IP>:3000
 
 - 登录成功；
 - 默认进入 `/activities`；
-- Activity Feed 显示 Upcoming / Ongoing；
+- Activity Feed 显示 Upcoming / Ongoing / Hot；
 - Activity 搜索 / 分类 / 标签可用；
 - Activity Detail 可打开；
 - 点击后能查看 participationMethod；
+- 可以表达 Interest，重复点击不重复计数；
+- 发起者在线时收到匿名 Interest 提示；
 - 可以发布 Activity；
+- 可以发布 Activity Update；
+- 已表达 Interest 的在线身份收到 update 提示；
 - 可以查看我的发布；
 - 可以关闭自己发布的 Activity；
 - 中文无乱码。
@@ -176,8 +184,10 @@ http://<VPS_IP>:3000
 - 组织主页；
 - 加入组织；
 - 频道聊天；
-- WebSocket 实时消息；
+- WebSocket 聊天消息；
 - unread / presence。
+
+Activity-first notification WebSocket (`/ws/notifications`) 是当前验收内容；legacy chat WebSocket 不是。
 
 ## 8. Troubleshooting priorities
 

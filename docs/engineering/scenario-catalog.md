@@ -61,7 +61,7 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
 - 一致性边界文档（MySQL durable fact vs RabbitMQ/WebSocket side effect）
 - Redis Sorted Set 证据已在场景 2 Hot Activity Ranking 中落地
 
-### Frank 映射
+### 能力映射
 
 ⑥ 工程深度：RabbitMQ 可靠管道 / WebSocket 定向推送 / Local Session identity boundary
 ⑦ 解释 tradeoff：为什么 Interest source of truth 放 MySQL、为什么 notification 是 side effect、为什么 Redis 暂不放在单实例 notification 路由里

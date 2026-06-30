@@ -84,3 +84,7 @@ learning-records/
 lessons/
 reference/
 .hermes/
+
+# Private career / job-evidence notes (local only)
+docs/private/
+docs/job-evidence.md

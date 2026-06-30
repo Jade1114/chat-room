@@ -181,10 +181,12 @@ It cares about:
 
 ## Next directions
 
-After the accepted Activity-first MVP, future work is split into two tracks:
+After the accepted Activity-first MVP and engineering enhancement track, the immediate work is product delivery rather than more feature expansion:
 
-1. **Style / design adjustment** — improve the first-screen experience, Activity card hierarchy, Feed tabs, Detail page motivation, Publish form flow, mobile layout, and empty/error/legacy states.
-2. **New features** — add only after real user feedback shows the need, such as Activity editing UI, drafts, interested/bookmark state, initiator profile/history, better ranking, participation intent, or a redesigned post-MVP Organization model.
+1. **Deployment / reviewer readiness** — keep Docker/VPS instructions accurate, prepare seed data and a 15–20 minute review path, and make the project easy to demo.
+2. **Real feedback collection** — ask classmates to try the main Activity discovery → contact → real participation loop and record where they hesitate.
+3. **Style / design adjustment** — if users understand the concept but the UI feels like engineering output, improve the first-screen experience, Activity card hierarchy, Feed tabs, Detail page motivation, Publish form flow, mobile layout, and empty/error/legacy states.
+4. **New features** — add only after real feedback shows the need, such as Activity editing UI, drafts, interested/bookmark state, initiator profile/history, better ranking, participation intent, or a redesigned post-MVP Organization model.
 
 ## Local running
 
@@ -226,7 +228,8 @@ npm run dev
 ### Local SQL layout
 
 ```text
-backend/sql/init/       fresh schema + seed
+backend/sql/init/       fresh schema only
+backend/sql/dev-seed/   local development seed data
 backend/sql/delete/     destructive local reset
 backend/sql/changes/    migration-style changes for older local DBs
 ```
@@ -236,7 +239,7 @@ Fresh local reset:
 ```bash
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/002_seed.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.sql
 ```
 
 ## Document map

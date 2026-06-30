@@ -2,7 +2,7 @@
 
 > 目的：用轻量手动验收证明 Activity-first MVP 主链路可运行、可观察、可解释。
 >
-> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知中心或平台内报名。当前验收 Activity Interest 的在线匿名提示卡片，以及 Slice 3 已通过的 Hot Activity Ranking。
+> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知中心或平台内报名。当前验收 Activity Interest 在线匿名提示卡片、Hot Activity Ranking、Rate Limiting、Activity Expiration Engine，以及 Activity Update 在线提示。
 
 ## 1. Acceptance scope
 
@@ -69,7 +69,7 @@ Auth / Local Session
 - 实时聊天；
 - 评论区；
 - 通知中心；
-- 推荐算法；
+- 个性化推荐算法；
 - 图片 / 文件上传；
 - 人数上限 / 报名 / 候补 / 签到；
 - “我参与的 Activity”；

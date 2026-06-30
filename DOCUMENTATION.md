@@ -93,7 +93,7 @@ VISION.md → docs/MVP.md → docs/adr/0003-activity-first-mvp.md
 README.md → docs/classmate-review-guide.md → docs/manual-acceptance.md
 ```
 
-**产品工程 / 面试证据：**
+**产品工程 / 交付说明：**
 ```
 README.md → VISION.md → docs/roadmap.md → docs/MVP.md → docs/manual-acceptance.md
 ```

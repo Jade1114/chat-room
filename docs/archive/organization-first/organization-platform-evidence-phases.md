@@ -1,10 +1,10 @@
-# Organization Platform Roadmap with Frank's Evidence Framework
+# Organization Platform Roadmap with Product Evidence Framework
 
 > **For Hermes:** Use this as a product/engineering roadmap, not as a code-only implementation checklist.
 
-**Goal:** Turn `chat-room` from a technical chat-room exercise into a job-evidence project that proves Yuy can understand a real scenario, model the domain, deliver a working system, verify quality, deploy it, and explain decisions.
+**Goal:** Turn `chat-room` from a technical chat-room exercise into a project-evidence artifact that proves Yuy can understand a real scenario, model the domain, deliver a working system, verify quality, deploy it, and explain decisions.
 
-**Core Principle:** Follow Frank's path: `目标岗位 → 交付结果 → 证据作品 → 技术补缺`, not `学技术 → 堆功能 → 写简历`.
+**Core Principle:** Follow the product-evidence path: `目标岗位 → 交付结果 → 项目作品 → 技术补缺`, not `学技术 → 堆功能 → 写简历`.
 
 **Project Positioning:** An organization-centered communication platform for campuses and online communities. Users discover organizations, inspect activities, join organizations, and communicate in organization-owned channels.
 
@@ -14,7 +14,7 @@
 
 **Purpose:** Finish the shift from “chat-room demo” to “organization-centered platform”.
 
-**Frank Mapping:** 岗位证据法 / 产品化基本功.
+**Capability Mapping:** 项目证据法 / 产品化基本功.
 
 **Main Work:**
 
@@ -41,7 +41,7 @@
 
 **Purpose:** Rebuild the system's core authorization path around organizations.
 
-**Frank Mapping:** 数据建模 / 接口设计 / 真实业务主链路.
+**Capability Mapping:** 数据建模 / 接口设计 / 真实业务主链路.
 
 **Main Work:**
 
@@ -85,7 +85,7 @@
 
 **Purpose:** Make the product do what the product claims: help users find or create organizations.
 
-**Frank Mapping:** 产品化 / 用户流程 / 从真实问题到系统功能.
+**Capability Mapping:** 产品化 / 用户流程 / 从真实问题到系统功能.
 
 **Main Work:**
 
@@ -134,7 +134,7 @@
 
 **Purpose:** Give organizations a reason to exist beyond chat.
 
-**Frank Mapping:** 真实场景 / 业务信息建模 / MVP 边界控制.
+**Capability Mapping:** 真实场景 / 业务信息建模 / MVP 边界控制.
 
 **Main Work:**
 
@@ -174,7 +174,7 @@
 
 **Purpose:** Turn the system from separate features into a coherent product surface.
 
-**Frank Mapping:** 轻量原型 / 用户流程 / 产品交付表达.
+**Capability Mapping:** 轻量原型 / 用户流程 / 产品交付表达.
 
 **Main Work:**
 
@@ -213,7 +213,7 @@
 
 **Purpose:** Move from “local project” to “deliverable system”.
 
-**Frank Mapping:** 交付化 / 自动化 / 运维 / 排错.
+**Capability Mapping:** 交付化 / 自动化 / 运维 / 排错.
 
 **Main Work:**
 
@@ -250,7 +250,7 @@
 
 **Purpose:** Add backend depth only where the product naturally needs it.
 
-**Frank Mapping:** 技术补缺 follows 证据作品, not the other way around.
+**Capability Mapping:** 技术补缺 follows 项目作品, not the other way around.
 
 **Main Work:**
 
@@ -284,7 +284,7 @@
 
 **Purpose:** Add the safety controls that were intentionally deferred in MVP.
 
-**Frank Mapping:** 权限控制 / 风险边界 / 工程系统不是玩具.
+**Capability Mapping:** 权限控制 / 风险边界 / 工程系统不是玩具.
 
 **Main Work:**
 
@@ -318,9 +318,9 @@
 
 ## Phase 8: Portfolio Packaging and Interview Narrative
 
-**Purpose:** Convert the project into job evidence.
+**Purpose:** Convert the project into project evidence.
 
-**Frank Mapping:** 作品证明 / 岗位证据 / 能解释清楚.
+**Capability Mapping:** 作品表达 / 项目证据 / 能解释清楚.
 
 **Main Work:**
 
@@ -363,9 +363,9 @@
 
 ## Phase 9: AI Collaboration Evidence Layer
 
-**Purpose:** Connect this project with Frank's second work category: proving Yuy can manage AI output.
+**Purpose:** Connect this project with the second work category: proving Yuy can manage AI output.
 
-**Frank Mapping:** AI 编排化 / 管理 AI 输出 / Agent 工程闭环.
+**Capability Mapping:** AI 编排化 / 管理 AI 输出 / Agent 工程闭环.
 
 **Main Work:**
 
@@ -397,10 +397,10 @@
 
 ## Guiding Rule
 
-For every next task, ask Frank's question first:
+For every next task, ask the product-evidence question first:
 
 ```text
-这一步会增加哪一种岗位证据？
+这一步会增加哪一种项目证据？
 ```
 
 If the answer is unclear, do not do it yet.

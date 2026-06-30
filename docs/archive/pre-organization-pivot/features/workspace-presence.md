@@ -330,7 +330,7 @@ sessionManager.getSessionsByChannelId(channelId)
 
 ### Step 1：课程通知 / 官方公告
 
-从 Frank 的产品型工程师视角，下一步应该把现有 workspace + history + unread 能力落到真实高校协作场景：
+从 产品型工程师视角，下一步应该把现有 workspace + history + unread 能力落到真实高校协作场景：
 
 ```text
 教师 / 管理员发布课程通知

@@ -22,13 +22,16 @@ chat-room 当前是一个 **Activity-first 校园参与平台**。
 → 搜索 / 分类 / 标签筛选
 → 打开 Activity 详情
 → 查看参与方式
+→ 表达“我感兴趣”
+→ 发起者收到匿名提示
 → 私下联系发起者
 → 发布 Activity
+→ 发布活动补充说明
 → 查看我的发布
 → 关闭我发起的 Activity
 ```
 
-系统会记录两个最小验证事件：
+系统会记录两个最小验证事件，并用 Interest / Hot Ranking / Activity Update 支撑更完整的参与链路：
 
 ```text
 DETAIL_VIEW
@@ -74,6 +77,8 @@ PARTICIPATION_METHOD_VIEW
 - 收藏 / 关注 / 好友；
 - 图片海报上传；
 - Activity 编辑 UI。
+
+当前已经实现的 Interest 通知和 Activity Update 通知只是在线轻量提示，不是通知中心；Hot Activity Ranking 是透明发现辅助，不是推荐算法或游戏化排行榜。
 
 如果你觉得“没有聊天”或者“不能直接报名”，这不是 bug，是当前 MVP 边界。
 
@@ -135,10 +140,11 @@ http://localhost:5173
 
 ## 7. 重置本地数据
 
-当前 SQL 目录只保留三类：
+当前 SQL 目录分为 schema、dev seed、delete、changes 四类：
 
 ```text
-backend/sql/init/       初始化
+backend/sql/init/       初始化 schema
+backend/sql/dev-seed/   本地开发测试数据
 backend/sql/delete/     删除
 backend/sql/changes/    变动
 ```
@@ -148,13 +154,14 @@ backend/sql/changes/    变动
 ```bash
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/002_seed.sql
+mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.sql
 ```
 
 如果重置后浏览器还保留旧登录态，可以清理：
 
 ```js
 localStorage.removeItem('chat_room_token')
+localStorage.removeItem('chat_room_local_session_id')
 ```
 
 ## 8. 15–20 分钟试用流程
@@ -224,7 +231,36 @@ test001 / 123456
 - 你是否愿意按这个方式联系发起者；
 - 如果不愿意，是因为 Activity 不感兴趣、信息不清楚、还是联系方式不可信？
 
-### 8.6 发布 Activity
+### 8.6 表达 Interest 和观察提示
+
+用另一个浏览器窗口或无痕窗口打开同一个 Activity，点击：
+
+```text
+我感兴趣
+```
+
+检查：
+
+- 按钮是否变成“已感兴趣”；
+- 重复点击是否不会重复增加计数；
+- 发起者在线时是否收到右上角匿名提示；
+- 这个提示是否只是轻量提醒，而不是聊天或通知中心。
+
+### 8.7 热门 Feed
+
+回到“发现事情”，切到：
+
+```text
+热门
+```
+
+检查：
+
+- 是否能理解“热门”来自浏览、查看参与方式和 Interest；
+- 是否不是个性化推荐或游戏化榜单；
+- 关闭 / 过期 Activity 是否不应该因为历史热度继续出现在 Feed。
+
+### 8.8 发布 Activity
 
 进入：
 
@@ -248,7 +284,7 @@ test001 / 123456
 - participationMethod 是否足够表达参与方式；
 - 发布后是否出现在对应 Feed。
 
-### 8.7 我的发布
+### 8.9 我的发布 / Activity Update
 
 进入：
 
@@ -261,6 +297,8 @@ test001 / 123456
 - 是否能看到自己发布的 Activity；
 - 是否能区分状态；
 - 是否能关闭自己发布的 Activity；
+- 是否能给自己发布的 Activity 增加“补充说明”；
+- 已表达 Interest 的在线用户是否收到“你感兴趣的活动有新补充”提示；
 - 关闭后的 Activity 是否不再出现在默认 Feed。
 
 ## 9. 反馈格式
@@ -336,6 +374,5 @@ test001 / 123456
 - Activity 编辑 UI；
 - Activity 草稿；
 - 收藏 / 个人感兴趣列表（区别于当前已经实现、会反馈给发起者的 Activity Interest）；
-- Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名提示；
-- 更好的活动质量和推荐排序；
+- 更好的活动质量排序和发现体验；
 - 后续再重新设计 post-MVP Organization 能力。

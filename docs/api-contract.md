@@ -108,6 +108,13 @@ Response:
   "interestedByCurrentIdentity": false,
   "canExpressInterest": true,
   "initiatedByCurrentIdentity": false,
+  "hotMetrics": {
+    "score": 12,
+    "detailViews": 4,
+    "participationMethodViews": 1,
+    "interestCount": 1
+  },
+  "updates": [],
   "createdAt": "2026-06-25T10:00:00Z",
   "updatedAt": "2026-06-25T10:00:00Z"
 }
@@ -129,7 +136,7 @@ DRAFT | PUBLISHED | EXPIRED | CLOSED
 ## 4. Activity Feed
 
 ```http
-GET /api/activities?query=&category=&tag=
+GET /api/activities?query=&category=&tag=&sort=
 X-Local-Session-Id: <local-session-id optional>
 <auth header optional>
 ```
@@ -181,6 +188,8 @@ Rules:
 - `ongoing`: `ONGOING`, `PUBLISHED`, valid, ordered by `createdAt` descending.
 - Search matches title, description, and tags.
 - Feed response should not require exposing `participationMethod`; detail page may reveal it after explicit action.
+- `sort=hot` returns the same visibility-filtered Activity shape ordered by Redis `activity:hot_score`; if Redis is empty or unavailable, the backend falls back to the default Feed ordering.
+- Hot ranking is a transparent discovery aid derived from `DETAIL_VIEW`, `PARTICIPATION_METHOD_VIEW`, and durable Interest events; it is not personalized recommendation.
 
 ## 5. Activity Detail
 
@@ -190,7 +199,7 @@ X-Local-Session-Id: <local-session-id optional>
 <auth header optional>
 ```
 
-Response includes full Activity data, but UI should still require a deliberate action before prominently displaying `participationMethod`.
+Response includes full Activity data and `updates[]`, but UI should still require a deliberate action before prominently displaying `participationMethod`.
 
 Expected side effect:
 
@@ -308,6 +317,8 @@ Rules:
 - no edit history;
 - no change notification.
 
+The current UI does not expose Activity editing as a primary MVP capability.
+
 ## 10. Close Activity
 
 ```http
@@ -381,7 +392,55 @@ Server-to-client payload:
 
 Frontend displays this as a non-modal right-top notification card with a `查看我的活动` action.
 
-## 13. Activity events
+## 13. Publish Activity Update
+
+```http
+POST /api/activities/{activityId}/updates
+Content-Type: application/json
+X-Local-Session-Id: <local-session-id>
+<auth header optional>
+```
+
+Request:
+
+```json
+{
+  "content": "周五 7 点图书馆门口集合，微信群二维码已更新在参与方式里。"
+}
+```
+
+Rules:
+
+- only the Activity initiator may publish an update;
+- only `PUBLISHED` Activities can receive new updates;
+- updates are append-only in the first version;
+- response returns the created update;
+- `GET /api/activities/{activityId}` includes `updates[]`;
+- publishing an update emits a best-effort online notification to identities that already expressed Interest.
+
+Server-to-client update notification payload:
+
+```json
+{
+  "type": "ACTIVITY_UPDATE_PUBLISHED",
+  "activityId": "act-001",
+  "activityTitle": "周五晚羽毛球缺 2 人",
+  "updateId": "upd-001",
+  "message": "你感兴趣的活动有新补充"
+}
+```
+
+Activity Update is not chat, comment, channel, direct message, or notification-center persistence.
+
+## 14. Rate limiting and expiration
+
+- Public `POST /api/activities` uses Redis sliding-window limits.
+- Public `POST /api/activities/{activityId}/interest` uses Redis token-bucket limits.
+- Limit rejections return `429 Too Many Requests` with `Retry-After` and JSON body fields such as `error` and `retryAfterSeconds`.
+- Redis limiter failures are fail-open: normal product actions should not be blocked by Redis outages.
+- Activity expiration is source-of-truth in MySQL; Redis `activity:expires_at` is a hot time index used by the scheduled expiration engine.
+
+## 15. Activity events
 
 Activity events are internal validation logs.
 
@@ -404,7 +463,7 @@ Minimum fields:
 
 No analytics dashboard is required for MVP.
 
-## 14. Legacy APIs
+## 16. Legacy APIs
 
 Organization, Membership, Channel, WebSocket chat, unread, and presence APIs may still exist in code.
 

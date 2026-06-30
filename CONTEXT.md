@@ -18,7 +18,7 @@ The first-version hypothesis is:
 
 A logged-in person using the platform.
 
-In the MVP, a User can browse Activities, publish Activities, open Activity details, view participation methods, and manage Activities they initiated.
+In the MVP, a User can browse Activities, publish Activities, open Activity details, view participation methods, express Activity Interest, publish Activity Updates for Activities they initiated, and manage Activities they initiated.
 
 The MVP does not model following, friends, private messaging, profile pages, reputation, or social graph relationships.
 
@@ -36,7 +36,7 @@ The Local Session or logged-in User who publishes an Activity.
 
 A Local Session Initiator is identified by a browser-local session identity. A logged-in User Initiator is identified by a stable User identity. Both can publish Activities in the first version.
 
-The MVP shows only the initiator's display name and the publish time on Activity Detail. If the Initiator is a logged-in User, the display name is the User's display name. If the Initiator is a Local Session, the display name is a generic temporary-user label rather than the local session identity. If the initiator wants to provide background or identity context, they write it in the Activity description.
+The MVP shows the initiator's display name, publish time, Interest count, and Activity Update timeline on Activity Detail. If the Initiator is a logged-in User, the display name is the User's display name. If the Initiator is a Local Session, the display name is a generic temporary-user label rather than the local session identity. If the initiator wants to provide background or identity context, they write it in the Activity description.
 
 A Local Session Initiator can manage the Activity only from the same browser identity that created it. Management includes editing and closing that Activity. Clearing local storage may cause the Local Session Initiator to lose management access; that is acceptable for the first version.
 
@@ -103,12 +103,13 @@ Expired Activities do not return to `DRAFT` automatically.
 
 The logged-in user's main product entry.
 
-The Feed has two default sections:
+The Feed has two default time-based sections and one transparent discovery tab:
 
 - `Upcoming / 即将发生`: valid `SCHEDULED` Activities ordered by `startTime` ascending.
 - `Ongoing / 持续招募`: valid `ONGOING` Activities ordered by `createdAt` descending.
+- `Hot / 热门`: valid `PUBLISHED` Activities ordered by Redis hot score derived from detail views, participation-method views, and Activity Interest.
 
-Search and category/tag filtering preserve this two-section structure.
+Search and category/tag filtering apply to both the default time-based Feed and the Hot tab. Hot ranking is a discovery aid, not personalized recommendation or a gamified leaderboard.
 
 ## Activity Event
 
@@ -116,8 +117,8 @@ A minimal measurement log for MVP validation.
 
 The MVP records:
 
-- `DETAIL_VIEW`: a User opens an Activity detail page.
-- `PARTICIPATION_METHOD_VIEW`: a User clicks to reveal the participation method.
+- `DETAIL_VIEW`: a User or Local Session opens an Activity detail page.
+- `PARTICIPATION_METHOD_VIEW`: a User or Local Session clicks to reveal the participation method.
 
 These are measurement events only. They are not participation relationships, favorites, registrations, or social relationships.
 
@@ -131,15 +132,23 @@ An Activity Interest is visible to the Activity's Initiator as feedback that som
 
 The current implemented version exposes Activity Interest as an anonymous count and current-identity status. It does not expose the interested User, local session identity, interested-user list, or any way for the Initiator to contact interested people through the platform.
 
-Online Interest hints are a future engineering slice. If implemented, a hint should be delivered to the Initiator identity only after the durable Interest relationship exists in MySQL, and notification failure must not change the Interest fact.
+Online Interest hints are implemented as a best-effort engineering slice. A hint is delivered to the Initiator identity only after the durable Interest relationship exists in MySQL, and notification failure must not change the Interest fact.
 
-The current version shows Interest Count on Activity Detail and My Initiated Activities. It does not show Interest Count on Activity Feed cards, Admin dashboard, or a notification center.
+The current version shows Interest Count on Activity Detail and My Initiated Activities. It does not expose an interested-user list or a notification center. Online hints are transient cards, not persisted notification-center items.
 
 A Local Session or logged-in User can express at most one Activity Interest per Activity. The Initiator of an Activity cannot express Interest in their own Activity; the product may instead offer a "promote my Activity" action for future work. After expressing interest, the same browser should be able to see that it has already expressed interest on that Activity's detail page. The first version does not model canceling interest, a personal interested-activities list, or Feed-level interested status.
 
 Activity Interest is a current-state relationship, not only an event log. The system may record an additional Activity Event for analytics, but the Interest relationship itself is the source of truth for already-interested state, counts, and LocalSession-to-User Association.
 
 In the first version, a Local Session may express Activity Interest using a browser-local session identity. If the Local Session later logs in or registers in the same browser, the Interest may be associated with the logged-in User rather than creating a duplicate Interest. Clearing local storage may create a new Local Session identity; that is acceptable for the first version.
+
+## Activity Update
+
+A one-way supplemental note published by an Activity Initiator.
+
+Activity Update belongs to the Activity lifecycle. It helps already-interested people move closer to real participation when details change or need clarification. It is visible on Activity Detail as a timeline and may emit an online best-effort hint to identities that already expressed Interest.
+
+Activity Update is not chat, not a comment, not a reply thread, not a channel, and not a notification-center item. Only the Initiator can publish an update, and only `PUBLISHED` Activities can receive new updates in the first version.
 
 ## Organization
 

@@ -57,6 +57,8 @@ login
 → /activities/new publish
 → /me/activities
 → close my initiated Activity
+→ initiator publishes Activity Update
+→ interested online identity receives Activity Update hint
 ```
 
 系统外真实参与仍需通过同学反馈和发起者反馈验证。
@@ -75,7 +77,7 @@ P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
 P9 Activity Rate Limiting: Redis sliding window + token bucket ✅
 P10 Activity Expiration Engine: Redis time index + scheduled lifecycle ✅
-P11 Activity Update: initiator note + interested-user notification 🚧
+P11 Activity Update: initiator note + interested-user notification ✅
 ```
 
 ---
@@ -114,7 +116,7 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 | 轨道 | 文档 | 当前 |
 |------|------|------|
 | 产品轨道 | 本文档 Section 5.1-5.3 | Phase 0（收集反馈） |
-| 工程轨道 | `docs/engineering/activity-update-design.md` | 最后一个 feature：Activity Update 正在实现；完成后进入部署上线与文档收尾 |
+| 工程轨道 | `docs/engineering/activity-update-design.md`、`docs/engineering/scenario-catalog.md` | 当前收尾 feature 已完成；进入部署上线、reviewer 文档和真实反馈阶段 |
 
 产品轨道验证"用户是否需要这个产品"。工程轨道把项目从 MySQL CRUD 升级为能证明你**会做系统**的证据——WebSocket 实时推送、RabbitMQ 事件管道、Redis 热缓存、并发安全加固、一致性边界文档。
 
@@ -131,7 +133,7 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 
 **已知限制**：公开社交平台限制管理员宣传（影响平台流量），需探索不依赖外部引流的增长方式。
 
-**Frank 映射**：真实场景验证 / MVP 假设置信度
+**能力映射**：真实场景验证 / MVP 假设置信度
 
 **出口条件**：有足够的反馈数据判断下一步优先方向。
 
@@ -155,7 +157,7 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 - 移动端布局
 - empty / error / legacy 状态统一
 
-**Frank 映射**：产品化 / 用户流程 / 从工程交付到产品交付
+**能力映射**：产品化 / 用户流程 / 从工程交付到产品交付
 
 #### Direction B: 功能补足
 
@@ -182,13 +184,16 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 - 发起者 profile / 历史发布
 - 真实反馈收集面板
 
-**工程轨道当前完成（Slice 3）**：
+**工程轨道当前状态（已收尾）**：
 - Hot Activity Ranking 已实现并验收：Redis `activity:hot_score` Sorted Set 负责派生热度分数，`GET /api/activities?sort=hot` 和前端 `热门` tab 负责读路径，MySQL 仍是 Activity 可见性与解释指标的事实源。设计与边界见 `docs/engineering/activity-hot-ranking-design.md`。
+- Activity Rate Limiting 已实现并验收：Redis sliding window / token bucket 保护公开发布和 Interest 点击。
+- Activity Expiration Engine 已实现并验收：Redis time index + Spring scheduled lifecycle + MySQL guarded status transition。
+- Activity Update 已实现并验收：发起者单向补充说明，详情页 timeline，RabbitMQ/WebSocket 通知已表达 Interest 的在线身份。
 
 **暂缓**：
 - Redis multi-instance notification routing：等出现多 backend 实例部署需求时再做，不在当前单实例 MVP 中硬塞进 notification 链路
 
-**Frank 映射**：参与链路 / 业务信息建模 / 从浏览到行动的转化
+**能力映射**：参与链路 / 业务信息建模 / 从浏览到行动的转化
 
 #### 优先级判断
 
@@ -206,13 +211,13 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 
 **原则**：重新设计 Organization，不恢复旧模型。根据实际需求决定 Organization 的形态——是轻量发布者身份、是社团主页、还是完整的组织管理系统。
 
-**Frank 映射**：领域建模 / 从真实需求到系统设计 / 不恢复被推翻的旧模型
+**能力映射**：领域建模 / 从真实需求到系统设计 / 不恢复被推翻的旧模型
 
 ---
 
-### Phase 3: 交付证据与工程深度
+### Phase 3: 交付证据与工程深度（当前收尾方向）
 
-**触发条件**：产品方向稳定，需要为岗位证据补充交付化和工程深度表达。
+**触发条件**：Activity-first MVP 和当前工程增强已完成，需要把项目整理成可部署、可演示、可解释的交付证明。
 
 **可能工作**：
 - 稳定 Docker Compose / VPS 部署
@@ -221,7 +226,7 @@ P11 Activity Update: initiator note + interested-user notification 🚧
 - Redis / RabbitMQ 只在解决真实产品问题时引入
 - 架构图与一致性边界文档
 
-**Frank 映射**：交付化 / 技术补缺跟随证据作品 / 能解释清楚
+**能力映射**：交付化 / 技术补缺跟随产品场景 / 能解释清楚
 
 ---
 
