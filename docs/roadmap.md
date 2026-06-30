@@ -35,6 +35,7 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Redis Hot Activity Ranking：`activity:hot_score` Sorted Set、`GET /api/activities?sort=hot`、前端 `热门` tab、`hotMetrics` 解释指标
 - Activity Rate Limiting：Redis sliding window / token bucket 保护公开发布和 Interest 点击，超限返回 `429` + `Retry-After`
 - Activity Expiration Engine：Redis `activity:expires_at` Sorted Set、Spring `@Scheduled`、Redis lock、MySQL `PUBLISHED -> EXPIRED` 状态迁移
+- Activity Update：发起者单向补充说明，详情页 timeline，RabbitMQ/WebSocket 通知已表达 Interest 的在线身份
 - Activity-first frontend routes and navigation
 - legacy Organization / Channel / Chat 前端入口降级
 
@@ -73,7 +74,8 @@ P6 Hide / downgrade legacy Organization routes    ✅
 P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
 P9 Activity Rate Limiting: Redis sliding window + token bucket ✅
-P10 Activity Expiration Engine: Redis time index + scheduled lifecycle 🚧
+P10 Activity Expiration Engine: Redis time index + scheduled lifecycle ✅
+P11 Activity Update: initiator note + interested-user notification 🚧
 ```
 
 ---
@@ -112,7 +114,7 @@ P10 Activity Expiration Engine: Redis time index + scheduled lifecycle 🚧
 | 轨道 | 文档 | 当前 |
 |------|------|------|
 | 产品轨道 | 本文档 Section 5.1-5.3 | Phase 0（收集反馈） |
-| 工程轨道 | `docs/engineering/scenario-catalog.md` | 场景 3 Activity Expiration Engine 正在实现：Redis 时间索引 + 定时过期 |
+| 工程轨道 | `docs/engineering/activity-update-design.md` | 最后一个 feature：Activity Update 正在实现；完成后进入部署上线与文档收尾 |
 
 产品轨道验证"用户是否需要这个产品"。工程轨道把项目从 MySQL CRUD 升级为能证明你**会做系统**的证据——WebSocket 实时推送、RabbitMQ 事件管道、Redis 热缓存、并发安全加固、一致性边界文档。
 
@@ -170,6 +172,7 @@ P10 Activity Expiration Engine: Redis time index + scheduled lifecycle 🚧
 - Hot metrics explainability：热门卡片展示 score、浏览、查看参与方式、interest count 的来源
 - Rate limiting and safety：公开发布与 Interest 点击加 Redis 限流，避免低成本匿名滥用
 - Activity Expiration Engine：Activity 到期后由 scheduled lifecycle engine 自动转为 `EXPIRED`，不依赖用户打开 Feed 才清理
+- Activity Update：发起者发布补充说明，帮助已表达 Interest 的人更容易真实参与，同时明确不做私聊/评论/频道
 - Feed 手动刷新边界：发布新 Activity 不广播到其他用户 Feed
 
 **可能工作**：

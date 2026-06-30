@@ -192,7 +192,40 @@ Activity 到期后自动标记为 EXPIRED，不用人工管理生命周期。当
 
 ---
 
-## 场景 5: 离线消息补偿
+## 场景 5: Activity Update / 发起者补充说明
+
+### 产品
+
+发起者看到有人对 Activity 感兴趣后，可以发布单向补充说明，帮助感兴趣的人真实参与。它不是私聊、评论、频道或群聊。设计入口：`docs/engineering/activity-update-design.md`。
+
+### 为什么需要核心技术
+
+| 需求 | 技术 | 为什么必须 |
+|------|------|-----------|
+| 补充说明持久展示 | MySQL `activity_update` | update 是 Activity 生命周期事实，不能只靠 WebSocket |
+| 只允许发起者发布 | Activity initiator authorization | 避免评论区化和冒充发起者 |
+| 通知已感兴趣的人 | RabbitMQ + WebSocket | update 持久化后异步通知在线 Interested identities，不阻塞发布 |
+| Local Session / User 双身份 | dual-field identity | 匿名发起/匿名感兴趣都要被正确路由，不能塞进 userId |
+
+### 一致性边界
+
+| 数据 | 存储 | 一致性 |
+|------|------|--------|
+| update 内容 | MySQL | 强一致 source of truth |
+| update notification | RabbitMQ → WebSocket | online best-effort side effect |
+| interested recipients | MySQL activity_interest | 发送时查询当前 durable Interest |
+
+### 证据产出
+
+- 轻量产品沟通能力，不滑向 chat/comment/channel
+- initiator authorization
+- RabbitMQ side effect after durable write
+- WebSocket targeted notification to interested identities
+- Local Session/User recipient routing
+
+---
+
+## 场景 6: 离线消息补偿
 
 ### 产品
 

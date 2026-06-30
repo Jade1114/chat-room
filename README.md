@@ -72,6 +72,7 @@ The accepted MVP supports:
 - Activity Detail;
 - publish Activity;
 - free-text participation method;
+- Activity Updates / 活动补充说明；
 - my initiated Activities;
 - minimal Activity event logs for validation.
 
@@ -107,7 +108,7 @@ Existing organization, membership, channel, and chat code is historical implemen
 
 The project now includes a small, accepted Hot Activity Ranking engineering slice: Redis stores a derived `activity:hot_score` Sorted Set, while MySQL remains the source of truth for Activity visibility and explanatory metrics. This is a transparent discovery aid, not a personalized recommendation system or gamified leaderboard.
 
-The current engineering track also protects public Activity actions with Redis-backed rate limiting: publishing uses a sliding-window limit, Interest clicks use a token bucket, and exceeded limits return `429 Too Many Requests` with `Retry-After`. Activity lifecycle is handled by a scheduled expiration engine: Redis keeps a hot `activity:expires_at` time index, while MySQL remains the source of truth for `PUBLISHED → EXPIRED` status transitions.
+The current engineering track also protects public Activity actions with Redis-backed rate limiting: publishing uses a sliding-window limit, Interest clicks use a token bucket, and exceeded limits return `429 Too Many Requests` with `Retry-After`. Activity lifecycle is handled by a scheduled expiration engine: Redis keeps a hot `activity:expires_at` time index, while MySQL remains the source of truth for `PUBLISHED → EXPIRED` status transitions. Initiators can publish Activity Updates as one-way supplemental notes; this is intentionally not chat, comments, or a channel.
 
 ## Activity rules
 

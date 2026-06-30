@@ -55,6 +55,8 @@ Auth / Local Session
 - Redis 限流失败时 fail-open，不阻塞正常主链路；
 - Activity 到期后由定时任务转为 `EXPIRED`，不依赖打开 Feed 才清理；
 - Redis `activity:expires_at` 只作为过期时间索引，MySQL 仍是状态事实源；
+- 发起者可以发布 Activity Update，非发起者、关闭/过期 Activity 不能发布；
+- 已表达 Interest 的在线身份收到 Activity Update 提示；
 - 前端构建和后端编译；
 - Organization / Channel / Chat 入口被降级为 legacy，不影响 MVP 第一印象。
 
@@ -655,7 +657,53 @@ Redis 不可用时触发 tick 或打开 Feed：
 - SQL fallback 仍能执行过期清理；
 - 发布、编辑、关闭、Interest 不应因为 Redis 过期索引失败而被阻塞。
 
-## 20. Checklist
+## 20. Activity Update acceptance
+
+设计与验收入口：`docs/engineering/activity-update-design.md`。
+
+当前 Activity Update 是发起者单向补充说明：
+
+```text
+initiator → Activity Detail timeline → interested identities notification
+```
+
+它不是私聊、评论、频道或通知中心。
+
+### Backend/API
+
+```bash
+curl -s -X POST 'http://localhost:8080/api/activities/{activityId}/updates' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Local-Session-Id: <initiator-local-session>' \
+  -d '{"content":"周五 7 点图书馆门口集合，微信群二维码已更新在参与方式里。"}' | jq
+```
+
+期望：
+
+- 发起者可以发布 update；
+- 非发起者返回 `403`；
+- `CLOSED` / `EXPIRED` Activity 返回 `400`；
+- `GET /api/activities/{activityId}` 返回 `updates[]`；
+- update 持久化在 MySQL `activity_update`。
+
+### Frontend
+
+打开 Activity Detail：
+
+- 发起者视角显示“发布补充说明”输入框；
+- 普通访问者只看到 update timeline；
+- 发布后 timeline 立即出现新补充说明；
+- copy 明确说明这不是聊天/评论区。
+
+### Realtime notification
+
+1. B 对 A 的 Activity 表达 Interest，并保持在线；
+2. A 发布 Activity Update；
+3. B 收到右上角非阻塞提示：`你感兴趣的活动有新补充`；
+4. CTA 跳转到 Activity Detail；
+5. 未表达 Interest 的在线用户不应收到提示。
+
+## 21. Checklist
 
 ### Build
 
