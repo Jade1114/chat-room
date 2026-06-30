@@ -2,7 +2,7 @@
 -- Run after older organization-first migrations when migrating an existing dev database.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE chat_room;
+USE do_together;
 
 DROP TABLE IF EXISTS activity_event;
 DROP TABLE IF EXISTS activity_interest;

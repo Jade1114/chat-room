@@ -1,15 +1,15 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: chat-room-mysql
+    container_name: do-together-mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
       - "13306:3306"
     environment:
-      MYSQL_DATABASE: chat_room
-      MYSQL_ROOT_PASSWORD: ${CHAT_ROOM_DB_ROOT_PASSWORD}
-      MYSQL_USER: ${CHAT_ROOM_DB_USERNAME}
-      MYSQL_PASSWORD: ${CHAT_ROOM_DB_PASSWORD}
+      MYSQL_DATABASE: do_together
+      MYSQL_ROOT_PASSWORD: ${DO_TOGETHER_DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DO_TOGETHER_DB_USERNAME}
+      MYSQL_PASSWORD: ${DO_TOGETHER_DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/sql/init/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
@@ -26,7 +26,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: chat-room-redis
+    container_name: do-together-redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -35,11 +35,11 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: chat-room-rabbitmq
+    container_name: do-together-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${CHAT_ROOM_RABBITMQ_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${CHAT_ROOM_RABBITMQ_PASSWORD}
-      RABBITMQ_DEFAULT_VHOST: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:-/}
+      RABBITMQ_DEFAULT_USER: ${DO_TOGETHER_RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${DO_TOGETHER_RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${DO_TOGETHER_RABBITMQ_VIRTUAL_HOST:-/}
     ports:
       - "15673:15672"
     healthcheck:
@@ -52,20 +52,20 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: chat-room-backend
+    container_name: do-together-backend
     environment:
-      CHAT_ROOM_DB_URL: jdbc:mysql://mysql:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC
-      CHAT_ROOM_DB_USERNAME: ${CHAT_ROOM_DB_USERNAME}
-      CHAT_ROOM_DB_PASSWORD: ${CHAT_ROOM_DB_PASSWORD}
-      CHAT_ROOM_REDIS_HOST: redis
-      CHAT_ROOM_REDIS_PORT: 6379
-      CHAT_ROOM_REDIS_PASSWORD: ""
-      CHAT_ROOM_RABBITMQ_HOST: rabbitmq
-      CHAT_ROOM_RABBITMQ_PORT: 5672
-      CHAT_ROOM_RABBITMQ_USERNAME: ${CHAT_ROOM_RABBITMQ_USERNAME}
-      CHAT_ROOM_RABBITMQ_PASSWORD: ${CHAT_ROOM_RABBITMQ_PASSWORD}
-      CHAT_ROOM_RABBITMQ_VIRTUAL_HOST: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:-/}
-      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-secret-do-not-use-in-production-please-change-48chars-minimum}
+      DO_TOGETHER_DB_URL: jdbc:mysql://mysql:3306/do_together?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC
+      DO_TOGETHER_DB_USERNAME: ${DO_TOGETHER_DB_USERNAME}
+      DO_TOGETHER_DB_PASSWORD: ${DO_TOGETHER_DB_PASSWORD}
+      DO_TOGETHER_REDIS_HOST: redis
+      DO_TOGETHER_REDIS_PORT: 6379
+      DO_TOGETHER_REDIS_PASSWORD: ""
+      DO_TOGETHER_RABBITMQ_HOST: rabbitmq
+      DO_TOGETHER_RABBITMQ_PORT: 5672
+      DO_TOGETHER_RABBITMQ_USERNAME: ${DO_TOGETHER_RABBITMQ_USERNAME}
+      DO_TOGETHER_RABBITMQ_PASSWORD: ${DO_TOGETHER_RABBITMQ_PASSWORD}
+      DO_TOGETHER_RABBITMQ_VIRTUAL_HOST: ${DO_TOGETHER_RABBITMQ_VIRTUAL_HOST:-/}
+      DO_TOGETHER_JWT_SECRET: ${DO_TOGETHER_JWT_SECRET:-dev-secret-do-not-use-in-production-please-change-48chars-minimum}
     depends_on:
       mysql:
         condition: service_healthy
@@ -81,7 +81,7 @@ services:
       args:
         VITE_API_BASE_URL: ""
         VITE_WS_URL: ""
-    container_name: chat-room-frontend
+    container_name: do-together-frontend
     ports:
       - "3000:80"
     depends_on:

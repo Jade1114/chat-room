@@ -5,7 +5,7 @@
 ## 1. Common rules
 
 - Public Activity discovery endpoints support low-friction Local Session access before login.
-- Requests that act as a browser-local identity should send `X-Local-Session-Id`; the frontend stores it in `localStorage.chat_room_local_session_id`.
+- Requests that act as a browser-local identity should send `X-Local-Session-Id`; the frontend stores it in `localStorage.do_together_local_session_id`.
 - If a JWT is present, backend treats the request as a logged-in User and may associate same-browser Local Session state to that User.
 - REST responses are JSON.
 - Time fields use ISO 8601 strings.

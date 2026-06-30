@@ -81,7 +81,7 @@ Auth / Local Session
 
 | 依赖 | 默认地址 | 说明 |
 | --- | --- | --- |
-| MySQL | `localhost:3306` | 数据库名：`chat_room` |
+| MySQL | `localhost:3306` | 数据库名：`do_together` |
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
 | RabbitMQ | `localhost:5672` / management `localhost:15673` | Slice 2C Interest notification side effect |
@@ -108,8 +108,8 @@ mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.
 重置后请清理浏览器旧 token，或让前端自动通过 `/api/auth/me` 401 清理：
 
 ```js
-localStorage.removeItem('chat_room_token')
-localStorage.removeItem('chat_room_local_session_id')
+localStorage.removeItem('do_together_token')
+localStorage.removeItem('do_together_local_session_id')
 ```
 
 Seed test account:
@@ -196,7 +196,7 @@ curl -s -X POST "http://localhost:8080/api/activities/$ACTIVITY_ID/interest" \
 ### Event logs
 
 ```bash
-mysql --default-character-set=utf8mb4 -uroot -p -D chat_room -e "
+mysql --default-character-set=utf8mb4 -uroot -p -D do_together -e "
 SELECT activity_id, user_id, visitor_id AS local_session_id, event_type, created_at
 FROM activity_event
 ORDER BY created_at DESC
@@ -333,7 +333,7 @@ test001 / 123456
 
 ```text
 A = Activity 发起者，保持应用在线
-B = 另一浏览器或清理过 chat_room_local_session_id 的 Local Session
+B = 另一浏览器或清理过 do_together_local_session_id 的 Local Session
 ```
 
 操作：

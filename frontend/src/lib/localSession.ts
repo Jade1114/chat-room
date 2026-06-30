@@ -1,4 +1,4 @@
-const LOCAL_SESSION_ID_KEY = 'chat_room_local_session_id';
+const LOCAL_SESSION_ID_KEY = 'do_together_local_session_id';
 
 export function getLocalSessionId(): string {
   const existing = localStorage.getItem(LOCAL_SESSION_ID_KEY);

@@ -45,7 +45,7 @@ Slice 2 depends on these Slice 1 facts:
 - `interestCount` is derived from durable Interest rows;
 - repeated clicks by the same identity are idempotent;
 - the Activity Initiator cannot express Interest in their own Activity;
-- Local Session is a browser-local identity carried by `X-Local-Session-Id` / `chat_room_local_session_id`;
+- Local Session is a browser-local identity carried by `X-Local-Session-Id` / `do_together_local_session_id`;
 - same-browser login/register may associate Local Session Activities and Interests to the logged-in User.
 
 Slice 2 must not bypass these facts. Notification is a side effect after a durable Interest is created, not the definition of Interest itself.
@@ -380,7 +380,7 @@ button/link: 查看我的活动
 
 - A creates or owns an Activity.
 - A keeps the app open and connected.
-- B opens the Activity from another browser profile or after clearing `chat_room_local_session_id`.
+- B opens the Activity from another browser profile or after clearing `do_together_local_session_id`.
 - B clicks `我感兴趣`.
 - A sees one anonymous realtime hint.
 - A sees no interested-user identity.

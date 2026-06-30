@@ -1,4 +1,4 @@
-USE chat_room;
+USE do_together;
 
 CREATE TABLE IF NOT EXISTS activity_update (
     id                      VARCHAR(32)     PRIMARY KEY,

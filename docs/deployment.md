@@ -111,7 +111,7 @@ VPS 上建议先开放：
 
 ```text
 22    SSH
-3000  chat-room frontend
+3000  do-together frontend
 ```
 
 不要优先开放 MySQL / Redis / RabbitMQ 管理端口给公网。
@@ -119,17 +119,17 @@ VPS 上建议先开放：
 ## 6. VPS deploy commands
 
 ```bash
-git clone <repo-url> chat-room
-cd chat-room
+git clone <repo-url> do-together
+cd do-together
 cp .env.deploy.example .env.deploy
 ```
 
 编辑 `.env.deploy`，至少替换：
 
 ```text
-CHAT_ROOM_DB_ROOT_PASSWORD
-CHAT_ROOM_DB_PASSWORD
-CHAT_ROOM_JWT_SECRET
+DO_TOGETHER_DB_ROOT_PASSWORD
+DO_TOGETHER_DB_PASSWORD
+DO_TOGETHER_JWT_SECRET
 ```
 
 如仍启动 RabbitMQ/Redis legacy services，也替换对应密码。
@@ -209,7 +209,7 @@ Activity-first notification WebSocket (`/ws/notifications`) 是当前验收内�
 ```sql
 SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME
 FROM information_schema.SCHEMATA
-WHERE SCHEMA_NAME='chat_room';
+WHERE SCHEMA_NAME='do_together';
 ```
 
 Activity title / description / participationMethod 必须能正确保存中文。

@@ -3,7 +3,7 @@
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE chat_room;
+USE do_together;
 
 INSERT INTO app_user (id, username, display_name, password_hash, role) VALUES
 ('u-admin',    'admin',   '平台管理员', '$2a$10$nB76XJURPpL5.5riCS3Ud.gVmOvH4Tjg6/BrPdqxSWJQdQvDWHUX6', 'ADMIN'),

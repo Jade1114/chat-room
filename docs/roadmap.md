@@ -26,7 +26,7 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Spring Boot backend / React + Vite frontend
 - MySQL / Docker Compose
 - Activity-first schema / seed / migration
-- Local Session 低门槛身份：`chat_room_local_session_id` + `X-Local-Session-Id`
+- Local Session 低门槛身份：`do_together_local_session_id` + `X-Local-Session-Id`
 - Activity Feed / Detail / Publish / My initiated APIs
 - Activity event logging (DETAIL_VIEW / PARTICIPATION_METHOD_VIEW)
 - Activity Interest：`我感兴趣`、幂等计数、当前身份状态、自发起 Activity 不可点

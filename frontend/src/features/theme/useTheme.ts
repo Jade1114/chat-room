@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
-const storageKey = 'chat-room-theme';
+const storageKey = 'do-together-theme';
 
 function isTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'dark';

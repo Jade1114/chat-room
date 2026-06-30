@@ -3,15 +3,15 @@
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE DATABASE IF NOT EXISTS chat_room
+CREATE DATABASE IF NOT EXISTS do_together
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-ALTER DATABASE chat_room
+ALTER DATABASE do_together
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE chat_room;
+USE do_together;
 
 CREATE TABLE app_user (
     id              VARCHAR(32)     PRIMARY KEY,

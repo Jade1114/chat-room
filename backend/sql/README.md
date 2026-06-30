@@ -6,7 +6,7 @@
 backend/sql/
 ├── init/       # 初始化：从空数据库创建当前 Activity-first MVP schema（DDL only）
 ├── dev-seed/   # 本地开发测试数据（Docker override / local dev only）
-├── delete/     # 删除：本地开发重置用，删除 chat_room 数据库
+├── delete/     # 删除：本地开发重置用，删除 do_together 数据库
 └── changes/    # 变动：已有数据库迁移到当前结构时使用
 ```
 
@@ -40,7 +40,7 @@ mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.
 mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
 ```
 
-注意：这会删除整个 `chat_room` 数据库。
+注意：这会删除整个 `do_together` 数据库。
 
 ## 4. 变动
 

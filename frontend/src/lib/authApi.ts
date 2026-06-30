@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'chat_room_token';
+const TOKEN_KEY = 'do_together_token';
 
 export function getToken(): string | null {
   try {

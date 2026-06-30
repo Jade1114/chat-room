@@ -1,6 +1,6 @@
-# chat-room
+# do-together
 
-chat-room is an **Activity-first campus participation platform**.
+do-together is an **Activity-first campus participation platform**.
 
 It is not a chat app, not a forum, not a marketplace, and not an organization management system. The first-version product asks one question:
 

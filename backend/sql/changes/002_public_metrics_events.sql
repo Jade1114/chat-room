@@ -2,7 +2,7 @@
 -- Run this on existing local databases after 001_activity_first_mvp.sql.
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE chat_room;
+USE do_together;
 
 ALTER TABLE activity_event
     MODIFY user_id VARCHAR(32) NULL;

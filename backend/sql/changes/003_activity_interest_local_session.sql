@@ -1,4 +1,4 @@
-USE chat_room;
+USE do_together;
 
 ALTER TABLE activity
     ADD COLUMN created_by_user_id VARCHAR(32) NULL AFTER created_by,

@@ -3,26 +3,26 @@ spring:
     import: optional:file:.env[.properties]
 
   application:
-    name: chat-room-backend
+    name: do-together-backend
 
   datasource:
-    url: ${CHAT_ROOM_DB_URL:jdbc:mysql://localhost:3306/chat_room?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${CHAT_ROOM_DB_USERNAME}
-    password: ${CHAT_ROOM_DB_PASSWORD}
+    url: ${DO_TOGETHER_DB_URL:jdbc:mysql://localhost:3306/do_together?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DO_TOGETHER_DB_USERNAME}
+    password: ${DO_TOGETHER_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:
-      host: ${CHAT_ROOM_REDIS_HOST}
-      port: ${CHAT_ROOM_REDIS_PORT}
-      password: ${CHAT_ROOM_REDIS_PASSWORD}
+      host: ${DO_TOGETHER_REDIS_HOST}
+      port: ${DO_TOGETHER_REDIS_PORT}
+      password: ${DO_TOGETHER_REDIS_PASSWORD}
 
   rabbitmq:
-    host: ${CHAT_ROOM_RABBITMQ_HOST}
-    port: ${CHAT_ROOM_RABBITMQ_PORT}
-    username: ${CHAT_ROOM_RABBITMQ_USERNAME}
-    password: ${CHAT_ROOM_RABBITMQ_PASSWORD}
-    virtual-host: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST}
+    host: ${DO_TOGETHER_RABBITMQ_HOST}
+    port: ${DO_TOGETHER_RABBITMQ_PORT}
+    username: ${DO_TOGETHER_RABBITMQ_USERNAME}
+    password: ${DO_TOGETHER_RABBITMQ_PASSWORD}
+    virtual-host: ${DO_TOGETHER_RABBITMQ_VIRTUAL_HOST}
     publisher-confirm-type: correlated
     publisher-returns: true
 
@@ -32,5 +32,5 @@ mybatis:
 
 app:
   jwt:
-    secret: ${CHAT_ROOM_JWT_SECRET:dev-secret-do-not-use-in-production}
+    secret: ${DO_TOGETHER_JWT_SECRET:dev-secret-do-not-use-in-production}
     expiration-ms: 86400000

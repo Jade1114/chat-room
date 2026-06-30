@@ -284,7 +284,7 @@
 
 **复现步骤**:
 
-1. 浏览器保留旧 `chat_room_token`
+1. 浏览器保留旧 `do_together_token`
 2. 本地数据库重置，旧 token 中的用户行被删除
 3. 访问 `/activities/:activityId` 或点击“查看参与方式”
 4. 后端尝试写入 `activity_event(activity_id, user_id, event_type)`

@@ -62,7 +62,7 @@
 
 | 文档 | 用途 |
 |------|------|
-| `MISSION.md` | 学习目标：通过 chat-room 学 Redis/RabbitMQ/并发 |
+| `MISSION.md` | 学习目标：通过 do-together 学 Redis/RabbitMQ/并发 |
 | `NOTES.md` | 教学协作偏好 |
 | `RESOURCES.md` | 学习资源索引 |
 | `learning-records/` | 学习记录（如 Redis presence、RabbitMQ boundary） |

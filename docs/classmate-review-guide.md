@@ -1,10 +1,10 @@
 # Classmate Review Guide
 
-> 给同学、朋友或外部 reviewer 快速理解和试用 chat-room 的入口。重点不是读源码，而是判断：这个平台是否能让人发现值得一起做的事情，并愿意联系发起者真实参与。
+> 给同学、朋友或外部 reviewer 快速理解和试用 do-together 的入口。重点不是读源码，而是判断：这个平台是否能让人发现值得一起做的事情，并愿意联系发起者真实参与。
 
 ## 1. 一句话理解
 
-chat-room 当前是一个 **Activity-first 校园参与平台**。
+do-together 当前是一个 **Activity-first 校园参与平台**。
 
 它想解决的问题不是“缺一个聊天室”，而是：
 
@@ -160,8 +160,8 @@ mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.
 如果重置后浏览器还保留旧登录态，可以清理：
 
 ```js
-localStorage.removeItem('chat_room_token')
-localStorage.removeItem('chat_room_local_session_id')
+localStorage.removeItem('do_together_token')
+localStorage.removeItem('do_together_local_session_id')
 ```
 
 ## 8. 15–20 分钟试用流程
