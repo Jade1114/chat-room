@@ -18,4 +18,4 @@ services:
 
   backend:
     environment:
-      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-jwt-secret-local-only}
+      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-secret-do-not-use-in-production-please-change-48chars-minimum}

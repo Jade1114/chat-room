@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: ${CHAT_ROOM_DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/sql/init:/docker-entrypoint-initdb.d:ro
+      - ./backend/sql/init/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     healthcheck:
       test:
         [
@@ -65,7 +65,7 @@ services:
       CHAT_ROOM_RABBITMQ_USERNAME: ${CHAT_ROOM_RABBITMQ_USERNAME}
       CHAT_ROOM_RABBITMQ_PASSWORD: ${CHAT_ROOM_RABBITMQ_PASSWORD}
       CHAT_ROOM_RABBITMQ_VIRTUAL_HOST: ${CHAT_ROOM_RABBITMQ_VIRTUAL_HOST:-/}
-      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-secret-do-not-use-in-production}
+      CHAT_ROOM_JWT_SECRET: ${CHAT_ROOM_JWT_SECRET:-dev-secret-do-not-use-in-production-please-change-48chars-minimum}
     depends_on:
       mysql:
         condition: service_healthy
