@@ -1,30 +1,28 @@
 # do-together
 
-do-together is an **Activity-first campus participation platform**.
+[中文文档](README.zh-CN.md)
 
-It is not a chat app, not a forum, not a marketplace, and not an organization management system. The first-version product asks one question:
+**do-together** is an Activity-first campus participation platform that helps students discover worthwhile things to do together beyond fragmented WeChat groups, Moments, recruitment seasons, and friend-of-friend circulation.
+
+## Current status
+
+- Activity-first MVP implemented and manually accepted.
+- Docker Compose deployment completed.
+- VPS public-access acceptance completed.
+- Current acceptance focuses on Activity discovery, participation method, Interest, and Activity Update notification.
+
+## Why this exists
+
+Campus does not lack interesting people.
+It also does not lack worthwhile things to do together.
+
+What is missing is a place where those activities remain discoverable after they leave WeChat groups, Moments, recruitment season, or private friend circles.
+
+The first version validates one product question:
 
 > If campus has an always-open place where anyone can publish worthwhile things to do together, will people discover them and actually participate?
 
-## Vision
-
-Campus does not lack interesting people.
-
-It also does not lack worthwhile things to do together.
-
-What is missing is a place where those things remain discoverable after they leave WeChat groups, Moments, recruitment season, or friend-of-friend circulation.
-
-The product exists so that every "I want to do something" moment can more easily find people willing to do it together.
-
-## Current MVP status
-
-The Activity-first MVP main path has been implemented and manually accepted locally. The current MVP is defined by:
-
-- `VISION.md` — why the product exists;
-- `docs/MVP.md` — what the first version validates;
-- `docs/adr/0003-activity-first-mvp.md` — accepted Activity-first product decisions.
-
-The first version validates:
+## MVP flow
 
 ```text
 login
@@ -32,176 +30,117 @@ login
 → search / filter Activities
 → Activity Detail
 → view participation method
-→ private/off-platform contact
-→ real-world participation
-→ user returns to find new Activities
+→ express Interest
+→ receive Activity Update notification
+→ publish Activity
+→ manage my initiated Activities
 ```
 
-## Core objects
+The MVP validates whether users can discover an Activity, understand why it is worth joining, see how to participate, contact the initiator privately/off-platform, and return later to find more Activities.
 
-### User
+## Features
 
-A logged-in person who can browse, publish, and privately follow up on Activities.
-
-### Activity
-
-A worthwhile thing someone wants others to participate in together.
-
-Examples:
-
-- Workshop;
-- match / game session;
-- study group;
-- sports;
-- photography walk;
-- reading group;
-- Hackathon team-up;
-- project collaborator search;
-- travel companion search.
-
-An Activity does not have to come from a club or organization. In the MVP every Activity is initiated by an individual user. If the thing is associated with a club, lab, teacher, company, or organization, that context is written in the Activity title or description.
-
-## MVP features
-
-The accepted MVP supports:
-
-- user login;
-- Activity Feed;
-- Activity search;
-- category / tag filtering;
-- Activity Detail;
-- publish Activity;
-- free-text participation method;
-- Activity Updates / 活动补充说明；
-- my initiated Activities;
-- minimal Activity event logs for validation.
-
-The first-version navigation is:
-
-```text
-发现事情   /activities
-发起事情   /activities/new
-我的发布   /me/activities
-```
-
-After login, the default destination should be `/activities`.
+- User login
+- Activity Feed with `Upcoming` / `Ongoing` / `Hot` tabs
+- Activity search, category filter, and tag filter
+- Activity Detail
+- Free-text participation method
+- Activity Interest
+- Activity Updates
+- Online notification hints for Interest and Activity Updates
+- My initiated Activities
+- Close initiated Activity
 
 ## MVP non-goals
 
 The current MVP intentionally does not build:
 
-- organization system;
-- organization homepage;
-- Membership;
-- platform-internal registration / participation table;
-- multi-channel chat;
-- realtime chat;
-- notification center;
-- recommendation algorithm;
-- gamified ranking / badges;
-- social graph;
-- comment system;
-- image / poster / file upload;
-- activity capacity / waitlist / approval workflow.
+- organization system
+- organization homepage
+- membership workflow
+- platform-internal registration table
+- multi-channel chat
+- realtime chat
+- notification center
+- recommendation algorithm
+- comment system
+- file / image upload
 
-Existing organization, membership, channel, and chat code is historical implementation asset and possible future capability. It is not the current MVP acceptance standard. In the current frontend, Organization / Channel / Chat routes are downgraded as legacy capability: they are not shown as primary navigation and direct visits display a legacy notice.
+Legacy organization, channel, and chat code exists as historical implementation asset and possible future capability. It is not the current product acceptance path.
 
-The project now includes a small, accepted Hot Activity Ranking engineering slice: Redis stores a derived `activity:hot_score` Sorted Set, while MySQL remains the source of truth for Activity visibility and explanatory metrics. This is a transparent discovery aid, not a personalized recommendation system or gamified leaderboard.
+## Screenshots
 
-The current engineering track also protects public Activity actions with Redis-backed rate limiting: publishing uses a sliding-window limit, Interest clicks use a token bucket, and exceeded limits return `429 Too Many Requests` with `Retry-After`. Activity lifecycle is handled by a scheduled expiration engine: Redis keeps a hot `activity:expires_at` time index, while MySQL remains the source of truth for `PUBLISHED → EXPIRED` status transitions. Initiators can publish Activity Updates as one-way supplemental notes; this is intentionally not chat, comments, or a channel.
+### Activity discovery dashboard
 
-## Activity rules
+The Activity Feed shows the first-screen discovery path: publish an Activity, view my initiated Activities, browse current Activities, search by title/description/tag, filter by category/tag, and switch between Upcoming, Ongoing, and Hot sections.
 
-First-version Activity fields and rules:
+![Activity discovery dashboard](docs/screenshots/dashboard.png)
 
-- `title`: what the thing is;
-- `description`: why it is worth participating in and what will happen;
-- `category`: one fixed category;
-- `tags`: up to 5 free-text tags;
-- `timeMode`: `SCHEDULED` or `ONGOING`;
-- `startTime`: required for `SCHEDULED`;
-- `expiresAt`: required for `ONGOING`, max 30 days;
-- `location`: where it happens, or online context;
-- `participationMethod`: free-text instructions for how to participate or contact the initiator;
-- `status`: `DRAFT`, `PUBLISHED`, `EXPIRED`, or `CLOSED`.
+### Activity detail and participation method
 
-The first-version category list:
+The Activity Detail page keeps the decision context and participation method visible: what the Activity is, when and where it happens, who initiated it, and how an interested user can follow up privately/off-platform.
+
+![Activity detail and participation method](docs/screenshots/detail.png)
+
+## Tech stack
+
+| Layer | Tech |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, Nginx |
+| Backend | Spring Boot, Java 21, MyBatis |
+| Database | MySQL 8.4 |
+| Cache / Ranking / Rate Limit | Redis |
+| Async Notification | RabbitMQ |
+| Deployment | Docker Compose, VPS |
+
+## Engineering highlights
+
+### Activity-first domain modeling
+
+The project was reframed from a chat-room exercise into an Activity-first campus participation platform. The current product model centers on Activity discovery, participation method, Interest, and Activity Updates.
+
+### Redis-backed discovery and protection
+
+Redis supports:
+
+- Hot Activity Ranking;
+- public action rate limiting;
+- Activity expiration time indexing.
+
+MySQL remains the source of truth for Activity visibility, state, and durable records.
+
+### RabbitMQ asynchronous side effects
+
+Interest and Activity Update notifications are handled as asynchronous side effects instead of blocking the core Activity flow.
+
+### Docker Compose deployment
+
+Frontend, backend, MySQL, Redis, and RabbitMQ are containerized and can be started as one deployment unit.
+
+### VPS public acceptance
+
+The MVP has been deployed to a VPS and manually accepted through the public Activity-first flow.
+
+## Architecture
 
 ```text
-STUDY        学习
-SPORTS       运动
-GAME         游戏
-PROJECT      项目
-WORKSHOP     Workshop
-COMPETITION  比赛
-TRAVEL       出行
-TEAM_UP      找队友 / 找搭子
-OTHER        其他
+Browser
+  ↓
+Frontend container / Nginx :80
+  ├─ serves React static assets
+  ├─ proxies /api/* → backend:8080
+  └─ proxies /ws/*  → backend:8080
+
+Backend / Spring Boot
+  ├─ MySQL    source of truth
+  ├─ Redis    hot ranking, rate limiting, expiration index
+  └─ RabbitMQ async notification side effects
 ```
 
-## Activity Feed
-
-The Feed has two default time-based sections, plus an accepted Hot discovery tab:
-
-```text
-Upcoming / 即将发生
-- SCHEDULED + PUBLISHED
-- not expired
-- ordered by startTime ascending
-
-Ongoing / 持续招募
-- ONGOING + PUBLISHED
-- expiresAt has not passed
-- ordered by createdAt descending
-
-Hot / 热门
-- valid PUBLISHED Activities only
-- ordered by Redis hot score derived from detail views, participation-method views, and Activity Interest
-- falls back to the default Feed order if Redis is empty or unavailable
-```
-
-Search and category/tag filters apply to the default time-based Feed and to the Hot discovery tab.
-
-## Success metrics
-
-The MVP does not primarily care about:
-
-- registration count;
-- message count;
-- online count.
-
-It cares about:
-
-- Activity publication count;
-- Activity Feed browsing;
-- Activity Detail views;
-- participation method views;
-- qualitative confirmation that users actually contacted initiators or participated offline;
-- whether users return to find new Activities.
-
-## Next directions
-
-After the accepted Activity-first MVP and engineering enhancement track, the immediate work is product delivery rather than more feature expansion:
-
-1. **Deployment / reviewer readiness** — keep Docker/VPS instructions accurate, prepare seed data and a 15–20 minute review path, and make the project easy to demo.
-2. **Real feedback collection** — ask classmates to try the main Activity discovery → contact → real participation loop and record where they hesitate.
-3. **Style / design adjustment** — if users understand the concept but the UI feels like engineering output, improve the first-screen experience, Activity card hierarchy, Feed tabs, Detail page motivation, Publish form flow, mobile layout, and empty/error/legacy states.
-4. **New features** — add only after real feedback shows the need, such as Activity editing UI, drafts, interested/bookmark state, initiator profile/history, better ranking, participation intent, or a redesigned post-MVP Organization model.
-
-## Local running
-
-### Docker Compose
+## Quick start
 
 ```bash
 cp .env.deploy.example .env.deploy
-
-docker compose --env-file .env.deploy up -d --build
-```
-
-Reset local data:
-
-```bash
-docker compose --env-file .env.deploy down -v
 docker compose --env-file .env.deploy up -d --build
 ```
 
@@ -211,53 +150,96 @@ Open:
 http://localhost:3000
 ```
 
-### Development mode
+Check services:
 
 ```bash
-# backend
+docker compose --env-file .env.deploy ps
+```
+
+Reset local data:
+
+```bash
+docker compose --env-file .env.deploy down -v
+docker compose --env-file .env.deploy up -d --build
+```
+
+## Seed accounts
+
+When using the local development override, the following accounts are available:
+
+| Username | Password | Role | Purpose |
+| --- | --- | --- | --- |
+| `admin` | `123456` | ADMIN | Admin / deployment verification |
+| `test001` | `123456` | MEMBER | Activity browser / initiator |
+| `test002` | `123456` | MEMBER | Second browser / initiator |
+
+`docker-compose.override.yml` adds development seed data. Do not use it as-is for a real production deployment.
+
+## Local smoke test
+
+Login:
+
+```bash
+curl -s -X POST 'http://localhost:3000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test001","password":"123456"}'
+```
+
+Fetch Activities with a token:
+
+```bash
+TOKEN=$(curl -s -X POST 'http://localhost:3000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test001","password":"123456"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
+AUTH_HEADER=$(printf 'Authorization: \x42earer %s' "$TOKEN")
+
+curl -s 'http://localhost:3000/api/activities' \
+  -H "$AUTH_HEADER"
+```
+
+## Development mode
+
+Backend:
+
+```bash
 cd backend
 mvn -q -DskipTests compile
 mvn spring-boot:run
+```
 
-# frontend
+Frontend:
+
+```bash
 cd frontend
 npm run build
 npm run dev
 ```
 
-### Local SQL layout
+## Deployment
 
-```text
-backend/sql/init/       fresh schema only
-backend/sql/dev-seed/   local development seed data
-backend/sql/delete/     destructive local reset
-backend/sql/changes/    migration-style changes for older local DBs
-```
-
-Fresh local reset:
+The project supports Docker Compose deployment.
 
 ```bash
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/delete/001_drop_database.sql
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/init/001_schema.sql
-mysql --default-character-set=utf8mb4 -uroot -p < backend/sql/dev-seed/002_seed.sql
+cp .env.deploy.example .env.deploy
+# edit secrets in .env.deploy
+docker compose --env-file .env.deploy up -d --build
 ```
 
-## Document map
+For VPS deployment steps and the acceptance checklist, see [docs/deployment.md](docs/deployment.md).
 
-For the full documentation structure, see:
+The VPS public-access acceptance has been completed. The public URL is intentionally omitted from repository documentation.
 
-```text
-DOCUMENTATION.md
-```
+## Documentation
 
-Quick entry points:
-
-- `VISION.md`: product vision;
-- `docs/MVP.md`: first-version MVP scope;
-- `docs/adr/0003-activity-first-mvp.md`: accepted Activity-first decisions;
-- `CONTEXT.md`: domain glossary;
-- `docs/roadmap.md`: current status and phased roadmap;
-- `docs/manual-acceptance.md`: manual acceptance checklist;
-- `docs/classmate-review-guide.md`: reviewer / classmate guide;
-- `DOCUMENTATION.md`: complete map, including local-only learning notes if present;
-- `docs/archive/`: historical documents.
+- [VISION.md](VISION.md) — product vision
+- [docs/MVP.md](docs/MVP.md) — current MVP scope
+- [docs/adr/0003-activity-first-mvp.md](docs/adr/0003-activity-first-mvp.md) — accepted Activity-first product decision
+- [CONTEXT.md](CONTEXT.md) — domain glossary and current context
+- [docs/api-contract.md](docs/api-contract.md) — API contract
+- [docs/manual-acceptance.md](docs/manual-acceptance.md) — manual acceptance guide
+- [docs/deployment.md](docs/deployment.md) — Docker/VPS deployment
+- [docs/roadmap.md](docs/roadmap.md) — current state and next directions
+- [DOCUMENTATION.md](DOCUMENTATION.md) — full documentation map
+- [docs/archive/](docs/archive/) — historical documents
