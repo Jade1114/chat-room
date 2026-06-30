@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yuy.chatroom.dto.CreateActivityRequest;
+import com.yuy.chatroom.dto.CreateActivityUpdateRequest;
 import com.yuy.chatroom.dto.ParticipationMethodResponse;
 import com.yuy.chatroom.service.ActivityRateLimitService;
 import com.yuy.chatroom.service.ActivityService;
+import com.yuy.chatroom.service.ActivityUpdateService;
 import com.yuy.chatroom.service.RateLimitExceededException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +30,7 @@ public class ActivityController {
 
   private final ActivityService activityService;
   private final ActivityRateLimitService rateLimitService;
+  private final ActivityUpdateService updateService;
 
   @GetMapping("/api/activities")
   public ResponseEntity<?> getFeed(@RequestParam(required = false) String query,
@@ -105,6 +108,19 @@ public class ActivityController {
   public ResponseEntity<?> closeActivity(@PathVariable String activityId, HttpServletRequest request) {
     try {
       return ResponseEntity.ok(activityService.closeActivity(activityId, currentUserId(request), localSessionId(request)));
+    } catch (SecurityException error) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
+    } catch (IllegalArgumentException error) {
+      return notFoundOrBadRequest(error);
+    }
+  }
+
+  @PostMapping("/api/activities/{activityId}/updates")
+  public ResponseEntity<?> publishUpdate(@PathVariable String activityId,
+      @RequestBody CreateActivityUpdateRequest updateRequest,
+      HttpServletRequest request) {
+    try {
+      return ResponseEntity.ok(updateService.publishUpdate(activityId, updateRequest, currentUserId(request), localSessionId(request)));
     } catch (SecurityException error) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", error.getMessage()));
     } catch (IllegalArgumentException error) {

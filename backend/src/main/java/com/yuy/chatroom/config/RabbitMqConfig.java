@@ -21,6 +21,11 @@ public class RabbitMqConfig {
   public static final String ACTIVITY_INTEREST_CREATED_DLQ = "activity.interest.created.dlq";
   public static final String ACTIVITY_INTEREST_DLX = "activity.interest.dlx";
   public static final String ACTIVITY_INTEREST_CREATED_ROUTING_KEY = "activity.interest.created";
+  public static final String ACTIVITY_UPDATE_EXCHANGE = "activity.update.exchange";
+  public static final String ACTIVITY_UPDATE_PUBLISHED_QUEUE = "activity.update.published.queue";
+  public static final String ACTIVITY_UPDATE_PUBLISHED_DLQ = "activity.update.published.dlq";
+  public static final String ACTIVITY_UPDATE_DLX = "activity.update.dlx";
+  public static final String ACTIVITY_UPDATE_PUBLISHED_ROUTING_KEY = "activity.update.published";
 
   @Bean
   public Jackson2JsonMessageConverter rabbitMessageConverter() {
@@ -129,6 +134,45 @@ public class RabbitMqConfig {
         .bind(activityInterestCreatedDeadLetterQueue())
         .to(activityInterestDeadLetterExchange())
         .with(ACTIVITY_INTEREST_CREATED_ROUTING_KEY);
+  }
+
+  @Bean
+  TopicExchange activityUpdateExchange() {
+    return new TopicExchange(ACTIVITY_UPDATE_EXCHANGE, true, false);
+  }
+
+  @Bean
+  TopicExchange activityUpdateDeadLetterExchange() {
+    return new TopicExchange(ACTIVITY_UPDATE_DLX, true, false);
+  }
+
+  @Bean
+  Queue activityUpdatePublishedQueue() {
+    return QueueBuilder.durable(ACTIVITY_UPDATE_PUBLISHED_QUEUE)
+        .withArgument("x-dead-letter-exchange", ACTIVITY_UPDATE_DLX)
+        .withArgument("x-dead-letter-routing-key", ACTIVITY_UPDATE_PUBLISHED_ROUTING_KEY)
+        .build();
+  }
+
+  @Bean
+  Queue activityUpdatePublishedDeadLetterQueue() {
+    return QueueBuilder.durable(ACTIVITY_UPDATE_PUBLISHED_DLQ).build();
+  }
+
+  @Bean
+  Binding activityUpdatePublishedBinding() {
+    return BindingBuilder
+        .bind(activityUpdatePublishedQueue())
+        .to(activityUpdateExchange())
+        .with(ACTIVITY_UPDATE_PUBLISHED_ROUTING_KEY);
+  }
+
+  @Bean
+  Binding activityUpdatePublishedDeadLetterBinding() {
+    return BindingBuilder
+        .bind(activityUpdatePublishedDeadLetterQueue())
+        .to(activityUpdateDeadLetterExchange())
+        .with(ACTIVITY_UPDATE_PUBLISHED_ROUTING_KEY);
   }
 
   @Bean

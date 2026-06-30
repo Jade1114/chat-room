@@ -1,6 +1,7 @@
 package com.yuy.chatroom.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import com.yuy.chatroom.model.Activity;
 
@@ -31,6 +32,7 @@ public class ActivityResponse {
   private boolean canExpressInterest;
   private boolean initiatedByCurrentIdentity;
   private ActivityHotMetrics hotMetrics;
+  private List<ActivityUpdateResponse> updates;
   private Instant createdAt;
   private Instant updatedAt;
 
@@ -47,6 +49,13 @@ public class ActivityResponse {
   public static ActivityResponse from(Activity activity, boolean includeParticipationMethod,
       long interestCount, boolean interestedByCurrentIdentity, boolean initiatedByCurrentIdentity,
       ActivityHotMetrics hotMetrics) {
+    return from(activity, includeParticipationMethod, interestCount, interestedByCurrentIdentity,
+        initiatedByCurrentIdentity, hotMetrics, List.of());
+  }
+
+  public static ActivityResponse from(Activity activity, boolean includeParticipationMethod,
+      long interestCount, boolean interestedByCurrentIdentity, boolean initiatedByCurrentIdentity,
+      ActivityHotMetrics hotMetrics, List<ActivityUpdateResponse> updates) {
     return new ActivityResponse(
         activity.getId(),
         activity.getTitle(),
@@ -69,6 +78,7 @@ public class ActivityResponse {
         !initiatedByCurrentIdentity && !interestedByCurrentIdentity,
         initiatedByCurrentIdentity,
         hotMetrics,
+        updates == null ? List.of() : updates,
         activity.getCreatedAt(),
         activity.getUpdatedAt());
   }

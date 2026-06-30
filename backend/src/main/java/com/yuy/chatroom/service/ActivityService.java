@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import com.yuy.chatroom.dto.ActivityFeedResponse;
 import com.yuy.chatroom.dto.ActivityHotMetrics;
 import com.yuy.chatroom.dto.ActivityResponse;
+import com.yuy.chatroom.dto.ActivityUpdateResponse;
 import com.yuy.chatroom.dto.CreateActivityRequest;
 import com.yuy.chatroom.mapper.ActivityMapper;
+import com.yuy.chatroom.mapper.ActivityUpdateMapper;
 import com.yuy.chatroom.mapper.UserMapper;
 import com.yuy.chatroom.model.Activity;
 
@@ -27,6 +29,7 @@ public class ActivityService {
       "STUDY", "SPORTS", "GAME", "PROJECT", "WORKSHOP", "COMPETITION", "TRAVEL", "TEAM_UP", "OTHER");
 
   private final ActivityMapper activityMapper;
+  private final ActivityUpdateMapper updateMapper;
   private final UserMapper userMapper;
   private final ActivityInterestEventPublisher interestEventPublisher;
   private final ActivityHotScoreService hotScoreService;
@@ -34,8 +37,9 @@ public class ActivityService {
 
   public ActivityService(ActivityMapper activityMapper, UserMapper userMapper,
       ActivityInterestEventPublisher interestEventPublisher, ActivityHotScoreService hotScoreService,
-      ActivityExpirationService expirationService) {
+      ActivityExpirationService expirationService, ActivityUpdateMapper updateMapper) {
     this.activityMapper = activityMapper;
+    this.updateMapper = updateMapper;
     this.userMapper = userMapper;
     this.interestEventPublisher = interestEventPublisher;
     this.hotScoreService = hotScoreService;
@@ -90,7 +94,7 @@ public class ActivityService {
     Activity activity = requireActivity(activityId);
     recordEvent(activityId, userId, localSessionId, "DETAIL_VIEW");
     hotScoreService.incrementDetailView(activityId);
-    return responseForIdentity(activity, false, userId, localSessionId);
+    return responseForIdentity(activity, false, userId, localSessionId, true);
   }
 
   public String revealParticipationMethod(String activityId, String userId, String localSessionId) {
@@ -214,6 +218,11 @@ public class ActivityService {
 
   private ActivityResponse responseForIdentity(Activity activity, boolean includeParticipationMethod,
       String userId, String localSessionId) {
+    return responseForIdentity(activity, includeParticipationMethod, userId, localSessionId, false);
+  }
+
+  private ActivityResponse responseForIdentity(Activity activity, boolean includeParticipationMethod,
+      String userId, String localSessionId, boolean includeUpdates) {
     String cleanedUserId = cleanOptional(userId);
     String cleanedLocalSessionId = cleanOptional(localSessionId);
     boolean interested = false;
@@ -224,8 +233,11 @@ public class ActivityService {
       interested = activityMapper.hasLocalSessionInterest(activity.getId(), cleanedLocalSessionId) > 0;
     }
     boolean initiated = isInitiator(activity, cleanedUserId, cleanedLocalSessionId);
+    List<ActivityUpdateResponse> updates = includeUpdates
+        ? updateMapper.findByActivityId(activity.getId()).stream().map(ActivityUpdateResponse::from).toList()
+        : List.of();
     return ActivityResponse.from(activity, includeParticipationMethod,
-        activityMapper.countInterests(activity.getId()), interested, initiated);
+        activityMapper.countInterests(activity.getId()), interested, initiated, null, updates);
   }
 
   private void associateLocalSessionToUser(String userId, String localSessionId) {
