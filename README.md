@@ -107,7 +107,7 @@ Existing organization, membership, channel, and chat code is historical implemen
 
 The project now includes a small, accepted Hot Activity Ranking engineering slice: Redis stores a derived `activity:hot_score` Sorted Set, while MySQL remains the source of truth for Activity visibility and explanatory metrics. This is a transparent discovery aid, not a personalized recommendation system or gamified leaderboard.
 
-The current engineering track also protects public Activity actions with Redis-backed rate limiting: publishing uses a sliding-window limit, Interest clicks use a token bucket, and exceeded limits return `429 Too Many Requests` with `Retry-After`.
+The current engineering track also protects public Activity actions with Redis-backed rate limiting: publishing uses a sliding-window limit, Interest clicks use a token bucket, and exceeded limits return `429 Too Many Requests` with `Retry-After`. Activity lifecycle is handled by a scheduled expiration engine: Redis keeps a hot `activity:expires_at` time index, while MySQL remains the source of truth for `PUBLISHED → EXPIRED` status transitions.
 
 ## Activity rules
 

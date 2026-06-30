@@ -133,32 +133,32 @@ Feed 不再只按时间排序。引入"热门"维度——结合浏览详情、�
 
 ### 产品
 
-Activity 到期后自动标记为 EXPIRED，即将开始的 Activity 推送提醒给感兴趣的参与者。不用人工管理生命周期。
+Activity 到期后自动标记为 EXPIRED，不用人工管理生命周期。当前实现入口：`docs/engineering/activity-expiration-engine-design.md`。即将开始/即将过期提醒暂缓到后续通知 slice。
 
 ### 为什么需要核心技术
 
 | 需求 | 技术 | 为什么必须 |
 |------|------|-----------|
-| 高效查询"即将过期/开始"的 Activity | Redis `ZRANGEBYSCORE` | 按时间戳排序，O(log N) 范围查询 |
-| 定时检查 | Spring `@Scheduled` | 简单可靠，单实例足够（配合 Redis 分布式锁防重复执行） |
-| 多实例不重复执行 | Redis `SETNX` 分布式锁 | 防止每个实例都扫一遍 |
-| 批量发送提醒 | RabbitMQ 批量 publish | 一次检查可能产生几十条提醒，逐条 HTTP 太慢 |
-| 提醒不重复发送 | Redis 幂等标记 | `SETNX reminder:sent:{activityId}:{userId}` |
+| 高效查询到期 Activity | Redis `ZRANGEBYSCORE` on `activity:expires_at` | 已实现：按 expiresAt epoch millis 排序，批量取 due ids |
+| 定时检查 | Spring `@Scheduled` | 已实现：默认 60s tick，可通过 `app.activity-expiration.fixed-delay-ms` 调整 |
+| 多实例不重复执行 | Redis `SETNX` lock with TTL | 已实现：`activity:expiration:lock` 防止重复 tick |
+| 批量状态迁移 | MySQL guarded update | 已实现：只把 due ids 中仍为 `PUBLISHED` 且 `expires_at < now` 的 Activity 改为 `EXPIRED` |
+| 提醒与去重 | RabbitMQ + Redis idempotency | 暂缓：等产品需要到期/开始提醒时再做 |
 
 ### 一致性边界
 
 | 数据 | 存储 | 一致性 |
 |------|------|--------|
 | Activity 状态 | MySQL | 强一致 |
-| 过期/提醒索引 | Redis Sorted Set | 热数据，从 MySQL 重建 |
-| 提醒去重 | Redis String | 幂等保证，带 TTL |
+| 过期索引 | Redis Sorted Set | 热数据，每 tick 从 MySQL published Activities 同步，可从 MySQL 重建 |
+| 分布式锁 | Redis String | 带 TTL 的 tick lock，失败时 SQL fallback 保护正确性 |
 
 ### 证据产出
 
 - Redis Sorted Set 做时间索引
 - Redis 分布式锁（`SETNX` + TTL）
-- 定时任务设计（频率、批量、容错）
-- RabbitMQ 批量处理
+- Spring `@Scheduled` 生命周期任务设计（频率、批量、容错）
+- MySQL source of truth + Redis hot index 一致性边界
 
 ---
 

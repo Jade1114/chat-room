@@ -30,13 +30,16 @@ public class ActivityService {
   private final UserMapper userMapper;
   private final ActivityInterestEventPublisher interestEventPublisher;
   private final ActivityHotScoreService hotScoreService;
+  private final ActivityExpirationService expirationService;
 
   public ActivityService(ActivityMapper activityMapper, UserMapper userMapper,
-      ActivityInterestEventPublisher interestEventPublisher, ActivityHotScoreService hotScoreService) {
+      ActivityInterestEventPublisher interestEventPublisher, ActivityHotScoreService hotScoreService,
+      ActivityExpirationService expirationService) {
     this.activityMapper = activityMapper;
     this.userMapper = userMapper;
     this.interestEventPublisher = interestEventPublisher;
     this.hotScoreService = hotScoreService;
+    this.expirationService = expirationService;
   }
 
   public ActivityFeedResponse getFeed(String query, String category, String tag, String sort) {
@@ -117,7 +120,9 @@ public class ActivityService {
     activity.setCreatedByUserId(cleanedUserId);
     activity.setCreatedByLocalSessionId(cleanedLocalSessionId);
     activityMapper.insert(activity);
-    return responseForIdentity(activityMapper.findById(activity.getId()), false, cleanedUserId, cleanedLocalSessionId);
+    Activity created = activityMapper.findById(activity.getId());
+    expirationService.indexActivity(created);
+    return responseForIdentity(created, false, cleanedUserId, cleanedLocalSessionId);
   }
 
   private String publicCreatorUserId() {
@@ -136,7 +141,9 @@ public class ActivityService {
     }
     Activity updated = buildActivity(existing, request, existing.getCreatedBy(), false);
     activityMapper.update(updated);
-    return responseForIdentity(activityMapper.findById(activityId), false, userId, localSessionId);
+    Activity saved = activityMapper.findById(activityId);
+    expirationService.indexActivity(saved);
+    return responseForIdentity(saved, false, userId, localSessionId);
   }
 
   public ActivityResponse closeActivity(String activityId, String userId, String localSessionId) {
@@ -146,6 +153,7 @@ public class ActivityService {
     activity.setStatus("CLOSED");
     activity.setUpdatedAt(Instant.now());
     activityMapper.update(activity);
+    expirationService.removeActivity(activityId);
     return responseForIdentity(activityMapper.findById(activityId), false, userId, localSessionId);
   }
 

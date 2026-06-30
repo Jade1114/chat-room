@@ -2,6 +2,7 @@ package com.yuy.chatroom.mapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Delete;
@@ -135,10 +136,32 @@ public interface ActivityMapper {
       UPDATE activity
       SET status = 'EXPIRED', updated_at = #{now}
       WHERE status = 'PUBLISHED'
-        AND ((time_mode = 'SCHEDULED' AND end_time IS NOT NULL AND end_time < #{now})
+        AND ((time_mode = 'SCHEDULED' AND expires_at < #{now})
           OR (time_mode = 'ONGOING' AND expires_at < #{now}))
       """)
   void expireOutdated(@Param("now") Instant now);
+
+  @Select("""
+      SELECT id, expires_at AS expiresAt
+      FROM activity
+      WHERE status = 'PUBLISHED'
+        AND expires_at IS NOT NULL
+      """)
+  List<Map<String, Object>> findPublishedExpirationIndexRows();
+
+  @Update("""
+      <script>
+      UPDATE activity
+      SET status = 'EXPIRED', updated_at = #{now}
+      WHERE status = 'PUBLISHED'
+        AND expires_at &lt; #{now}
+        AND id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+          #{id}
+        </foreach>
+      </script>
+      """)
+  int expirePublishedByIds(@Param("ids") List<String> ids, @Param("now") Instant now);
 
   @Insert("""
       INSERT INTO activity_event (id, activity_id, user_id, visitor_id, event_type, created_at)

@@ -53,6 +53,8 @@ Auth / Local Session
 - 高频发布 Activity 会被限流，返回 `429` 和 `Retry-After`；
 - 高频点击 `我感兴趣` 会被限流，返回 `429` 和 `Retry-After`；
 - Redis 限流失败时 fail-open，不阻塞正常主链路；
+- Activity 到期后由定时任务转为 `EXPIRED`，不依赖打开 Feed 才清理；
+- Redis `activity:expires_at` 只作为过期时间索引，MySQL 仍是状态事实源；
 - 前端构建和后端编译；
 - Organization / Channel / Chat 入口被降级为 legacy，不影响 MVP 第一印象。
 
@@ -81,7 +83,7 @@ Auth / Local Session
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
 | RabbitMQ | `localhost:5672` / management `localhost:15673` | Slice 2C Interest notification side effect |
-| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking accepted；场景 4 Rate Limiting 使用 sliding window / token bucket |
+| Redis | `localhost:6379` | Hot Ranking、Rate Limiting、Activity Expiration time index / lock |
 
 ## 3. Local database reset
 
@@ -597,7 +599,63 @@ Redis 不可用时重复一次正常发布或 Interest：
 - 后端记录 warning；
 - MySQL 原有业务规则仍然生效。
 
-## 19. Checklist
+## 19. Scenario 3: Activity Expiration Engine acceptance
+
+设计与验收入口：`docs/engineering/activity-expiration-engine-design.md`。
+
+当前场景 3 使用 Redis 时间索引和 Spring scheduled tick 处理 Activity 生命周期：
+
+```text
+activity:expires_at
+activity:expiration:lock
+```
+
+验收前可清理本地过期索引：
+
+```bash
+redis-cli DEL activity:expires_at activity:expiration:lock
+```
+
+### Redis time index
+
+创建或编辑一个短有效期 Activity 后检查：
+
+```bash
+redis-cli ZRANGE activity:expires_at 0 -1 WITHSCORES
+```
+
+期望：
+
+- Activity id 出现在 `activity:expires_at`；
+- score 是该 Activity 的 `expiresAt` epoch millis；
+- 关闭 Activity 后，id 从 `activity:expires_at` 移除。
+
+### Scheduled expiration
+
+等待 Activity 过期并经过一个 scheduler tick，或临时降低：
+
+```yaml
+app:
+  activity-expiration:
+    fixed-delay-ms: 5000
+```
+
+期望：
+
+- MySQL 中该 Activity 从 `PUBLISHED` 变为 `EXPIRED`；
+- 该 Activity 不再进入默认 Feed；
+- due id 从 `activity:expires_at` 移除；
+- `activity:expiration:lock` 只作为短期 tick lock 存在。
+
+### Redis failure boundary
+
+Redis 不可用时触发 tick 或打开 Feed：
+
+- 后端记录 warning；
+- SQL fallback 仍能执行过期清理；
+- 发布、编辑、关闭、Interest 不应因为 Redis 过期索引失败而被阻塞。
+
+## 20. Checklist
 
 ### Build
 
