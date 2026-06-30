@@ -33,6 +33,7 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Activity Interest 实时通知：发起者在线时收到匿名右上角通知卡片
 - Activity Interest RabbitMQ 异步事件管道：`ActivityInterestCreatedEvent`、publisher confirm、manual ack、DLQ
 - Redis Hot Activity Ranking：`activity:hot_score` Sorted Set、`GET /api/activities?sort=hot`、前端 `热门` tab、`hotMetrics` 解释指标
+- Activity Rate Limiting：Redis sliding window / token bucket 保护公开发布和 Interest 点击，超限返回 `429` + `Retry-After`
 - Activity-first frontend routes and navigation
 - legacy Organization / Channel / Chat 前端入口降级
 
@@ -70,6 +71,7 @@ P5 Manual acceptance                              ✅
 P6 Hide / downgrade legacy Organization routes    ✅
 P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
+P9 Activity Rate Limiting: Redis sliding window + token bucket 🚧
 ```
 
 ---
@@ -108,7 +110,7 @@ P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
 | 轨道 | 文档 | 当前 |
 |------|------|------|
 | 产品轨道 | 本文档 Section 5.1-5.3 | Phase 0（收集反馈） |
-| 工程轨道 | `docs/engineering/scenario-catalog.md` | Slice 3 Hot Activity Ranking 已实现并验收；下一步从真实反馈或下一工程场景中选择 |
+| 工程轨道 | `docs/engineering/scenario-catalog.md` | 场景 4 Activity Rate Limiting 正在实现：公开发布和 Interest 点击限流 |
 
 产品轨道验证"用户是否需要这个产品"。工程轨道把项目从 MySQL CRUD 升级为能证明你**会做系统**的证据——WebSocket 实时推送、RabbitMQ 事件管道、Redis 热缓存、并发安全加固、一致性边界文档。
 
@@ -164,6 +166,7 @@ P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
 - RabbitMQ async side effects：把 Interest notification 从 HTTP 同步 side effect 拆成 `ActivityInterestCreated` 事件管道
 - Hot Activity Ranking：用 Redis Sorted Set 将详情浏览、查看参与方式、表达兴趣转化为 `热门` Feed 排序
 - Hot metrics explainability：热门卡片展示 score、浏览、查看参与方式、interest count 的来源
+- Rate limiting and safety：公开发布与 Interest 点击加 Redis 限流，避免低成本匿名滥用
 - Feed 手动刷新边界：发布新 Activity 不广播到其他用户 Feed
 
 **可能工作**：

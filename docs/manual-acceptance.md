@@ -50,6 +50,9 @@ Auth / Local Session
 - 过期 / 关闭 Activity 不进入默认 Feed；
 - `热门` tab 按 Redis hot score 展示可解释排序，且关闭 / 过期 Activity 不因为 Redis 分数进入 Hot Feed；
 - Redis 空或不可用时，Hot Feed fallback，不阻塞主链路；
+- 高频发布 Activity 会被限流，返回 `429` 和 `Retry-After`；
+- 高频点击 `我感兴趣` 会被限流，返回 `429` 和 `Retry-After`；
+- Redis 限流失败时 fail-open，不阻塞正常主链路；
 - 前端构建和后端编译；
 - Organization / Channel / Chat 入口被降级为 legacy，不影响 MVP 第一印象。
 
@@ -78,7 +81,7 @@ Auth / Local Session
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
 | RabbitMQ | `localhost:5672` / management `localhost:15673` | Slice 2C Interest notification side effect |
-| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking accepted：`activity:hot_score` Sorted Set |
+| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking accepted；场景 4 Rate Limiting 使用 sliding window / token bucket |
 
 ## 3. Local database reset
 
@@ -537,7 +540,64 @@ Slice 3D 边界：
 - 后续新行为会继续写入 Redis；
 - 只有当 Hot Feed 成为关键入口、不能接受冷启动时，才引入 scheduled rebuild job / admin rebuild endpoint / batch script。
 
-## 18. Checklist
+## 18. Scenario 4: Activity Rate Limiting acceptance
+
+设计与验收入口：`docs/engineering/activity-rate-limiting-design.md`。
+
+当前场景 4 保护两个公开写动作：
+
+```text
+POST /api/activities
+POST /api/activities/{activityId}/interest
+```
+
+Redis keys 使用 hashed identity。验收前可清理本地限流 key：
+
+```bash
+redis-cli --scan --pattern 'rate:activity:*' | xargs -r redis-cli DEL
+```
+
+### Publish sliding-window limit
+
+同一个 Local Session 在 60 秒内连续发布 4 个有效 Activity：
+
+```bash
+LOCAL_SESSION_ID="rate-create-demo"
+# 连续调用 POST /api/activities 4 次
+```
+
+期望：
+
+- 前 3 次成功；
+- 第 4 次返回 `429 Too Many Requests`；
+- response header 包含 `Retry-After`；
+- JSON body 包含 `error` 和 `retryAfterSeconds`。
+
+### Interest token-bucket limit
+
+同一个 Local Session 在 1 秒内快速点击 Interest 超过 10 次：
+
+```bash
+LOCAL_SESSION_ID="rate-interest-demo"
+# 快速调用 POST /api/activities/{activityId}/interest
+```
+
+期望：
+
+- 正常点击成功或返回幂等后的 ActivityResponse；
+- 持续高频点击返回 `429 Too Many Requests`；
+- response header 包含 `Retry-After`；
+- JSON body 包含 `error` 和 `retryAfterSeconds`。
+
+### Redis failure boundary
+
+Redis 不可用时重复一次正常发布或 Interest：
+
+- 业务动作不应因为 limiter 失败而被阻塞；
+- 后端记录 warning；
+- MySQL 原有业务规则仍然生效。
+
+## 19. Checklist
 
 ### Build
 

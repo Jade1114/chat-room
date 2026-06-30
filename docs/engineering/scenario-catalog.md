@@ -166,16 +166,16 @@ Activity 到期后自动标记为 EXPIRED，即将开始的 Activity 推送提�
 
 ### 产品
 
-防止恶意用户高频发布 Activity 或刷意向。系统级保护，不是功能需求。
+防止恶意用户高频发布 Activity 或刷意向。系统级保护，不是功能需求。当前实现入口：`docs/engineering/activity-rate-limiting-design.md`。
 
 ### 为什么需要核心技术
 
 | 需求 | 技术 | 为什么必须 |
 |------|------|-----------|
-| 每人每分钟最多发 3 个 Activity | Redis 滑动窗口 | 跨实例共享计数器；重启不丢（Redis 持久化） |
-| 每秒最多 10 个意向点击 | Redis Token Bucket | 突发容忍 + 稳定限流 |
-| 限流拒绝时返回 429 + Retry-After | HTTP 标准响应 | 前端可以展示友好提示 |
-| IP 级别限流和用户级别限流分开 | 两级 Redis key | 防止单用户换账号绕开 |
+| 每人每分钟最多发 3 个 Activity | Redis ZSET sliding window | 已实现：actor 维度 3/min，IP 维度 10/min |
+| 每秒最多 10 个意向点击 | Redis token bucket | 已实现：actor 维度 capacity/refill 10/s，IP 维度 30/s |
+| 限流拒绝时返回 429 + Retry-After | HTTP 标准响应 | 已实现：JSON body 返回 `error` 和 `retryAfterSeconds` |
+| IP 级别限流和用户/Local Session 级别限流分开 | 两级 Redis key | 已实现：logged-in User、Local Session、IP fallback 分层 |
 
 ### 一致性边界
 
@@ -185,9 +185,10 @@ Activity 到期后自动标记为 EXPIRED，即将开始的 Activity 推送提�
 
 ### 证据产出
 
-- Redis 两种限流算法（滑动窗口 + Token Bucket）
-- 多级限流设计（IP + User）
-- 限流不影响正常用户体验
+- Redis 两种限流算法（sliding window + token bucket）
+- 多级限流设计（IP + User / Local Session）
+- `429 Too Many Requests` + `Retry-After`
+- Redis 失败时 fail-open，不影响正常用户体验
 
 ---
 
