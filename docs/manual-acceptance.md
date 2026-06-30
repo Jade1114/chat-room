@@ -2,7 +2,7 @@
 
 > 目的：用轻量手动验收证明 Activity-first MVP 主链路可运行、可观察、可解释。
 >
-> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知中心或平台内报名。当前只验收 Activity Interest 的在线匿名提示卡片。
+> 当前 MVP 不验收 Organization、Membership、Channel、实时聊天、评论、通知中心或平台内报名。当前验收 Activity Interest 的在线匿名提示卡片，以及 Slice 3 已通过的 Hot Activity Ranking。
 
 ## 1. Acceptance scope
 
@@ -16,6 +16,7 @@ Auth / Local Session
 → participation method reveal
 → Activity Interest (`我感兴趣` / `已感兴趣`)
 → Activity event logs
+→ Hot Activity Ranking (`热门` tab / `sort=hot`)
 → Publish Activity
 → My initiated Activities
 → Close Activity
@@ -47,6 +48,8 @@ Auth / Local Session
 - 未登录 Local Session 发起者关闭 Activity 不应出现 `close activity status 401`；
 - `/me/activities` 展示我的发布，并支持未登录 Local Session 访问；
 - 过期 / 关闭 Activity 不进入默认 Feed；
+- `热门` tab 按 Redis hot score 展示可解释排序，且关闭 / 过期 Activity 不因为 Redis 分数进入 Hot Feed；
+- Redis 空或不可用时，Hot Feed fallback，不阻塞主链路；
 - 前端构建和后端编译；
 - Organization / Channel / Chat 入口被降级为 legacy，不影响 MVP 第一印象。
 
@@ -75,7 +78,7 @@ Auth / Local Session
 | Backend | `localhost:8080` | Spring Boot 服务 |
 | Frontend | Vite dev server | React 前端 |
 | RabbitMQ | `localhost:5672` / management `localhost:15673` | Slice 2C Interest notification side effect |
-| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking planned |
+| Redis | `localhost:6379` | Slice 3 Hot Activity Ranking accepted：`activity:hot_score` Sorted Set |
 
 ## 3. Local database reset
 
@@ -219,7 +222,7 @@ test001 / 123456
 
 ```text
 打开 /activities
-→ Feed tab 正常：Upcoming / Ongoing
+→ Feed tab 正常：Upcoming / Ongoing / 热门
 → 搜索 Redis
 → 分类筛选 STUDY / PROJECT
 → 标签筛选 后端 / 找队友
@@ -472,9 +475,9 @@ MVP 需要人工问：
 
 ## 17. Slice 3B/3C/3D: Hot Activity Ranking acceptance
 
-Slice 3 设计入口：`docs/engineering/activity-hot-ranking-design.md`。
+Slice 3 设计与验收入口：`docs/engineering/activity-hot-ranking-design.md`。
 
-当前 Slice 3B 验收 Redis 写路径，Slice 3C 验收 Hot Feed 读路径和前端 `热门` tab，Slice 3D 验收 Redis 派生读模型的恢复边界。Redis key：
+当前 Slice 3B/3C/3D 已通过验收：Redis 写路径、Hot Feed 读路径、前端 `热门` tab、以及 Redis 派生读模型恢复边界均成立。Redis key：
 
 ```text
 activity:hot_score

@@ -97,13 +97,15 @@ The current MVP intentionally does not build:
 - realtime chat;
 - notification center;
 - recommendation algorithm;
-- ranking / badges;
+- gamified ranking / badges;
 - social graph;
 - comment system;
 - image / poster / file upload;
 - activity capacity / waitlist / approval workflow.
 
 Existing organization, membership, channel, and chat code is historical implementation asset and possible future capability. It is not the current MVP acceptance standard. In the current frontend, Organization / Channel / Chat routes are downgraded as legacy capability: they are not shown as primary navigation and direct visits display a legacy notice.
+
+The project now includes a small, accepted Hot Activity Ranking engineering slice: Redis stores a derived `activity:hot_score` Sorted Set, while MySQL remains the source of truth for Activity visibility and explanatory metrics. This is a transparent discovery aid, not a personalized recommendation system or gamified leaderboard.
 
 ## Activity rules
 
@@ -136,7 +138,7 @@ OTHER        其他
 
 ## Activity Feed
 
-The Feed has two sections, currently represented as tabs:
+The Feed has two default time-based sections, plus an accepted Hot discovery tab:
 
 ```text
 Upcoming / 即将发生
@@ -148,9 +150,14 @@ Ongoing / 持续招募
 - ONGOING + PUBLISHED
 - expiresAt has not passed
 - ordered by createdAt descending
+
+Hot / 热门
+- valid PUBLISHED Activities only
+- ordered by Redis hot score derived from detail views, participation-method views, and Activity Interest
+- falls back to the default Feed order if Redis is empty or unavailable
 ```
 
-Search and category/tag filters keep the same two-section structure.
+Search and category/tag filters apply to the default time-based Feed and to the Hot discovery tab.
 
 ## Success metrics
 

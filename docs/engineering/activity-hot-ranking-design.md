@@ -158,13 +158,13 @@ Not accepted:
 
 ## 7. Delivery slices
 
-### Slice 3A: Hot Ranking design — current
+### Slice 3A: Hot Ranking design — accepted
 
-Deliver this document and update roadmap/scenario catalog/manual acceptance.
+Delivered the design document and used it to guide implementation.
 
-No production code.
+No production code belonged to this design-only slice.
 
-### Slice 3B: Redis write path — implemented, pending acceptance
+### Slice 3B: Redis write path — implemented and accepted
 
 Goal: update `activity:hot_score` when user behavior happens.
 
@@ -184,7 +184,7 @@ Acceptance:
 - duplicate Interest does not add +5 again;
 - Redis failure does not block product action.
 
-### Slice 3C: Hot Feed read path — implemented, pending acceptance
+### Slice 3C: Hot Feed read path — implemented and accepted
 
 Goal: users can request hot ranking.
 
@@ -207,7 +207,7 @@ Acceptance:
 - Hot Feed response includes `hotMetrics.score`, `hotMetrics.detailViews`, `hotMetrics.participationMethodViews`, and `hotMetrics.interestCount`;
 - frontend Hot cards show a lightweight explanation such as `最近被关注：X 人感兴趣 · Y 次查看参与方式 · Z 次浏览`.
 
-### Slice 3D: Persistence and Redis recovery boundary — documented
+### Slice 3D: Persistence and Redis recovery boundary — documented and accepted
 
 Goal: close the architecture boundary without adding an operations script in the current slice.
 

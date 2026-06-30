@@ -32,6 +32,7 @@ Activity-first MVP 主链路已闭合，本地手动验收通过。
 - Activity Interest：`我感兴趣`、幂等计数、当前身份状态、自发起 Activity 不可点
 - Activity Interest 实时通知：发起者在线时收到匿名右上角通知卡片
 - Activity Interest RabbitMQ 异步事件管道：`ActivityInterestCreatedEvent`、publisher confirm、manual ack、DLQ
+- Redis Hot Activity Ranking：`activity:hot_score` Sorted Set、`GET /api/activities?sort=hot`、前端 `热门` tab、`hotMetrics` 解释指标
 - Activity-first frontend routes and navigation
 - legacy Organization / Channel / Chat 前端入口降级
 
@@ -48,6 +49,8 @@ login
 → 发起者收到匿名 Interest 通知卡片
 → RabbitMQ 异步投递 Interest notification side effect
 → DETAIL_VIEW / PARTICIPATION_METHOD_VIEW event logs
+→ Redis Hot Activity Ranking 更新热度分数
+→ /activities `热门` tab 展示可解释热门排序
 → /activities/new publish
 → /me/activities
 → close my initiated Activity
@@ -66,6 +69,7 @@ P4 Activity-first frontend routes and navigation  ✅
 P5 Manual acceptance                              ✅
 P6 Hide / downgrade legacy Organization routes    ✅
 P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
+P8 Hot Activity Ranking: Redis Sorted Set + Hot Feed ✅
 ```
 
 ---
@@ -104,7 +108,7 @@ P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 | 轨道 | 文档 | 当前 |
 |------|------|------|
 | 产品轨道 | 本文档 Section 5.1-5.3 | Phase 0（收集反馈） |
-| 工程轨道 | `docs/engineering/scenario-catalog.md` | Slice 2 完成；下一步 Slice 3A Hot Activity Ranking 设计 |
+| 工程轨道 | `docs/engineering/scenario-catalog.md` | Slice 3 Hot Activity Ranking 已实现并验收；下一步从真实反馈或下一工程场景中选择 |
 
 产品轨道验证"用户是否需要这个产品"。工程轨道把项目从 MySQL CRUD 升级为能证明你**会做系统**的证据——WebSocket 实时推送、RabbitMQ 事件管道、Redis 热缓存、并发安全加固、一致性边界文档。
 
@@ -158,6 +162,8 @@ P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 - 幂等与自发起保护：重复点击不重复计数，发起者不能给自己的 Activity 表达兴趣
 - Interest 实时通知：有人表达兴趣后，发起者在线时收到匿名右上角提示卡片
 - RabbitMQ async side effects：把 Interest notification 从 HTTP 同步 side effect 拆成 `ActivityInterestCreated` 事件管道
+- Hot Activity Ranking：用 Redis Sorted Set 将详情浏览、查看参与方式、表达兴趣转化为 `热门` Feed 排序
+- Hot metrics explainability：热门卡片展示 score、浏览、查看参与方式、interest count 的来源
 - Feed 手动刷新边界：发布新 Activity 不广播到其他用户 Feed
 
 **可能工作**：
@@ -167,8 +173,8 @@ P7 Activity Interest Notification: WebSocket + RabbitMQ ✅
 - 发起者 profile / 历史发布
 - 真实反馈收集面板
 
-**工程轨道下一步（Slice 3）**：
-- Hot Activity Ranking：用 Redis Sorted Set 把浏览、查看参与方式、表达兴趣等行为转化为热门活动排序（设计入口：`docs/engineering/activity-hot-ranking-design.md`）
+**工程轨道当前完成（Slice 3）**：
+- Hot Activity Ranking 已实现并验收：Redis `activity:hot_score` Sorted Set 负责派生热度分数，`GET /api/activities?sort=hot` 和前端 `热门` tab 负责读路径，MySQL 仍是 Activity 可见性与解释指标的事实源。设计与边界见 `docs/engineering/activity-hot-ranking-design.md`。
 
 **暂缓**：
 - Redis multi-instance notification routing：等出现多 backend 实例部署需求时再做，不在当前单实例 MVP 中硬塞进 notification 链路

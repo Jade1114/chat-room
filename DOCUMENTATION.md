@@ -47,7 +47,7 @@
 | `docs/engineering/scenario-catalog.md` | 工程场景目录：5 个候选场景，每个场景分析为什么必须用 Redis/RabbitMQ/并发，能产生什么工程证据。从中选择推进。 |
 | `docs/engineering/activity-interest-design.md` | Activity Interest + realtime hint 的可实现设计：领域边界、交付切片、Slice 1 API/数据模型/验收清单。 |
 | `docs/engineering/activity-interest-notification-design.md` | Slice 2 总结：Interest notification 语义、WebSocket targeted hint、RabbitMQ async side-effect、Redis multi-instance routing 暂缓边界。 |
-| `docs/engineering/activity-hot-ranking-design.md` | Slice 3 设计：用 Redis Sorted Set 把浏览、查看参与方式、表达兴趣转化为 Hot Activity Ranking。 |
+| `docs/engineering/activity-hot-ranking-design.md` | Slice 3 设计、实现状态与恢复边界：用 Redis Sorted Set 把浏览、查看参与方式、表达兴趣转化为已验收的 Hot Activity Ranking。 |
 | `docs/engineering/capability-checklist.md` | 工程能力清单：6 大能力域（消息可靠性/缓存/实时推送/并发安全/一致性/系统保护），每项能力的具体技术手段和面试表达，技能覆盖矩阵。 |
 | `docs/engineering/engineering-track.md` | 历史：旧的线性 E0-E4 计划，已被场景目录替代。E0 已实现。 |
 

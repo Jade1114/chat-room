@@ -26,7 +26,7 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
 | 高频点击防刷 | Redis 滑动窗口 / Token Bucket | 暂缓：等真实刷请求或多实例共享限流压力出现再做 |
 | 解除 HTTP 响应和后台处理耦合 | RabbitMQ | 已完成：Interest 写入 MySQL 后立即返回，通知 side effect 走异步事件 |
 | 发起者收到实时通知 | WebSocket 定向推送 | 已完成：不是 Feed 广播，而是发给 Activity Initiator |
-| 热度计数（浏览量+意向数） | Redis `Sorted Set` + `ZINCRBY` | 转移到场景 2 / Slice 3：Hot Activity Ranking |
+| 热度计数（浏览量+意向数） | Redis `Sorted Set` + `ZINCRBY` | 已完成：转移到场景 2 / Slice 3 Hot Activity Ranking，并通过验收 |
 | 消息不丢 | RabbitMQ publisher confirm + consumer manual ack | 已完成：publisher confirm、manual ack、DLQ |
 | 消费失败不丢 | Dead Letter Queue | 已完成：失败事件进入 `activity.interest.created.dlq` |
 | 多 consumer 并发 | 线程安全审查 | 多个 consumer 同时处理不同用户的意向，计数不能错 |
@@ -38,7 +38,7 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
 | 意向记录（谁对哪个活动表达了意向） | MySQL | 强一致（source of truth） |
 | 意向计数（展示用） | MySQL count / response projection | 强一致展示，暂不放 Redis |
 | 通知投递 | RabbitMQ → WebSocket | at-least-once side effect，Interest 本身不回滚 |
-| 热度分数 | Redis Sorted Set | 转移到 Slice 3 Hot Activity Ranking |
+| 热度分数 | Redis Sorted Set | 已完成：Slice 3 Hot Activity Ranking 的派生读模型 |
 
 ### 数据路径
 
@@ -51,7 +51,7 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
       → Consumer: WebSocket 定向通知发起者
 ```
 
-当前 Slice 1/2 已实现：MySQL durable Interest、WebSocket targeted hint、RabbitMQ async side-effect pipeline。Redis 不继续放在 notification 主链路里；下一步 Redis 入口改为场景 2 Hot Activity Ranking。
+当前 Slice 1/2 已实现：MySQL durable Interest、WebSocket targeted hint、RabbitMQ async side-effect pipeline。Redis 没有继续放在 notification 主链路里，而是通过场景 2 / Slice 3 Hot Activity Ranking 进入产品链路，并已验收。
 
 ### 证据产出
 
@@ -59,7 +59,7 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
 - RabbitMQ 可靠消息管道（confirm/ack/DLQ）
 - WebSocket 定向推送（不止群发）
 - 一致性边界文档（MySQL durable fact vs RabbitMQ/WebSocket side effect）
-- Redis Sorted Set 证据转移到场景 2 Hot Activity Ranking
+- Redis Sorted Set 证据已在场景 2 Hot Activity Ranking 中落地
 
 ### Frank 映射
 
@@ -68,15 +68,15 @@ Slice 2 总结：`docs/engineering/activity-interest-notification-design.md`。
 
 ---
 
-## 场景 2: 热度排序 + Feed 动态重排（下一步 Slice 3）
+## 场景 2: 热度排序 + Feed 动态重排（Slice 3 已实现并验收）
 
 ### 产品
 
 Feed 不再只按时间排序。引入"热门"维度——结合浏览详情、查看参与方式、表达兴趣，让用户看到的不只是"最新"，还有"正在被关注"。
 
-设计入口：`docs/engineering/activity-hot-ranking-design.md`。
+设计与验收入口：`docs/engineering/activity-hot-ranking-design.md`。
 
-这是当前工程轨道下一步，因为它比 notification multi-instance routing 更贴近 Activity-first 产品命题：让值得一起完成的事情持续被发现。
+这是当前工程轨道已完成的 Redis 入口。它比 notification multi-instance routing 更贴近 Activity-first 产品命题：让值得一起完成的事情持续被发现。
 
 ### 为什么需要核心技术
 
@@ -84,9 +84,9 @@ Feed 不再只按时间排序。引入"热门"维度——结合浏览详情、�
 |------|------|-----------|
 | 实时热度计数（每次浏览/意向原子递增） | Redis `ZINCRBY` | MySQL `UPDATE SET count = count + 1` 在并发下性能差且需行锁 |
 | 按热度排序查询 | Redis `ZREVRANGE` | O(log N + M)，MySQL `ORDER BY score` 全表扫描 |
-| Feed 接口先查 Redis 再 fallback | cache-aside 模式 | Redis 命中时完全不走 MySQL；未命中回源并回填 |
-| 缓存失效 | 事件驱动 | Activity 发布/关闭/过期时主动 invalidate，不依赖 TTL 猜测 |
-| 多实例缓存一致 | Redis pub/sub 跨实例通知 | 实例 A 更新了缓存，实例 B 的缓存也失效 |
+| Feed 接口先查 Redis 排名再由 MySQL 过滤/水合，Redis 空或失败时 fallback | derived read model + source-of-truth hydration | Redis 只决定排序候选，Activity 可见性和解释指标仍由 MySQL 负责 |
+| 恢复边界 | Redis 可丢失派生状态 + MySQL durable facts | 当前不实现 rebuild，Hot Feed 允许冷启动 fallback，等 Hot Feed 成为关键入口再补 rebuild job |
+| 多实例缓存一致 | Redis pub/sub 跨实例通知 | 暂缓：等真实多实例部署需求出现再做 |
 
 ### 一致性边界
 
@@ -101,15 +101,23 @@ Feed 不再只按时间排序。引入"热门"维度——结合浏览详情、�
 ```
 用户打开 Feed
   → GET /api/activities?sort=hot
-    → Redis ZREVRANGE activity:feed:hot 0 19
-      → 命中：直接返回
-      → 未命中：MySQL 查询 → 回填 Redis → 返回
+    → Redis ZREVRANGE activity:hot_score
+    → MySQL 查询当前可见 Activity 并与 Redis 排名取交集
+    → 返回 hot[]，每项带 hotMetrics 解释指标
+    → Redis 空/失败时 fallback 到默认 Feed 顺序
 
 用户浏览 Activity 详情
-  → 记录 DETAIL_VIEW 事件
-    → RabbitMQ publish
-      → Consumer: Redis ZINCRBY activity:hot:{activityId} +1
-      → Consumer: Redis ZINCRBY activity:feed:hot {activityId} +1
+  → 记录 DETAIL_VIEW 事件到 MySQL
+  → Redis ZINCRBY activity:hot_score {activityId} +1
+
+用户查看参与方式
+  → 记录 PARTICIPATION_METHOD_VIEW 事件到 MySQL
+  → Redis ZINCRBY activity:hot_score {activityId} +3
+
+用户表达兴趣
+  → MySQL 写入 activity_interest
+  → RabbitMQ publish ActivityInterestCreatedEvent
+  → Consumer: WebSocket 通知 + Redis ZINCRBY activity:hot_score {activityId} +5
 ```
 
 ### 证据产出
@@ -211,7 +219,7 @@ Activity 到期后自动标记为 EXPIRED，即将开始的 Activity 推送提�
 | 如果你想要... | 选 |
 |---------------|-----|
 | 最完整的链路（Redis + RabbitMQ + WebSocket + 并发全串起来） | 场景 1 |
-| 当前下一步：用 Redis 贴合 Activity-first 产品命题 | 场景 2 |
+| 已完成 Redis 贴合 Activity-first 产品命题；下一步可继续工程深度 | 场景 2 → 场景 3/4/5 任选 |
 | 最轻量的系统级能力（不依赖新产品功能） | 场景 4 |
 | 最偏向运维/可靠性 | 场景 3 |
 | 完善已有能力（不引入新产品概念） | 场景 5 |
@@ -223,7 +231,7 @@ Activity 到期后自动标记为 EXPIRED，即将开始的 Activity 推送提�
 | 技术 | 场景 1 | 场景 2 | 场景 3 | 场景 4 | 场景 5 |
 |------|--------|--------|--------|--------|--------|
 | Redis String (SETNX/GET/SET) | ✅ 去重+限流 | | ✅ 分布式锁 | ✅ 限流 | ✅ 去重 |
-| Redis Sorted Set | ✅ 热度 | ✅ Feed排序 | ✅ 时间索引 | | |
+| Redis Sorted Set | | ✅ 热度/Feed排序 | ✅ 时间索引 | | |
 | Redis Set | | | | | ✅ 在线状态 |
 | RabbitMQ 可靠管道 | ✅ 事件 | ✅ 事件 | ✅ 批量 | | |
 | RabbitMQ DLQ | ✅ | | | | |
