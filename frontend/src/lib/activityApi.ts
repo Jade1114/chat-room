@@ -13,6 +13,14 @@ export interface ActivityHotMetrics {
   interestCount: number;
 }
 
+export interface ActivityUpdateResponse {
+  id: string;
+  activityId: string;
+  content: string;
+  authorDisplayName: string;
+  createdAt: string;
+}
+
 export interface ActivityResponse {
   id: string;
   title: string;
@@ -35,6 +43,7 @@ export interface ActivityResponse {
   canExpressInterest: boolean;
   initiatedByCurrentIdentity: boolean;
   hotMetrics: ActivityHotMetrics | null;
+  updates: ActivityUpdateResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -117,6 +126,16 @@ export async function expressActivityInterest(activityId: string): Promise<Activ
     headers: buildHeaders()
   });
   if (!response.ok) throw await parseError(response, `activity interest status ${response.status}`);
+  return response.json();
+}
+
+export async function publishActivityUpdate(activityId: string, content: string): Promise<ActivityUpdateResponse> {
+  const response = await fetch(buildApiUrl(`/api/activities/${encodeURIComponent(activityId)}/updates`), {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ content })
+  });
+  if (!response.ok) throw await parseError(response, `activity update status ${response.status}`);
   return response.json();
 }
 

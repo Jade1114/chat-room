@@ -3,11 +3,15 @@ import { notificationWsUrl } from '../config';
 import { getToken } from '../lib/authApi';
 import { getLocalSessionId } from '../lib/localSession';
 
-export interface ActivityInterestNotification {
+export type ActivityNotificationKind = 'interest' | 'update';
+
+export interface ActivityNotification {
   id: string;
+  kind: ActivityNotificationKind;
   activityId: string;
   activityTitle: string;
-  interestCount: number;
+  interestCount?: number;
+  updateId?: string;
   message: string;
 }
 
@@ -19,6 +23,14 @@ interface ServerActivityInterestHint {
   message: string;
 }
 
+interface ServerActivityUpdateHint {
+  type: 'ACTIVITY_UPDATE_PUBLISHED';
+  activityId: string;
+  activityTitle: string;
+  updateId: string;
+  message: string;
+}
+
 function buildNotificationSocketUrl() {
   const url = new URL(notificationWsUrl);
   url.searchParams.set('localSessionId', getLocalSessionId());
@@ -27,22 +39,33 @@ function buildNotificationSocketUrl() {
   return url.toString();
 }
 
-function parseNotification(payload: string): ActivityInterestNotification | null {
-  const message = JSON.parse(payload) as Partial<ServerActivityInterestHint>;
-  if (message.type !== 'ACTIVITY_INTEREST_HINT' || !message.activityId || !message.activityTitle) {
-    return null;
+function parseNotification(payload: string): ActivityNotification | null {
+  const message = JSON.parse(payload) as Partial<ServerActivityInterestHint> | Partial<ServerActivityUpdateHint>;
+  if (message.type === 'ACTIVITY_INTEREST_HINT' && message.activityId && message.activityTitle) {
+    return {
+      id: `${message.activityId}-interest-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      kind: 'interest',
+      activityId: message.activityId,
+      activityTitle: message.activityTitle,
+      interestCount: Number(message.interestCount ?? 0),
+      message: message.message || '有人对你的 Activity 感兴趣'
+    };
   }
-  return {
-    id: `${message.activityId}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    activityId: message.activityId,
-    activityTitle: message.activityTitle,
-    interestCount: Number(message.interestCount ?? 0),
-    message: message.message || '有人对你的 Activity 感兴趣'
-  };
+  if (message.type === 'ACTIVITY_UPDATE_PUBLISHED' && message.activityId && message.activityTitle && message.updateId) {
+    return {
+      id: `${message.activityId}-${message.updateId}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      kind: 'update',
+      activityId: message.activityId,
+      activityTitle: message.activityTitle,
+      updateId: message.updateId,
+      message: message.message || '你感兴趣的活动有新补充'
+    };
+  }
+  return null;
 }
 
 export function useActivityNotifications(enabled: boolean, identityKey: string) {
-  const [notifications, setNotifications] = useState<ActivityInterestNotification[]>([]);
+  const [notifications, setNotifications] = useState<ActivityNotification[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const removeNotification = useCallback((id: string) => {
     setNotifications((current) => current.filter((notification) => notification.id !== id));

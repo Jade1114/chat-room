@@ -86,7 +86,7 @@ function SidebarNavigationItem({ item, pathname }: { item: NavigationItem; pathn
   );
 }
 
-function ActivityInterestDialog({
+function ActivityNotificationDialog({
   notification,
   onDismiss
 }: {
@@ -94,6 +94,7 @@ function ActivityInterestDialog({
   onDismiss: (id: string) => void;
 }) {
   const open = Boolean(notification);
+  const isUpdate = notification?.kind === 'update';
 
   return (
     <Dialog modal={false} open={open} onOpenChange={(nextOpen) => {
@@ -106,13 +107,15 @@ function ActivityInterestDialog({
         {notification && (
           <div className="flex items-start gap-3 pr-6">
             <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent-strong">
-              <Icon className="size-5"><path d="M12 21s-6-4.35-8.25-8.24A4.5 4.5 0 0 1 12 7.5a4.5 4.5 0 0 1 8.25 5.26C18 16.65 12 21 12 21Z" /></Icon>
+              <Icon className="size-5">{isUpdate ? <path d="M4 4h16v12H7l-3 3V4Z" /> : <path d="M12 21s-6-4.35-8.25-8.24A4.5 4.5 0 0 1 12 7.5a4.5 4.5 0 0 1 8.25 5.26C18 16.65 12 21 12 21Z" />}</Icon>
             </span>
             <div className="min-w-0 flex-1">
               <DialogHeader className="gap-1 text-left">
-                <DialogTitle className="text-sm">有人对你的活动感兴趣</DialogTitle>
+                <DialogTitle className="text-sm">{isUpdate ? '你感兴趣的活动有新补充' : '有人对你的活动感兴趣'}</DialogTitle>
                 <DialogDescription className="text-xs leading-5">
-                  《{notification.activityTitle}》现在有 {notification.interestCount} 个感兴趣。
+                  {isUpdate
+                    ? `《${notification.activityTitle}》发布了新的补充说明。`
+                    : `《${notification.activityTitle}》现在有 ${notification.interestCount ?? 0} 个感兴趣。`}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="mt-3 flex-row justify-start gap-2 sm:justify-start">
@@ -120,7 +123,9 @@ function ActivityInterestDialog({
                   我知道了
                 </Button>
                 <Button asChild size="sm" onClick={() => onDismiss(notification.id)}>
-                  <Link to="/me/activities">查看我的活动</Link>
+                  {isUpdate
+                    ? <Link to="/activities/$activityId" params={{ activityId: notification.activityId }}>查看活动</Link>
+                    : <Link to="/me/activities">查看我的活动</Link>}
                 </Button>
               </DialogFooter>
             </div>
@@ -171,7 +176,7 @@ export function AppShell() {
   if (!currentUser) {
     return (
       <>
-        <ActivityInterestDialog notification={notifications[0]} onDismiss={removeNotification} />
+        <ActivityNotificationDialog notification={notifications[0]} onDismiss={removeNotification} />
         <Outlet />
       </>
     );
@@ -186,7 +191,7 @@ export function AppShell() {
 
   return (
     <main className="min-h-screen bg-app text-primary">
-      <ActivityInterestDialog notification={notifications[0]} onDismiss={removeNotification} />
+      <ActivityNotificationDialog notification={notifications[0]} onDismiss={removeNotification} />
       <div className="grid min-h-screen grid-cols-[320px_minmax(0,1fr)] max-lg:grid-cols-[minmax(0,1fr)]">
         <aside className="flex h-screen flex-col border-r border-divider bg-rail p-4 max-lg:hidden">
           <section className="shrink-0">
